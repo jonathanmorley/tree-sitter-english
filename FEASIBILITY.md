@@ -28,8 +28,13 @@ Reproduce with `nix develop -c tree-sitter test` and
 - Corpus: 19/19 pass (simple, compound `and`/`but`, subordinate
   `because`/`although`, relative `that`, multi-sentence paragraph, two
   paragraphs, SVO sentence, and ten abbreviation-robustness tests).
-- Speed: 4350 bytes/ms in tests. Sample files parse in about 0.05 ms.
-  Incremental re-parse comes free with tree-sitter.
+- Speed: full parse of Moby-Dick (1.27 MB, Gutenberg CRLF file, committed
+  as `examples/moby_dick.txt`) in ~131 ms median over five runs. A
+  one-word edit mid-book re-parses in ~37 ms. Peak RSS ~58 MB, about 40x
+  input size. The book yields 2,635 paragraphs, 10,475 sentences, 204,552
+  words, and 23,636 ERROR nodes, all from typographic characters the
+  grammar does not lex yet (semicolons, curly quotes and apostrophes, em
+  dashes); recovery never loses the document. Details in `POC_NOTES.md`.
 
 Real prose results (`examples/*.parse.txt`):
 
@@ -163,9 +168,11 @@ Proceed, scoped to tiers 1 and 2.
    and conflict-free.
 2. Sentence-boundary disambiguation is proven in the PoC, including
    last-word state tracking: the scanner lexes every word, stores it, and
-   serializes the state for incremental re-parse. Remaining work is
-   coverage: widen the abbreviation list, and handle ellipses and
-   quotation-mark conventions.
+   serializes the state for incremental re-parse. The Moby-Dick stress
+   test names the remaining coverage work: typographic characters
+   (semicolons, curly quotes and apostrophes, em dashes, colons) and
+   chapter-heading numbers. Semicolons are also the natural next tier-2
+   feature, since they join clauses like conjunctions.
 3. Treat tier 3 as out of scope for the grammar itself. If roles are needed,
    layer a real parser on top and write the results back as annotations.
 

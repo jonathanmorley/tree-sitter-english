@@ -64,7 +64,19 @@ static bool is_alpha(int32_t c) {
 }
 
 static bool is_space(int32_t c) {
-  return c == ' ' || c == '\t' || c == '\r' || c == '\f' || c == '\v';
+  return c == ' ' || c == '\t' || c == '\f' || c == '\v';
+}
+
+// Consume one newline: \n, \r\n, or a lone \r.
+static void consume_newline(TSLexer *lexer) {
+  if (lexer->lookahead == '\n') {
+    lexer->advance(lexer, true);
+    return;
+  }
+  if (lexer->lookahead == '\r') {
+    lexer->advance(lexer, true);
+    if (lexer->lookahead == '\n') lexer->advance(lexer, true);
+  }
 }
 
 // The scanner runs before extras are skipped, so it must skip whitespace
@@ -76,18 +88,15 @@ static void skip_whitespace(TSLexer *lexer, bool *paragraph_break_ahead) {
       lexer->advance(lexer, true);
       continue;
     }
-    if (lexer->lookahead == '\n') {
-      lexer->advance(lexer, true);
-      for (;;) {
-        if (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-          lexer->advance(lexer, true);
-          continue;
-        }
-        if (lexer->lookahead == '\n') {
-          *paragraph_break_ahead = true;
-          return;
-        }
-        break;
+    if (lexer->lookahead == '\n' || lexer->lookahead == '\r') {
+      consume_newline(lexer);
+      // A blank line may contain spaces and tabs.
+      while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        lexer->advance(lexer, true);
+      }
+      if (lexer->lookahead == '\n' || lexer->lookahead == '\r') {
+        *paragraph_break_ahead = true;
+        return;
       }
       continue; // lone newline: hard-wrapped prose, keep going
     }

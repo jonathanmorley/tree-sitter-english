@@ -89,7 +89,7 @@ module.exports = grammar({
       )))
     ),
 
-    paragraph_break: $ => /\n[ \t]*\n/,
+    paragraph_break: $ => /\r?\n[ \t]*\r?\n/,
 
     _comma: $ => ',',
 

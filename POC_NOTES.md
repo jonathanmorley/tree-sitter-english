@@ -142,7 +142,7 @@ Residual gaps (documented, not fixed):
 
 ## Corpus tests
 
-`nix develop -c tree-sitter test` — **19/19 pass**, 0 failures:
+`nix develop -c tree-sitter test` — **20/20 pass**, 0 failures:
 
 1. simple sentence (`Hello world.`)
 2. compound with `and`
@@ -163,6 +163,7 @@ Residual gaps (documented, not fixed):
 17. spaced single-letter initial does not end the sentence (`J. Smith arrived.`)
 18. pronoun `I` still ends a sentence (`It is I. You are next.`)
 19. conjunction word at sentence start lexes as a word (`For home he left.`)
+20. two paragraphs separated by a CRLF blank line (Gutenberg regression)
 
 ## Examples — parse results and wall time
 
@@ -220,6 +221,71 @@ their families.`).
 - The CLI only prints its own `Parse: X ms` footer for files with errors; the one
   it printed was `origin_of_species.txt  Parse: 0.09 ms  2690 bytes/ms`.
   The two clean files are equally tiny (~0.05 ms).
+
+## Stress test: Moby-Dick
+
+Input: Project Gutenberg #2701 (`examples/moby_dick.txt`, committed),
+1,276,263 bytes, 22,314 CRLF lines, sha256
+`9a6844ac0703853720010787c7b6c70b0020f1ab1862dcd74452fa46474d1215`.
+Includes the Gutenberg header and license footer, so the test covers
+typographic garbage as well as the novel. All numbers from the Nix dev
+shell CLI, five runs unless noted.
+
+| Metric | Result |
+|---|---|
+| Full parse | 129.5–134.2 ms, median ~131 ms (~9.8 KB/ms) |
+| Incremental re-parse after inserting one word mid-book | ~37 ms (3.5x faster) |
+| Peak RSS | ~58 MB (~52 MB over the 6.5 MB CLI baseline, ≈40x input size) |
+
+Structure extracted from the whole book:
+
+| Nodes | Count |
+|---|---|
+| `paragraph` | 2,635 |
+| `sentence` | 10,475 |
+| `word` | 204,552 |
+| `conjunction` | 10,659 |
+| `subordinator` | 6,768 |
+| `period` (sentence-continuing dots) | 266 |
+| `dotted` | 39 |
+| `number` | 496 |
+| ERROR | 23,636 |
+
+The sentence and word counts sit where Moby-Dick's known totals sit
+(~10k sentences, ~206k words), and error recovery never loses the
+document: every sentence still parses despite 23k error nodes.
+
+Error characterization. Roughly 12k hostile characters produce the 23.6k
+ERROR nodes (one incident often spawns several nodes):
+
+| Character | Count | Class |
+|---|---|---|
+| `;` | 4,182 | semicolon is not a token; Melville uses them heavily |
+| `’` | 2,796 | curly apostrophe; the word token only allows ASCII `'` |
+| `—` | 1,730 | em dash |
+| `“` | 1,628 | curly opening quote |
+| `”` | 1,487 | curly closing quote |
+| `:` | 215 | colon |
+| `é` | 5 | non-ASCII letters |
+
+Plus the header/footer: `***` lines, URLs with dots, digits.
+
+What the stress test found:
+
+1. **CRLF bug (fixed).** The first run parsed the whole book as ONE
+   paragraph: Gutenberg files use `\r\n`, so `paragraph_break`
+   (`/\n[ \t]*\n/`) never matched and the scanner's whitespace skip
+   treated `\r` as an ordinary space. Fixed by making both CRLF-aware;
+   `test/corpus/crlf.txt` guards the regression.
+2. **Chapter headings split oddly (open).** `CHAPTER 1. Loomings.` ends
+   the sentence after the number: the scanner's state holds `chapter`,
+   not an abbreviation, and `L` starts uppercase. A small heading rule
+   or a `ch.`-style entry would fix it.
+3. **Semicolons are the obvious next tier-2 feature.** 4,182 of them,
+   and they join clauses exactly like conjunctions. Currently ERROR.
+
+Memory note: ~40x input size means the tree approach scales to books
+comfortably but not to corpora; a 100 MB input would need ~4 GB.
 
 ## Limitations / where the grammar breaks
 

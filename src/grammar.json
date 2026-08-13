@@ -208,7 +208,7 @@
     },
     "paragraph_break": {
       "type": "PATTERN",
-      "value": "\\n[ \\t]*\\n"
+      "value": "\\r?\\n[ \\t]*\\r?\\n"
     },
     "_comma": {
       "type": "STRING",

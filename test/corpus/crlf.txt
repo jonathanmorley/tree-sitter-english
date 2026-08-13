@@ -1,0 +1,24 @@
+==================
+Two paragraphs separated by a blank line (CRLF)
+==================
+
+First paragraph here.
+
+Second paragraph here.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))
