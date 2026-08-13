@@ -95,46 +95,54 @@ trailing break reduce at every sentence end, which wrongly split sentences that
 share a line into separate paragraphs). With the separator form, a paragraph
 only ends at a blank line or EOF.
 
-## Abbreviation robustness (external scanner)
+## Abbreviation robustness (stateful external scanner)
 
-Bare periods are decided by three layers, in order of application:
+`word`, `conjunction`, `subordinator` and the two period tokens are all
+external, lexed by `src/scanner.c`. The scanner stores the lowercased text
+of the last lexed word in its payload, round-tripped through
+`serialize`/`deserialize`, so the state survives incremental re-parse.
 
-1. **`abbrev` keyword tokens** — exact string literals that include the
-   trailing dot (`Mr.` `Mrs.` `Ms.` `Dr.` `St.` `Jr.` `Sr.` `vs.` `Inc.`
-   `Ltd.` `Co.` `No.` `Fig.` `Vol.` `approx.`, each in lowercase and
-   capitalized form). Longest match absorbs the dot before any sentence-end
-   logic sees it. Sentence-often-final abbreviations (`etc.`) are
-   deliberately NOT listed, so layer 3 decides them by context instead.
-2. **`dotted` token** — `/[A-Za-z]+(\.[A-Za-z]+)+\.?/` matches initialism
-   runs wholesale including the trailing dot: `H.M.S.` `U.S.` `e.g.` `i.e.`
-   `p.m.` `J.R.R.` Requires at least one internal period, so it never
-   swallows a plain sentence-final word like `dog.` or the pronoun `I.`.
-3. **External scanner (`src/scanner.c`)** — decides every remaining bare
-   dot, purely forward-looking (no serialized state): skip whitespace, and
-   if the next content character is a lowercase letter or digit, emit the
-   visible `period` token (the sentence continues); otherwise emit the
-   hidden terminal `_end_dot`. Justification: English sentences do not
-   start with a lowercase letter, so a lowercase continuation proves the
-   dot belongs to an unknown abbreviation (`the dept. said`), a spaced
-   run (`p. 42`), or a decimal context. A `number` token `/\d+(\.\d+)?/`
-   keeps decimal dots internal too (`3.50`).
+The scanner replaces tree-sitter keyword extraction, which external tokens
+bypass: it emits a closed-class word as `conjunction`/`subordinator` only
+where `valid_symbols` allows that symbol, and lexes it as a plain word
+otherwise (`For home he left.`).
 
-Corpus coverage: `test/corpus/abbreviations.txt` (7 tests). After the
-scanner, `examples/origin_of_species.txt` parses as **one sentence**; the
-only remaining ERROR nodes are the two lone apostrophes around `'Beagle,'`.
+Decision for a bare period, in order:
+
+1. previous word is a single letter other than `a`/`i` → `PERIOD` (spaced
+   initial: `J. Smith`). `a`/`i` stay splittable: `am I. You`.
+2. previous word is a known abbreviation (`mr` `mrs` `ms` `dr` `st` `jr`
+   `sr` `vs` `inc` `ltd` `co` `no` `fig` `vol` `approx`) → `PERIOD`.
+3. dot followed over whitespace by a lowercase letter or digit → `PERIOD`
+   (unknown abbreviations, spaced runs like `p. 42`).
+4. otherwise → sentence end.
+
+The `dotted` token still absorbs initialism runs wholesale (`H.M.S.`,
+`e.g.`): the scanner refuses letter-dot-letter sequences so the internal
+token wins. `number` keeps decimal dots internal.
+
+Two implementation traps, found by debugging:
+
+- **The scanner runs before extras are skipped**, at the raw whitespace
+  position. If it returns false there, tree-sitter does not re-invoke it
+  after the skip. The scanner must skip whitespace itself, and must refuse
+  when a blank line is forming, so the internal `paragraph_break` token
+  still matches.
+- **State updates only on emitted words.** Internal tokens (`dotted`,
+  `number`) and hidden commas do not touch the state; that is harmless
+  because none of them can precede a meaningful period.
 
 Residual gaps (documented, not fixed):
 
-- Spaced single-letter initials before a capital (`J. Smith`) still split.
-  Distinguishing them from a real sentence end (`am I. You`) needs the
-  preceding word, which a forward-only scanner cannot see.
+- A genuine initial `I.` (`I. M. Pei`) splits; the `a`/`i` exclusion trades
+  that rarity against the far more common pronouns.
 - Unknown abbreviations at end of line before a capital-starting
   continuation still split.
-- `etc.` followed by a capital starts a new sentence even mid-list.
+- Ellipses: the first dot ends the sentence, the rest become ERROR nodes.
 
 ## Corpus tests
 
-`nix develop -c tree-sitter test` — **16/16 pass**, 0 failures:
+`nix develop -c tree-sitter test` — **19/19 pass**, 0 failures:
 
 1. simple sentence (`Hello world.`)
 2. compound with `and`
@@ -152,6 +160,9 @@ Residual gaps (documented, not fixed):
 14. sentence still splits after an abbreviation (`Mr. Smith arrived. He stayed.`)
 15. lowercase continuation across `e.g.`
 16. abbreviation before a sentence-final mark (`Did Dr. Jones arrive?`)
+17. spaced single-letter initial does not end the sentence (`J. Smith arrived.`)
+18. pronoun `I` still ends a sentence (`It is I. You are next.`)
+19. conjunction word at sentence start lexes as a word (`For home he left.`)
 
 ## Examples — parse results and wall time
 
@@ -216,11 +227,12 @@ their families.`).
    grammar performs **no real syntactic analysis** — a "clause" is just a word
    run. It marks boundaries (paragraph/sentence/clause) and operators
    (conjunction/subordinator), nothing more.
-2. **Abbreviations:** initialism runs (`H.M.S.`, `e.g.`) and listed
-   abbreviations (`Mr.`, `Dr.`) no longer split sentences (external scanner
-   + `dotted`/`abbrev` tokens). Residual: spaced single-letter initials
-   before a capital (`J. Smith`), unknown abbreviations before a
-   capital-starting continuation, and `etc.` before a capital.
+2. **Abbreviations:** initialism runs, listed abbreviations, spaced
+   single-letter initials, and unknown abbreviations before lowercase
+   continuations no longer split sentences (stateful external scanner +
+   `dotted`/`number` tokens). Residual: a genuine initial `I.` (`I. M.
+   Pei`), unknown abbreviations before a capital-starting continuation,
+   and ellipses.
 3. **Lone apostrophes / quotes** at word edges (leading or trailing) error out.
 4. **Sentence-final punctuation inside quoted material** is handled, but an
    opening quote before a word (like `'Beagle`) errors.

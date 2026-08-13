@@ -1,10 +1,5 @@
 [
   {
-    "type": "abbrev",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "clause",
     "named": true,
     "fields": {},
@@ -12,10 +7,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "abbrev",
-          "named": true
-        },
         {
           "type": "dotted",
           "named": true
@@ -34,11 +25,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "conjunction",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "paragraph",
@@ -107,10 +93,6 @@
       "required": true,
       "types": [
         {
-          "type": "abbrev",
-          "named": true
-        },
-        {
           "type": "conjunction",
           "named": true
         },
@@ -142,257 +124,20 @@
     }
   },
   {
-    "type": "subordinator",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": ",",
     "named": false
   },
   {
-    "type": "After",
-    "named": false
-  },
-  {
-    "type": "Although",
-    "named": false
-  },
-  {
-    "type": "And",
-    "named": false
-  },
-  {
-    "type": "Approx.",
-    "named": false
-  },
-  {
-    "type": "Because",
-    "named": false
-  },
-  {
-    "type": "Before",
-    "named": false
-  },
-  {
-    "type": "But",
-    "named": false
-  },
-  {
-    "type": "Co.",
-    "named": false
-  },
-  {
-    "type": "Dr.",
-    "named": false
-  },
-  {
-    "type": "Fig.",
-    "named": false
-  },
-  {
-    "type": "For",
-    "named": false
-  },
-  {
-    "type": "If",
-    "named": false
-  },
-  {
-    "type": "Inc.",
-    "named": false
-  },
-  {
-    "type": "Jr.",
-    "named": false
-  },
-  {
-    "type": "Ltd.",
-    "named": false
-  },
-  {
-    "type": "Mr.",
-    "named": false
-  },
-  {
-    "type": "Mrs.",
-    "named": false
-  },
-  {
-    "type": "Ms.",
-    "named": false
-  },
-  {
-    "type": "No.",
-    "named": false
-  },
-  {
-    "type": "Nor",
-    "named": false
-  },
-  {
-    "type": "Or",
-    "named": false
-  },
-  {
-    "type": "Since",
-    "named": false
-  },
-  {
-    "type": "So",
-    "named": false
-  },
-  {
-    "type": "Sr.",
-    "named": false
-  },
-  {
-    "type": "St.",
-    "named": false
-  },
-  {
-    "type": "That",
-    "named": false
-  },
-  {
-    "type": "Though",
-    "named": false
-  },
-  {
-    "type": "Unless",
-    "named": false
-  },
-  {
-    "type": "Until",
-    "named": false
-  },
-  {
-    "type": "Vol.",
-    "named": false
-  },
-  {
-    "type": "Vs.",
-    "named": false
-  },
-  {
-    "type": "When",
-    "named": false
-  },
-  {
-    "type": "Which",
-    "named": false
-  },
-  {
-    "type": "While",
-    "named": false
-  },
-  {
-    "type": "Who",
-    "named": false
-  },
-  {
-    "type": "Whom",
-    "named": false
-  },
-  {
-    "type": "Whose",
-    "named": false
-  },
-  {
-    "type": "Yet",
-    "named": false
-  },
-  {
-    "type": "after",
-    "named": false
-  },
-  {
-    "type": "although",
-    "named": false
-  },
-  {
-    "type": "and",
-    "named": false
-  },
-  {
-    "type": "approx.",
-    "named": false
-  },
-  {
-    "type": "because",
-    "named": false
-  },
-  {
-    "type": "before",
-    "named": false
-  },
-  {
-    "type": "but",
-    "named": false
-  },
-  {
-    "type": "co.",
-    "named": false
+    "type": "conjunction",
+    "named": true
   },
   {
     "type": "dotted",
     "named": true
   },
   {
-    "type": "dr.",
-    "named": false
-  },
-  {
-    "type": "fig.",
-    "named": false
-  },
-  {
-    "type": "for",
-    "named": false
-  },
-  {
-    "type": "if",
-    "named": false
-  },
-  {
-    "type": "inc.",
-    "named": false
-  },
-  {
-    "type": "jr.",
-    "named": false
-  },
-  {
-    "type": "ltd.",
-    "named": false
-  },
-  {
-    "type": "mr.",
-    "named": false
-  },
-  {
-    "type": "mrs.",
-    "named": false
-  },
-  {
-    "type": "ms.",
-    "named": false
-  },
-  {
-    "type": "no.",
-    "named": false
-  },
-  {
-    "type": "nor",
-    "named": false
-  },
-  {
     "type": "number",
     "named": true
-  },
-  {
-    "type": "or",
-    "named": false
   },
   {
     "type": "paragraph_break",
@@ -403,75 +148,11 @@
     "named": true
   },
   {
-    "type": "since",
-    "named": false
-  },
-  {
-    "type": "so",
-    "named": false
-  },
-  {
-    "type": "sr.",
-    "named": false
-  },
-  {
-    "type": "st.",
-    "named": false
-  },
-  {
-    "type": "that",
-    "named": false
-  },
-  {
-    "type": "though",
-    "named": false
-  },
-  {
-    "type": "unless",
-    "named": false
-  },
-  {
-    "type": "until",
-    "named": false
-  },
-  {
-    "type": "vol.",
-    "named": false
-  },
-  {
-    "type": "vs.",
-    "named": false
-  },
-  {
-    "type": "when",
-    "named": false
-  },
-  {
-    "type": "which",
-    "named": false
-  },
-  {
-    "type": "while",
-    "named": false
-  },
-  {
-    "type": "who",
-    "named": false
-  },
-  {
-    "type": "whom",
-    "named": false
-  },
-  {
-    "type": "whose",
-    "named": false
+    "type": "subordinator",
+    "named": true
   },
   {
     "type": "word",
     "named": true
-  },
-  {
-    "type": "yet",
-    "named": false
   }
 ]

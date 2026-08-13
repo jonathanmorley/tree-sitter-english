@@ -10,7 +10,8 @@ Mr. Smith arrived.
   (paragraph
     (sentence
       (clause
-        (abbrev)
+        (word)
+        (period)
         (word)
         (word)))))
 
@@ -80,7 +81,8 @@ Mr. Smith arrived. He stayed.
   (paragraph
     (sentence
       (clause
-        (abbrev)
+        (word)
+        (period)
         (word)
         (word)))
     (sentence
@@ -119,6 +121,62 @@ Did Dr. Jones arrive?
     (sentence
       (clause
         (word)
-        (abbrev)
+        (word)
+        (period)
+        (word)
+        (word)))))
+
+==================
+Spaced single-letter initial does not end the sentence
+==================
+
+J. Smith arrived.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (period)
+        (word)
+        (word)))))
+
+==================
+Pronoun I still ends a sentence
+==================
+
+It is I. You are next.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Conjunction word at sentence start lexes as a word
+==================
+
+For home he left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
         (word)
         (word)))))

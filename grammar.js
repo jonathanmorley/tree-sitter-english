@@ -3,15 +3,18 @@
  *
  * Tier 1: source_file -> paragraph+ ; paragraph break = blank line.
  *         paragraph -> sentence+ ; sentence ends at [.?!] (+ closing quote/paren).
- *         Periods are robust to abbreviations via three layers:
- *           - `abbrev` keyword tokens absorb the trailing dot of common
- *             abbreviations (Mr., Dr., ...) so it is never exposed as a
- *             sentence end.
- *           - the `dotted` token matches initialism runs wholesale,
- *             including the trailing dot (H.M.S., U.S., e.g., p.m.).
- *           - an external scanner decides every remaining bare dot:
- *             a dot followed (over whitespace) by a lowercase letter or
- *             digit continues the sentence; anything else ends it.
+ *         Periods are robust to abbreviations. Word, conjunction and
+ *         subordinator are external tokens lexed by src/scanner.c, which
+ *         remembers the last word and decides every bare dot:
+ *           - previous word is a single letter other than a/i (a spaced
+ *             initial like "J.") -> the dot continues the sentence;
+ *           - previous word is a known abbreviation (mr, dr, ...) -> the
+ *             dot continues the sentence;
+ *           - otherwise a dot followed over whitespace by a lowercase
+ *             letter or digit continues the sentence; anything else ends it.
+ *         The `dotted` token matches initialism runs wholesale, including
+ *         the trailing dot (H.M.S., U.S., e.g.). The scanner refuses such
+ *         runs so `dotted` can absorb them.
  * Tier 2: sentence -> (clause | subordinate_clause) joined by conjunctions.
  *         A clause is a run of words/commas. A subordinate_clause is
  *         introduced by a subordinator and greedily absorbs the remainder
@@ -23,32 +26,6 @@
  * read was good"), and fields on hidden tokens do not render. See POC_NOTES.md.
  */
 
-// Each keyword is provided in lowercase and sentence-initial (capitalized)
-// form so that "Although", "But", "And", etc. are recognised too. They are
-// plain string literals so tree-sitter keyword-extracts them ahead of the
-// catch-all `word` token.
-const ci = words => words.flatMap(w => [w, w[0].toUpperCase() + w.slice(1)]);
-
-const CONJUNCTIONS = ci([
-  'and', 'but', 'or', 'nor', 'so', 'yet', 'for',
-]);
-
-const SUBORDINATORS = ci([
-  'because', 'although', 'though', 'if', 'when', 'while', 'since',
-  'unless', 'before', 'after', 'until', 'that', 'which', 'who',
-  'whom', 'whose',
-]);
-
-// Abbreviations whose trailing dot is part of the token, so it never ends a
-// sentence. Exact string literals win over `word` + bare dot by longest
-// match. Sentence-often-final abbreviations like "etc." are deliberately NOT
-// listed: the scanner's lowercase-continuation heuristic decides those
-// instead ("etc. and more" continues, "etc. The" ends).
-const ABBREVIATIONS = ci([
-  'mr.', 'mrs.', 'ms.', 'dr.', 'st.', 'jr.', 'sr.', 'vs.',
-  'inc.', 'ltd.', 'co.', 'no.', 'fig.', 'vol.', 'approx.',
-]);
-
 module.exports = grammar({
   name: 'english',
 
@@ -57,9 +34,16 @@ module.exports = grammar({
   // (longest-match between extra `\n` and token `\n[ \t]*\n`).
   extras: $ => [/\s/],
 
+  // Order defines the scanner's enum. `word`, `conjunction` and
+  // `subordinator` are external so the scanner can track the last word;
+  // the scanner emits each one only where the grammar allows it, which
+  // replaces internal keyword extraction.
   externals: $ => [
-    $._end_dot, // a period that ends the sentence (scanner-decided, hidden)
-    $.period,   // a period inside the sentence (scanner-decided)
+    $._end_dot,      // a period that ends the sentence (hidden)
+    $.period,        // a period inside the sentence
+    $.word,          // any open-class word run
+    $.conjunction,   // and but or nor so yet for
+    $.subordinator,  // because although that which who ...
   ],
 
   rules: {
@@ -105,27 +89,20 @@ module.exports = grammar({
       )))
     ),
 
-    conjunction: $ => choice(...CONJUNCTIONS),
-
-    subordinator: $ => choice(...SUBORDINATORS),
-
     paragraph_break: $ => /\n[ \t]*\n/,
 
     _comma: $ => ',',
 
-    // Word-class tokens. `abbrev` and `dotted` absorb their dots so those
-    // dots never reach the scanner.
-    _wordish: $ => choice($.word, $.abbrev, $.dotted, $.number),
-
-    abbrev: $ => choice(...ABBREVIATIONS),
+    // Word-class tokens. `dotted` absorbs initialism runs so their dots
+    // never reach the scanner; `number` does the same for decimals.
+    _wordish: $ => choice($.word, $.dotted, $.number),
 
     // Initialism/acronym runs with at least one internal period, plus an
     // optional trailing period: H.M.S. U.S. e.g. i.e. p.m. J.R.R.
+    // The scanner refuses letter-dot-letter sequences so this token wins.
     dotted: $ => /[A-Za-z]+(\.[A-Za-z]+)+\.?/,
 
     // Integers and decimals: the internal dot of 3.14 stays inside the token.
     number: $ => /\d+(\.\d+)?/,
-
-    word: $ => /[A-Za-z]+('[A-Za-z]+)?/,
   },
 });

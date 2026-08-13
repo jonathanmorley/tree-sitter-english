@@ -206,200 +206,6 @@
         }
       ]
     },
-    "conjunction": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "and"
-        },
-        {
-          "type": "STRING",
-          "value": "And"
-        },
-        {
-          "type": "STRING",
-          "value": "but"
-        },
-        {
-          "type": "STRING",
-          "value": "But"
-        },
-        {
-          "type": "STRING",
-          "value": "or"
-        },
-        {
-          "type": "STRING",
-          "value": "Or"
-        },
-        {
-          "type": "STRING",
-          "value": "nor"
-        },
-        {
-          "type": "STRING",
-          "value": "Nor"
-        },
-        {
-          "type": "STRING",
-          "value": "so"
-        },
-        {
-          "type": "STRING",
-          "value": "So"
-        },
-        {
-          "type": "STRING",
-          "value": "yet"
-        },
-        {
-          "type": "STRING",
-          "value": "Yet"
-        },
-        {
-          "type": "STRING",
-          "value": "for"
-        },
-        {
-          "type": "STRING",
-          "value": "For"
-        }
-      ]
-    },
-    "subordinator": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "because"
-        },
-        {
-          "type": "STRING",
-          "value": "Because"
-        },
-        {
-          "type": "STRING",
-          "value": "although"
-        },
-        {
-          "type": "STRING",
-          "value": "Although"
-        },
-        {
-          "type": "STRING",
-          "value": "though"
-        },
-        {
-          "type": "STRING",
-          "value": "Though"
-        },
-        {
-          "type": "STRING",
-          "value": "if"
-        },
-        {
-          "type": "STRING",
-          "value": "If"
-        },
-        {
-          "type": "STRING",
-          "value": "when"
-        },
-        {
-          "type": "STRING",
-          "value": "When"
-        },
-        {
-          "type": "STRING",
-          "value": "while"
-        },
-        {
-          "type": "STRING",
-          "value": "While"
-        },
-        {
-          "type": "STRING",
-          "value": "since"
-        },
-        {
-          "type": "STRING",
-          "value": "Since"
-        },
-        {
-          "type": "STRING",
-          "value": "unless"
-        },
-        {
-          "type": "STRING",
-          "value": "Unless"
-        },
-        {
-          "type": "STRING",
-          "value": "before"
-        },
-        {
-          "type": "STRING",
-          "value": "Before"
-        },
-        {
-          "type": "STRING",
-          "value": "after"
-        },
-        {
-          "type": "STRING",
-          "value": "After"
-        },
-        {
-          "type": "STRING",
-          "value": "until"
-        },
-        {
-          "type": "STRING",
-          "value": "Until"
-        },
-        {
-          "type": "STRING",
-          "value": "that"
-        },
-        {
-          "type": "STRING",
-          "value": "That"
-        },
-        {
-          "type": "STRING",
-          "value": "which"
-        },
-        {
-          "type": "STRING",
-          "value": "Which"
-        },
-        {
-          "type": "STRING",
-          "value": "who"
-        },
-        {
-          "type": "STRING",
-          "value": "Who"
-        },
-        {
-          "type": "STRING",
-          "value": "whom"
-        },
-        {
-          "type": "STRING",
-          "value": "Whom"
-        },
-        {
-          "type": "STRING",
-          "value": "whose"
-        },
-        {
-          "type": "STRING",
-          "value": "Whose"
-        }
-      ]
-    },
     "paragraph_break": {
       "type": "PATTERN",
       "value": "\\n[ \\t]*\\n"
@@ -417,140 +223,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "abbrev"
-        },
-        {
-          "type": "SYMBOL",
           "name": "dotted"
         },
         {
           "type": "SYMBOL",
           "name": "number"
-        }
-      ]
-    },
-    "abbrev": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "mr."
-        },
-        {
-          "type": "STRING",
-          "value": "Mr."
-        },
-        {
-          "type": "STRING",
-          "value": "mrs."
-        },
-        {
-          "type": "STRING",
-          "value": "Mrs."
-        },
-        {
-          "type": "STRING",
-          "value": "ms."
-        },
-        {
-          "type": "STRING",
-          "value": "Ms."
-        },
-        {
-          "type": "STRING",
-          "value": "dr."
-        },
-        {
-          "type": "STRING",
-          "value": "Dr."
-        },
-        {
-          "type": "STRING",
-          "value": "st."
-        },
-        {
-          "type": "STRING",
-          "value": "St."
-        },
-        {
-          "type": "STRING",
-          "value": "jr."
-        },
-        {
-          "type": "STRING",
-          "value": "Jr."
-        },
-        {
-          "type": "STRING",
-          "value": "sr."
-        },
-        {
-          "type": "STRING",
-          "value": "Sr."
-        },
-        {
-          "type": "STRING",
-          "value": "vs."
-        },
-        {
-          "type": "STRING",
-          "value": "Vs."
-        },
-        {
-          "type": "STRING",
-          "value": "inc."
-        },
-        {
-          "type": "STRING",
-          "value": "Inc."
-        },
-        {
-          "type": "STRING",
-          "value": "ltd."
-        },
-        {
-          "type": "STRING",
-          "value": "Ltd."
-        },
-        {
-          "type": "STRING",
-          "value": "co."
-        },
-        {
-          "type": "STRING",
-          "value": "Co."
-        },
-        {
-          "type": "STRING",
-          "value": "no."
-        },
-        {
-          "type": "STRING",
-          "value": "No."
-        },
-        {
-          "type": "STRING",
-          "value": "fig."
-        },
-        {
-          "type": "STRING",
-          "value": "Fig."
-        },
-        {
-          "type": "STRING",
-          "value": "vol."
-        },
-        {
-          "type": "STRING",
-          "value": "Vol."
-        },
-        {
-          "type": "STRING",
-          "value": "approx."
-        },
-        {
-          "type": "STRING",
-          "value": "Approx."
         }
       ]
     },
@@ -561,10 +238,6 @@
     "number": {
       "type": "PATTERN",
       "value": "\\d+(\\.\\d+)?"
-    },
-    "word": {
-      "type": "PATTERN",
-      "value": "[A-Za-z]+('[A-Za-z]+)?"
     }
   },
   "extras": [
@@ -583,6 +256,18 @@
     {
       "type": "SYMBOL",
       "name": "period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "word"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "conjunction"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "subordinator"
     }
   ],
   "inline": [],

@@ -44,4 +44,4 @@
       (subordinate_clause [0, 214] - [0, 228]
         (subordinator [0, 214] - [0, 218])
         (word [0, 219] - [0, 228])))))
-examples/origin_of_species.txt	Parse:    0.09 ms	  2690 bytes/ms	(ERROR [0, 21] - [0, 22])
+examples/origin_of_species.txt	Parse:    0.05 ms	  4517 bytes/ms	(ERROR [0, 21] - [0, 22])

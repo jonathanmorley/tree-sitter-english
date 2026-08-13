@@ -25,9 +25,9 @@ Reproduce with `nix develop -c tree-sitter test` and
 - `tree-sitter generate` exits 0 with **zero declared conflicts**. Two LR
   conflicts during development were resolved with `prec.left`, not `conflicts`
   declarations (see `POC_NOTES.md`).
-- Corpus: 16/16 pass (simple, compound `and`/`but`, subordinate
+- Corpus: 19/19 pass (simple, compound `and`/`but`, subordinate
   `because`/`although`, relative `that`, multi-sentence paragraph, two
-  paragraphs, SVO sentence, and seven abbreviation-robustness tests).
+  paragraphs, SVO sentence, and ten abbreviation-robustness tests).
 - Speed: 4350 bytes/ms in tests. Sample files parse in about 0.05 ms.
   Incremental re-parse comes free with tree-sitter.
 
@@ -74,8 +74,9 @@ Nothing parses English prose into sentence/clause structure with tree-sitter.
 ## Why tiers 1 and 2 fit tree-sitter
 
 - Segmentation is near-regular. Punctuation plus a closed-class word list
-  defines it, and closed-class lists map directly onto tree-sitter keyword
-  extraction.
+  defines it. The scanner emits closed-class words as conjunctions and
+  subordinators only where the grammar allows them, which reproduces
+  keyword-extraction semantics for external tokens.
 - Conjunctions behave like real operators: `sentence -> clause (conjunction
   clause)*` is the same shape as expression grammars, including left
   associativity via `prec.left`.
@@ -84,13 +85,14 @@ Nothing parses English prose into sentence/clause structure with tree-sitter.
   wins longest-match on blank lines. No external scanner needed.
 - Error recovery transfers from code to prose. The `'Beagle,'` error above
   damages one node, not the document.
-- Sentence boundaries survive abbreviations via three layers, all proven in
-  the PoC: `abbrev` keyword tokens absorb trailing dots (`Mr.`, `Dr.`); a
-  `dotted` token matches initialism runs wholesale (`H.M.S.`, `e.g.`); and
-  an external scanner decides every remaining bare dot by forward
-  lookahead. A dot followed over whitespace by a lowercase letter or digit
-  continues the sentence, because English sentences never start lowercase.
-  The scanner needs no serialized state.
+- Sentence boundaries survive abbreviations with a stateful external
+  scanner, proven in the PoC. The scanner lexes every word and remembers
+  the last one. A dot after a single-letter word (`J. Smith`), after a
+  known abbreviation (`mr`, `dr`, ...), or before a lowercase or digit
+  continuation keeps the sentence going. Initialism runs (`H.M.S.`,
+  `e.g.`) are absorbed wholesale by a `dotted` token and decimals by a
+  `number` token. The state round-trips through `serialize`, so it
+  survives incremental re-parse.
 
 ## Why tier 3 fails
 
@@ -122,12 +124,12 @@ Deeper reasons, independent of this PoC:
 ## Known hard cases
 
 1. Initialisms and abbreviations ended sentences at every internal period.
-   Now fixed for initialism runs (`dotted`), listed abbreviations
-   (`abbrev`), and unknown abbreviations before lowercase continuations
-   (scanner). Demonstrated: *Origin of Species* parses as one sentence.
-   Residual gaps: spaced single-letter initials before a capital
-   (`J. Smith`), unknown abbreviations before a capital-starting
-   continuation, and `etc.` before a capital.
+   Now fixed for initialism runs (`dotted`), listed abbreviations, spaced
+   single-letter initials (`J. Smith`), and unknown abbreviations before
+   lowercase continuations (stateful scanner). Demonstrated: *Origin of
+   Species* parses as one sentence. Residual gaps: a genuine initial `I.`
+   (`I. M. Pei`), unknown abbreviations before a capital-starting
+   continuation, and ellipses.
 2. Lone quotes and apostrophes at word edges fail to lex. Demonstrated with
    `'Beagle,'`. Fix is a wider word token or scanner handling.
 3. The subordinate clause is greedy in the PoC. It absorbs the rest of the
@@ -159,11 +161,11 @@ Proceed, scoped to tiers 1 and 2.
 
 1. Build the prose block-structure grammar. The PoC shows the core is small
    and conflict-free.
-2. Sentence-boundary disambiguation is proven feasible in the PoC: an
-   abbreviation keyword list, an initialism token, and a forward-looking
-   external scanner. Remaining work is coverage: widen the abbreviation
-   list and add scanner access to the preceding word to fix spaced
-   single-letter initials (`J. Smith`).
+2. Sentence-boundary disambiguation is proven in the PoC, including
+   last-word state tracking: the scanner lexes every word, stores it, and
+   serializes the state for incremental re-parse. Remaining work is
+   coverage: widen the abbreviation list, and handle ellipses and
+   quotation-mark conventions.
 3. Treat tier 3 as out of scope for the grammar itself. If roles are needed,
    layer a real parser on top and write the results back as annotations.
 
