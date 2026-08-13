@@ -229,7 +229,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_quote"
+              "name": "quote"
             }
           ]
         }
@@ -272,7 +272,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "_quote"
+                  "name": "quote"
                 }
               ]
             }
@@ -300,7 +300,7 @@
       "type": "PATTERN",
       "value": "—|–"
     },
-    "_quote": {
+    "quote": {
       "type": "PATTERN",
       "value": "[\"'\\u2018\\u2019\\u201C\\u201D]"
     },

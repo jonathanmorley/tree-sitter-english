@@ -75,21 +75,23 @@ module.exports = grammar({
 
     // The hidden external `_end_dot` token is a period the scanner judged
     // terminal. `?` and `!` are unambiguous and stay internal. Trailing
-    // closing quotes/parens belong to the sentence end.
+    // closing quotes/parens belong to the sentence end. These terminal
+    // quotes use inline regex (not $.quote) so they stay hidden and do not
+    // conflict with visible quote tokens that start a new clause.
     _sentence_end: $ => seq(
       choice($._end_dot, /[?!]/),
       repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/))
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $._quote)
+      choice($._wordish, $.period, $._comma, $.quote)
     )),
 
     subordinate_clause: $ => seq(
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $._quote
+        $.subordinate_clause, $.quote
       )))
     ),
 
@@ -104,8 +106,8 @@ module.exports = grammar({
     colon: $ => ':',
     em_dash: $ => /—|–/,
 
-    // Quote marks, hidden inside clauses so they do not clutter the tree.
-    _quote: $ => /["'\u2018\u2019\u201C\u201D]/,
+    // Quote marks, visible inside clauses so they are queryable.
+    quote: $ => /["'\u2018\u2019\u201C\u201D]/,
 
     // Word-class tokens. `dotted` absorbs initialism runs so their dots
     // never reach the scanner; `number` does the same for decimals.

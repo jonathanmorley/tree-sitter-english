@@ -77,6 +77,7 @@ Curly double quotes around a sentence
   (paragraph
     (sentence
       (clause
+        (quote)
         (word)
         (word)))))
 

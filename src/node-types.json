@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "quote",
+          "named": true
+        },
+        {
           "type": "word",
           "named": true
         }
@@ -121,6 +125,10 @@
           "named": true
         },
         {
+          "type": "quote",
+          "named": true
+        },
+        {
           "type": "subordinate_clause",
           "named": true
         },
@@ -165,6 +173,10 @@
   },
   {
     "type": "period",
+    "named": true
+  },
+  {
+    "type": "quote",
     "named": true
   },
   {
