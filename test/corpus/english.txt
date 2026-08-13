@@ -1,0 +1,174 @@
+==================
+Simple sentence
+==================
+
+Hello world.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Compound with "and"
+==================
+
+I like tea and coffee.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (conjunction)
+      (clause
+        (word)))))
+
+==================
+Compound with "but"
+==================
+
+It was good but costly.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (conjunction)
+      (clause
+        (word)))))
+
+==================
+Subordinate clause with "because"
+==================
+
+He left because he was tired.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Subordinate clause with "although"
+==================
+
+Although it rained, we went out.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Relative clause with "that"
+==================
+
+The book that I read was good.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Two sentences in one paragraph
+==================
+
+One sentence. Two sentence.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Two paragraphs separated by a blank line
+==================
+
+First paragraph here.
+
+Second paragraph here.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Simple SVO sentence (tier 3 dropped; parses as a generic clause)
+==================
+
+The dog chased the cat.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))

@@ -1,0 +1,411 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "english",
+  "rules": {
+    "source_file": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "paragraph_break"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "paragraph"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "paragraph_break"
+                }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "paragraph"
+              }
+            ]
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "paragraph_break"
+          }
+        }
+      ]
+    },
+    "paragraph": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "SYMBOL",
+        "name": "sentence"
+      }
+    },
+    "sentence": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "clause"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "subordinate_clause"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "conjunction"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "clause"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "subordinate_clause"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "subordinate_clause"
+              }
+            ]
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sentence_end"
+        }
+      ]
+    },
+    "_sentence_end": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "[.?!]"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PATTERN",
+                "value": "[\"'\\u2019\\u201D\\u201C]"
+              },
+              {
+                "type": "PATTERN",
+                "value": "[)\\]}]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clause": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "word"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_comma"
+            }
+          ]
+        }
+      }
+    },
+    "subordinate_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "subordinator"
+        },
+        {
+          "type": "PREC_LEFT",
+          "value": 0,
+          "content": {
+            "type": "REPEAT1",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "word"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_comma"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "conjunction"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "subordinate_clause"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "conjunction": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "and"
+        },
+        {
+          "type": "STRING",
+          "value": "And"
+        },
+        {
+          "type": "STRING",
+          "value": "but"
+        },
+        {
+          "type": "STRING",
+          "value": "But"
+        },
+        {
+          "type": "STRING",
+          "value": "or"
+        },
+        {
+          "type": "STRING",
+          "value": "Or"
+        },
+        {
+          "type": "STRING",
+          "value": "nor"
+        },
+        {
+          "type": "STRING",
+          "value": "Nor"
+        },
+        {
+          "type": "STRING",
+          "value": "so"
+        },
+        {
+          "type": "STRING",
+          "value": "So"
+        },
+        {
+          "type": "STRING",
+          "value": "yet"
+        },
+        {
+          "type": "STRING",
+          "value": "Yet"
+        },
+        {
+          "type": "STRING",
+          "value": "for"
+        },
+        {
+          "type": "STRING",
+          "value": "For"
+        }
+      ]
+    },
+    "subordinator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "because"
+        },
+        {
+          "type": "STRING",
+          "value": "Because"
+        },
+        {
+          "type": "STRING",
+          "value": "although"
+        },
+        {
+          "type": "STRING",
+          "value": "Although"
+        },
+        {
+          "type": "STRING",
+          "value": "though"
+        },
+        {
+          "type": "STRING",
+          "value": "Though"
+        },
+        {
+          "type": "STRING",
+          "value": "if"
+        },
+        {
+          "type": "STRING",
+          "value": "If"
+        },
+        {
+          "type": "STRING",
+          "value": "when"
+        },
+        {
+          "type": "STRING",
+          "value": "When"
+        },
+        {
+          "type": "STRING",
+          "value": "while"
+        },
+        {
+          "type": "STRING",
+          "value": "While"
+        },
+        {
+          "type": "STRING",
+          "value": "since"
+        },
+        {
+          "type": "STRING",
+          "value": "Since"
+        },
+        {
+          "type": "STRING",
+          "value": "unless"
+        },
+        {
+          "type": "STRING",
+          "value": "Unless"
+        },
+        {
+          "type": "STRING",
+          "value": "before"
+        },
+        {
+          "type": "STRING",
+          "value": "Before"
+        },
+        {
+          "type": "STRING",
+          "value": "after"
+        },
+        {
+          "type": "STRING",
+          "value": "After"
+        },
+        {
+          "type": "STRING",
+          "value": "until"
+        },
+        {
+          "type": "STRING",
+          "value": "Until"
+        },
+        {
+          "type": "STRING",
+          "value": "that"
+        },
+        {
+          "type": "STRING",
+          "value": "That"
+        },
+        {
+          "type": "STRING",
+          "value": "which"
+        },
+        {
+          "type": "STRING",
+          "value": "Which"
+        },
+        {
+          "type": "STRING",
+          "value": "who"
+        },
+        {
+          "type": "STRING",
+          "value": "Who"
+        },
+        {
+          "type": "STRING",
+          "value": "whom"
+        },
+        {
+          "type": "STRING",
+          "value": "Whom"
+        },
+        {
+          "type": "STRING",
+          "value": "whose"
+        },
+        {
+          "type": "STRING",
+          "value": "Whose"
+        }
+      ]
+    },
+    "paragraph_break": {
+      "type": "PATTERN",
+      "value": "\\n[ \\t]*\\n"
+    },
+    "_comma": {
+      "type": "STRING",
+      "value": ","
+    },
+    "word": {
+      "type": "PATTERN",
+      "value": "[A-Za-z]+('[A-Za-z]+)?"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "\\s"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": [],
+  "reserved": {}
+}
