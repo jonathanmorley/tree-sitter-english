@@ -95,9 +95,46 @@ trailing break reduce at every sentence end, which wrongly split sentences that
 share a line into separate paragraphs). With the separator form, a paragraph
 only ends at a blank line or EOF.
 
+## Abbreviation robustness (external scanner)
+
+Bare periods are decided by three layers, in order of application:
+
+1. **`abbrev` keyword tokens** — exact string literals that include the
+   trailing dot (`Mr.` `Mrs.` `Ms.` `Dr.` `St.` `Jr.` `Sr.` `vs.` `Inc.`
+   `Ltd.` `Co.` `No.` `Fig.` `Vol.` `approx.`, each in lowercase and
+   capitalized form). Longest match absorbs the dot before any sentence-end
+   logic sees it. Sentence-often-final abbreviations (`etc.`) are
+   deliberately NOT listed, so layer 3 decides them by context instead.
+2. **`dotted` token** — `/[A-Za-z]+(\.[A-Za-z]+)+\.?/` matches initialism
+   runs wholesale including the trailing dot: `H.M.S.` `U.S.` `e.g.` `i.e.`
+   `p.m.` `J.R.R.` Requires at least one internal period, so it never
+   swallows a plain sentence-final word like `dog.` or the pronoun `I.`.
+3. **External scanner (`src/scanner.c`)** — decides every remaining bare
+   dot, purely forward-looking (no serialized state): skip whitespace, and
+   if the next content character is a lowercase letter or digit, emit the
+   visible `period` token (the sentence continues); otherwise emit the
+   hidden terminal `_end_dot`. Justification: English sentences do not
+   start with a lowercase letter, so a lowercase continuation proves the
+   dot belongs to an unknown abbreviation (`the dept. said`), a spaced
+   run (`p. 42`), or a decimal context. A `number` token `/\d+(\.\d+)?/`
+   keeps decimal dots internal too (`3.50`).
+
+Corpus coverage: `test/corpus/abbreviations.txt` (7 tests). After the
+scanner, `examples/origin_of_species.txt` parses as **one sentence**; the
+only remaining ERROR nodes are the two lone apostrophes around `'Beagle,'`.
+
+Residual gaps (documented, not fixed):
+
+- Spaced single-letter initials before a capital (`J. Smith`) still split.
+  Distinguishing them from a real sentence end (`am I. You`) needs the
+  preceding word, which a forward-only scanner cannot see.
+- Unknown abbreviations at end of line before a capital-starting
+  continuation still split.
+- `etc.` followed by a capital starts a new sentence even mid-list.
+
 ## Corpus tests
 
-`nix develop -c tree-sitter test` — **9/9 pass**, 0 failures:
+`nix develop -c tree-sitter test` — **16/16 pass**, 0 failures:
 
 1. simple sentence (`Hello world.`)
 2. compound with `and`
@@ -108,6 +145,13 @@ only ends at a blank line or EOF.
 7. two sentences in one paragraph
 8. two paragraphs separated by a blank line
 9. simple SVO sentence (tier 3 dropped → generic clause)
+10. abbreviation does not end the sentence (`Mr. Smith arrived.`)
+11. initialism run stays one sentence (`The H.M.S. Beagle sailed.`)
+12. unknown abbreviation with lowercase continuation (`The dept. said …`)
+13. decimal number keeps its dot (`3.50`)
+14. sentence still splits after an abbreviation (`Mr. Smith arrived. He stayed.`)
+15. lowercase continuation across `e.g.`
+16. abbreviation before a sentence-final mark (`Did Dr. Jones arrive?`)
 
 ## Examples — parse results and wall time
 
@@ -123,25 +167,20 @@ of a good fortune, must be in want of a wife.`
 - **Wrong:** none — no ERROR node; the greedy `subordinate_clause` is coarse but
   bracketing is self-consistent.
 
-### origin_of_species.txt — errors (expected: hardest input)
+### origin_of_species.txt — one sentence, two apostrophe errors
 Text: `When on board H.M.S. 'Beagle,' as naturalist, … of that continent.`
 
-- **Right:** `When` recognised as `subordinator`; the long tail after the
-  initialisms parses as words with `and`/`that` as operator/subordinator
+- **Right:** the whole paragraph parses as **one sentence** (previously four
+  fragments): `H.M.S.` lexes as a single `dotted` token `[0,14]-[0,20]`, so
+  its periods never reach the sentence-end logic. `When` is a `subordinator`;
+  `and`/`that` act as operator/subordinator on the tail
   (`conjunction [0,140]-[0,143]`, `subordinator [0,214]-[0,218]`).
-- **Wrong (initialisms split sentences):** the periods inside `H.M.S.` each
-  terminate a sentence, fragmenting the opening:
+- **Wrong (lone apostrophes):** the word pattern `[A-Za-z]+('[A-Za-z]+)?` only
+  allows an apostrophe *between* letters, so both apostrophes of `'Beagle,'`
+  error out:
   ```
-  (sentence [0, 0] - [0, 16]    ; "When on board H.M.S." — the final '.' ends it
-    (subordinate_clause [0, 0] - [0, 15] …))
-  (sentence [0, 16] - [0, 18] …)   ; spurious 1-char sentence
-  (sentence [0, 18] - [0, 22] …)   ; spurious 2-char sentence
-  ```
-- **Wrong (leading apostrophe):** the word pattern `[A-Za-z]+('[A-Za-z]+)?` only
-  allows an apostrophe *between* letters, so the lone apostrophes in `'Beagle,'`
-  cannot lex as words → explicit error:
-  ```
-  (ERROR [0, 29] - [0, 30])     ; the closing "'" of "'Beagle,'"
+  (ERROR [0, 21] - [0, 22])     ; the opening "'"
+  (ERROR [0, 29] - [0, 30])     ; the closing "'" (the inner comma is absorbed)
   ```
 
 ### garden_path.txt — clean parse (no ERROR), but no structural insight
@@ -168,7 +207,7 @@ their families.`).
 - wall time ≈ **1.07–1.10 s** per example, dominated by `nix develop` shell
   startup (the parse itself is microseconds).
 - The CLI only prints its own `Parse: X ms` footer for files with errors; the one
-  it printed was `origin_of_species.txt  Parse: 0.05 ms  (ERROR [0,29]-[0,30])`.
+  it printed was `origin_of_species.txt  Parse: 0.09 ms  2690 bytes/ms`.
   The two clean files are equally tiny (~0.05 ms).
 
 ## Limitations / where the grammar breaks
@@ -177,8 +216,11 @@ their families.`).
    grammar performs **no real syntactic analysis** — a "clause" is just a word
    run. It marks boundaries (paragraph/sentence/clause) and operators
    (conjunction/subordinator), nothing more.
-2. **Initialisms / abbreviations** (`H.M.S.`, `e.g.`) end sentences at every
-   internal period.
+2. **Abbreviations:** initialism runs (`H.M.S.`, `e.g.`) and listed
+   abbreviations (`Mr.`, `Dr.`) no longer split sentences (external scanner
+   + `dotted`/`abbrev` tokens). Residual: spaced single-letter initials
+   before a capital (`J. Smith`), unknown abbreviations before a
+   capital-starting continuation, and `etc.` before a capital.
 3. **Lone apostrophes / quotes** at word edges (leading or trailing) error out.
 4. **Sentence-final punctuation inside quoted material** is handled, but an
    opening quote before a word (like `'Beagle`) errors.

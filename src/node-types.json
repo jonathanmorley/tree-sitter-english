@@ -1,5 +1,10 @@
 [
   {
+    "type": "abbrev",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "clause",
     "named": true,
     "fields": {},
@@ -7,6 +12,22 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "abbrev",
+          "named": true
+        },
+        {
+          "type": "dotted",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "period",
+          "named": true
+        },
         {
           "type": "word",
           "named": true
@@ -86,7 +107,23 @@
       "required": true,
       "types": [
         {
+          "type": "abbrev",
+          "named": true
+        },
+        {
           "type": "conjunction",
+          "named": true
+        },
+        {
+          "type": "dotted",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "period",
           "named": true
         },
         {
@@ -126,6 +163,10 @@
     "named": false
   },
   {
+    "type": "Approx.",
+    "named": false
+  },
+  {
     "type": "Because",
     "named": false
   },
@@ -138,11 +179,51 @@
     "named": false
   },
   {
+    "type": "Co.",
+    "named": false
+  },
+  {
+    "type": "Dr.",
+    "named": false
+  },
+  {
+    "type": "Fig.",
+    "named": false
+  },
+  {
     "type": "For",
     "named": false
   },
   {
     "type": "If",
+    "named": false
+  },
+  {
+    "type": "Inc.",
+    "named": false
+  },
+  {
+    "type": "Jr.",
+    "named": false
+  },
+  {
+    "type": "Ltd.",
+    "named": false
+  },
+  {
+    "type": "Mr.",
+    "named": false
+  },
+  {
+    "type": "Mrs.",
+    "named": false
+  },
+  {
+    "type": "Ms.",
+    "named": false
+  },
+  {
+    "type": "No.",
     "named": false
   },
   {
@@ -162,6 +243,14 @@
     "named": false
   },
   {
+    "type": "Sr.",
+    "named": false
+  },
+  {
+    "type": "St.",
+    "named": false
+  },
+  {
     "type": "That",
     "named": false
   },
@@ -175,6 +264,14 @@
   },
   {
     "type": "Until",
+    "named": false
+  },
+  {
+    "type": "Vol.",
+    "named": false
+  },
+  {
+    "type": "Vs.",
     "named": false
   },
   {
@@ -218,6 +315,10 @@
     "named": false
   },
   {
+    "type": "approx.",
+    "named": false
+  },
+  {
     "type": "because",
     "named": false
   },
@@ -230,6 +331,22 @@
     "named": false
   },
   {
+    "type": "co.",
+    "named": false
+  },
+  {
+    "type": "dotted",
+    "named": true
+  },
+  {
+    "type": "dr.",
+    "named": false
+  },
+  {
+    "type": "fig.",
+    "named": false
+  },
+  {
     "type": "for",
     "named": false
   },
@@ -238,8 +355,40 @@
     "named": false
   },
   {
+    "type": "inc.",
+    "named": false
+  },
+  {
+    "type": "jr.",
+    "named": false
+  },
+  {
+    "type": "ltd.",
+    "named": false
+  },
+  {
+    "type": "mr.",
+    "named": false
+  },
+  {
+    "type": "mrs.",
+    "named": false
+  },
+  {
+    "type": "ms.",
+    "named": false
+  },
+  {
+    "type": "no.",
+    "named": false
+  },
+  {
     "type": "nor",
     "named": false
+  },
+  {
+    "type": "number",
+    "named": true
   },
   {
     "type": "or",
@@ -250,11 +399,23 @@
     "named": true
   },
   {
+    "type": "period",
+    "named": true
+  },
+  {
     "type": "since",
     "named": false
   },
   {
     "type": "so",
+    "named": false
+  },
+  {
+    "type": "sr.",
+    "named": false
+  },
+  {
+    "type": "st.",
     "named": false
   },
   {
@@ -271,6 +432,14 @@
   },
   {
     "type": "until",
+    "named": false
+  },
+  {
+    "type": "vol.",
+    "named": false
+  },
+  {
+    "type": "vs.",
     "named": false
   },
   {

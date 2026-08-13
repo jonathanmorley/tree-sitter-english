@@ -1,0 +1,124 @@
+==================
+Abbreviation does not end the sentence
+==================
+
+Mr. Smith arrived.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (abbrev)
+        (word)
+        (word)))))
+
+==================
+Initialism run stays one sentence
+==================
+
+The H.M.S. Beagle sailed.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (dotted)
+        (word)
+        (word)))))
+
+==================
+Unknown abbreviation with lowercase continuation
+==================
+
+The dept. said it would close.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (period)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Decimal number keeps its dot
+==================
+
+It cost 3.50 dollars.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (number)
+        (word)))))
+
+==================
+Sentence still splits after an abbreviation
+==================
+
+Mr. Smith arrived. He stayed.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (abbrev)
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Lowercase continuation across e.g.
+==================
+
+Bring tools, e.g. a hammer.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (dotted)
+        (word)
+        (word)))))
+
+==================
+Abbreviation before a sentence-final mark
+==================
+
+Did Dr. Jones arrive?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (abbrev)
+        (word)
+        (word)))))

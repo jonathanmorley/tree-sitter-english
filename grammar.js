@@ -3,6 +3,15 @@
  *
  * Tier 1: source_file -> paragraph+ ; paragraph break = blank line.
  *         paragraph -> sentence+ ; sentence ends at [.?!] (+ closing quote/paren).
+ *         Periods are robust to abbreviations via three layers:
+ *           - `abbrev` keyword tokens absorb the trailing dot of common
+ *             abbreviations (Mr., Dr., ...) so it is never exposed as a
+ *             sentence end.
+ *           - the `dotted` token matches initialism runs wholesale,
+ *             including the trailing dot (H.M.S., U.S., e.g., p.m.).
+ *           - an external scanner decides every remaining bare dot:
+ *             a dot followed (over whitespace) by a lowercase letter or
+ *             digit continues the sentence; anything else ends it.
  * Tier 2: sentence -> (clause | subordinate_clause) joined by conjunctions.
  *         A clause is a run of words/commas. A subordinate_clause is
  *         introduced by a subordinator and greedily absorbs the remainder
@@ -30,6 +39,16 @@ const SUBORDINATORS = ci([
   'whom', 'whose',
 ]);
 
+// Abbreviations whose trailing dot is part of the token, so it never ends a
+// sentence. Exact string literals win over `word` + bare dot by longest
+// match. Sentence-often-final abbreviations like "etc." are deliberately NOT
+// listed: the scanner's lowercase-continuation heuristic decides those
+// instead ("etc. and more" continues, "etc. The" ends).
+const ABBREVIATIONS = ci([
+  'mr.', 'mrs.', 'ms.', 'dr.', 'st.', 'jr.', 'sr.', 'vs.',
+  'inc.', 'ltd.', 'co.', 'no.', 'fig.', 'vol.', 'approx.',
+]);
+
 module.exports = grammar({
   name: 'english',
 
@@ -37,6 +56,11 @@ module.exports = grammar({
   // A blank line lexes as the longer `paragraph_break` token instead
   // (longest-match between extra `\n` and token `\n[ \t]*\n`).
   extras: $ => [/\s/],
+
+  externals: $ => [
+    $._end_dot, // a period that ends the sentence (scanner-decided, hidden)
+    $.period,   // a period inside the sentence (scanner-decided)
+  ],
 
   rules: {
     // NOTE: the FIRST rule in `rules` is the entry (start) rule.
@@ -62,18 +86,23 @@ module.exports = grammar({
       $._sentence_end
     ),
 
+    // The hidden external `_end_dot` token is a period the scanner judged
+    // terminal. `?` and `!` are unambiguous and stay internal. Trailing
+    // closing quotes/parens belong to the sentence end.
     _sentence_end: $ => seq(
-      /[.?!]/,
+      choice($._end_dot, /[?!]/),
       repeat(choice(/["'\u2019\u201D\u201C]/, /[)\]}]/))
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($.word, $._comma)
+      choice($._wordish, $.period, $._comma)
     )),
 
     subordinate_clause: $ => seq(
       $.subordinator,
-      prec.left(repeat1(choice($.word, $._comma, $.conjunction, $.subordinate_clause)))
+      prec.left(repeat1(choice(
+        $._wordish, $.period, $._comma, $.conjunction, $.subordinate_clause
+      )))
     ),
 
     conjunction: $ => choice(...CONJUNCTIONS),
@@ -83,6 +112,19 @@ module.exports = grammar({
     paragraph_break: $ => /\n[ \t]*\n/,
 
     _comma: $ => ',',
+
+    // Word-class tokens. `abbrev` and `dotted` absorb their dots so those
+    // dots never reach the scanner.
+    _wordish: $ => choice($.word, $.abbrev, $.dotted, $.number),
+
+    abbrev: $ => choice(...ABBREVIATIONS),
+
+    // Initialism/acronym runs with at least one internal period, plus an
+    // optional trailing period: H.M.S. U.S. e.g. i.e. p.m. J.R.R.
+    dotted: $ => /[A-Za-z]+(\.[A-Za-z]+)+\.?/,
+
+    // Integers and decimals: the internal dot of 3.14 stays inside the token.
+    number: $ => /\d+(\.\d+)?/,
 
     word: $ => /[A-Za-z]+('[A-Za-z]+)?/,
   },

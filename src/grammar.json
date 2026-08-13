@@ -111,8 +111,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "PATTERN",
-          "value": "[.?!]"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_end_dot"
+            },
+            {
+              "type": "PATTERN",
+              "value": "[?!]"
+            }
+          ]
         },
         {
           "type": "REPEAT",
@@ -142,7 +151,11 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "word"
+              "name": "_wordish"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "period"
             },
             {
               "type": "SYMBOL",
@@ -169,7 +182,11 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "word"
+                  "name": "_wordish"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "period"
                 },
                 {
                   "type": "SYMBOL",
@@ -391,6 +408,160 @@
       "type": "STRING",
       "value": ","
     },
+    "_wordish": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "word"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "abbrev"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dotted"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "number"
+        }
+      ]
+    },
+    "abbrev": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "mr."
+        },
+        {
+          "type": "STRING",
+          "value": "Mr."
+        },
+        {
+          "type": "STRING",
+          "value": "mrs."
+        },
+        {
+          "type": "STRING",
+          "value": "Mrs."
+        },
+        {
+          "type": "STRING",
+          "value": "ms."
+        },
+        {
+          "type": "STRING",
+          "value": "Ms."
+        },
+        {
+          "type": "STRING",
+          "value": "dr."
+        },
+        {
+          "type": "STRING",
+          "value": "Dr."
+        },
+        {
+          "type": "STRING",
+          "value": "st."
+        },
+        {
+          "type": "STRING",
+          "value": "St."
+        },
+        {
+          "type": "STRING",
+          "value": "jr."
+        },
+        {
+          "type": "STRING",
+          "value": "Jr."
+        },
+        {
+          "type": "STRING",
+          "value": "sr."
+        },
+        {
+          "type": "STRING",
+          "value": "Sr."
+        },
+        {
+          "type": "STRING",
+          "value": "vs."
+        },
+        {
+          "type": "STRING",
+          "value": "Vs."
+        },
+        {
+          "type": "STRING",
+          "value": "inc."
+        },
+        {
+          "type": "STRING",
+          "value": "Inc."
+        },
+        {
+          "type": "STRING",
+          "value": "ltd."
+        },
+        {
+          "type": "STRING",
+          "value": "Ltd."
+        },
+        {
+          "type": "STRING",
+          "value": "co."
+        },
+        {
+          "type": "STRING",
+          "value": "Co."
+        },
+        {
+          "type": "STRING",
+          "value": "no."
+        },
+        {
+          "type": "STRING",
+          "value": "No."
+        },
+        {
+          "type": "STRING",
+          "value": "fig."
+        },
+        {
+          "type": "STRING",
+          "value": "Fig."
+        },
+        {
+          "type": "STRING",
+          "value": "vol."
+        },
+        {
+          "type": "STRING",
+          "value": "Vol."
+        },
+        {
+          "type": "STRING",
+          "value": "approx."
+        },
+        {
+          "type": "STRING",
+          "value": "Approx."
+        }
+      ]
+    },
+    "dotted": {
+      "type": "PATTERN",
+      "value": "[A-Za-z]+(\\.[A-Za-z]+)+\\.?"
+    },
+    "number": {
+      "type": "PATTERN",
+      "value": "\\d+(\\.\\d+)?"
+    },
     "word": {
       "type": "PATTERN",
       "value": "[A-Za-z]+('[A-Za-z]+)?"
@@ -404,7 +575,16 @@
   ],
   "conflicts": [],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "_end_dot"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "period"
+    }
+  ],
   "inline": [],
   "supertypes": [],
   "reserved": {}
