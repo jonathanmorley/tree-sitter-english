@@ -65,6 +65,9 @@ module.exports = grammar({
       choice($.clause, $.subordinate_clause),
       repeat(choice(
         seq($.conjunction, choice($.clause, $.subordinate_clause)),
+        seq($.semicolon, choice($.clause, $.subordinate_clause)),
+        seq($.colon, choice($.clause, $.subordinate_clause)),
+        seq($.em_dash, choice($.clause, $.subordinate_clause)),
         $.subordinate_clause
       )),
       $._sentence_end
@@ -75,23 +78,34 @@ module.exports = grammar({
     // closing quotes/parens belong to the sentence end.
     _sentence_end: $ => seq(
       choice($._end_dot, /[?!]/),
-      repeat(choice(/["'\u2019\u201D\u201C]/, /[)\]}]/))
+      repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/))
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma)
+      choice($._wordish, $.period, $._comma, $._quote)
     )),
 
     subordinate_clause: $ => seq(
       $.subordinator,
       prec.left(repeat1(choice(
-        $._wordish, $.period, $._comma, $.conjunction, $.subordinate_clause
+        $._wordish, $.period, $._comma, $.conjunction,
+        $.subordinate_clause, $._quote
       )))
     ),
 
     paragraph_break: $ => /\r?\n[ \t]*\r?\n/,
 
     _comma: $ => ',',
+
+    // Clause-joining punctuation. Semicolons conjoin coordinate clauses.
+    // Colons and em-dashes introduce elaborating material. En dash (U+2013)
+    // is included as an em-dash substitute.
+    semicolon: $ => ';',
+    colon: $ => ':',
+    em_dash: $ => /—|–/,
+
+    // Quote marks, hidden inside clauses so they do not clutter the tree.
+    _quote: $ => /["'\u2018\u2019\u201C\u201D]/,
 
     // Word-class tokens. `dotted` absorbs initialism runs so their dots
     // never reach the scanner; `number` does the same for decimals.

@@ -11,9 +11,17 @@ The grammar marks three levels of structure.
   endings both work.
 - Sentences. A sentence ends at a period, a question mark, or an
   exclamation mark.
-- Clauses. The conjunctions `and`, `but`, `or`, `nor`, `so`, `yet`, and
-  `for` join clauses. Subordinators such as `because`, `although`, and
-  `that` start subordinate clauses.
+- Clauses. The coordinating conjunctions `and`, `but`, `or`, `nor`, `so`,
+  `yet`, and `for` join clauses. Subordinators such as `because`,
+  `although`, `that`, `if`, `when`, `while`, `since`, `unless`, `before`,
+  `after`, `until`, `which`, `who`, `whom`, `whose`, `as`, `once`, `than`,
+  `till`, `whenever`, `where`, `whereas`, `wherever`, and `whether` start
+  subordinate clauses.
+- Clause punctuation. A semicolon joins two coordinate clauses. A colon
+  or an em dash introduces an elaborating clause. Both produce visible
+  node types.
+- Quote marks. The grammar accepts ASCII and curly quotes. Curly
+  apostrophes in possessives such as `ship's` lex as part of the word.
 
 The grammar keeps sentence boundaries correct around abbreviations.
 
@@ -30,9 +38,8 @@ ERROR node, and the parse continues.
 ## What the grammar does not do
 
 - It does not mark subjects, verbs, or objects.
-- It does not classify words. A clause is a flat run of words.
-- It does not lex semicolons, colons, em dashes, or curly quotes. These
-  characters produce ERROR nodes.
+- It does not classify words. A clause is a flat run of words. Conjunctive
+  adverbs such as `however` and `therefore` parse as plain words.
 - It does not handle ellipses.
 - It does not represent ambiguity. Garden-path sentences parse as flat
   clauses.

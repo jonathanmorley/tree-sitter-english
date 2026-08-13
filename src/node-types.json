@@ -54,7 +54,19 @@
           "named": true
         },
         {
+          "type": "colon",
+          "named": true
+        },
+        {
           "type": "conjunction",
+          "named": true
+        },
+        {
+          "type": "em_dash",
+          "named": true
+        },
+        {
+          "type": "semicolon",
           "named": true
         },
         {
@@ -128,11 +140,19 @@
     "named": false
   },
   {
+    "type": "colon",
+    "named": true
+  },
+  {
     "type": "conjunction",
     "named": true
   },
   {
     "type": "dotted",
+    "named": true
+  },
+  {
+    "type": "em_dash",
     "named": true
   },
   {
@@ -145,6 +165,10 @@
   },
   {
     "type": "period",
+    "named": true
+  },
+  {
+    "type": "semicolon",
     "named": true
   },
   {

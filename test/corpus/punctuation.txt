@@ -1,0 +1,180 @@
+==================
+Semicolon joins coordinate clauses
+==================
+
+I came; I saw; I conquered.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (semicolon)
+      (clause
+        (word)
+        (word))
+      (semicolon)
+      (clause
+        (word)
+        (word)))))
+
+==================
+Colon introduces elaborating clause
+==================
+
+He left early: the train was departing.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (colon)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Em-dash introduces elaborating clause
+==================
+
+He left early — the train was departing.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Curly double quotes around a sentence
+==================
+
+“Hello world.”
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Curly apostrophe in a possessive
+==================
+
+The ship’s hull was damaged.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Semicolon with conjunctive adverb
+==================
+
+He was tired; however, he continued.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (semicolon)
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Expanded subordinator: unless
+==================
+
+He left unless she called.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)))))
+
+==================
+Expanded subordinator: whereas
+==================
+
+She likes tea whereas he likes coffee.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Expanded subordinator: whether
+==================
+
+I doubt whether he will come.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)))))

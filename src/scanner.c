@@ -6,7 +6,8 @@
  *
  * Word lexing:
  *   - Collect letters (plus one internal apostrophe run, matching the old
- *     /[A-Za-z]+('[A-Za-z]+)?/ shape), lowercased into state.
+ *     /[A-Za-z]+('[A-Za-z]+)?/ shape), lowercased into state. Curly right
+ *     single quote (U+2019) is accepted as an apostrophe and normalized.
  *   - Letter followed by '.' followed by a letter: refuse, so the internal
  *     `dotted` token absorbs initialism runs (H.M.S., e.g.) wholesale.
  *   - Closed-class words are emitted as conjunction/subordinator only where
@@ -51,9 +52,11 @@ static const char *CONJUNCTIONS[] = {"and", "but", "or",  "nor",
                                      "so",  "yet", "for"};
 
 static const char *SUBORDINATORS[] = {
-    "because", "although", "though", "if",     "when", "while",  "since",
-    "unless",  "before",   "after",  "until",  "that", "which",  "who",
-    "whom",    "whose"};
+    "because",  "although",  "though",   "if",        "when",     "while",
+    "since",    "unless",    "before",   "after",     "until",    "that",
+    "which",    "who",       "whom",     "whose",     "as",       "once",
+    "than",     "till",      "whenever", "where",     "whereas",  "wherever",
+    "whether"};
 
 static const char *ABBREVIATIONS[] = {
     "mr", "mrs", "ms", "dr", "st", "jr", "sr", "vs",
@@ -209,8 +212,9 @@ bool tree_sitter_english_external_scanner_scan(void *payload, TSLexer *lexer,
       lexer->mark_end(lexer);
       continue;
     }
-    if (lexer->lookahead == '\'') {
-      // Apostrophe belongs to the word only between letters.
+    if (lexer->lookahead == '\'' || lexer->lookahead == 0x2019) {
+      // Apostrophe (ASCII or curly right single quote U+2019) belongs to
+      // the word only between letters. Normalize to ASCII for comparison.
       lexer->advance(lexer, false);
       if (is_alpha(lexer->lookahead)) {
         if (len < MAX_WORD) buf[len++] = '\'';
