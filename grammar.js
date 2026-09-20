@@ -26,7 +26,7 @@
  * read was good"), and fields on hidden tokens do not render. See POC_NOTES.md.
  */
 
-module.exports = grammar({
+export default grammar({
   name: 'english',
 
   // A single newline is whitespace (extra) so it is absorbed inside a sentence.
