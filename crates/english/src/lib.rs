@@ -44,7 +44,7 @@ impl Document {
     ///
     /// Parsing only fails if the operation is cancelled or times out, which
     /// cannot happen with a default parser; use [`Document::has_error`] to
-    /// detect input the grammar could not cover (e.g. the empty string).
+    /// detect input the grammar could not cover.
     pub fn parse(source: impl Into<String>) -> Self {
         let source = source.into();
         let mut parser = Parser::new();

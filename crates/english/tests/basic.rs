@@ -83,10 +83,15 @@ fn blank_line_separates_paragraphs() {
 }
 
 #[test]
-fn empty_input_is_an_error() {
-    // Documents current grammar behavior: source_file requires a paragraph,
-    // so the empty string parses to an ERROR node. Changing this is a
-    // grammar decision, not an AST one.
+fn empty_input_parses_cleanly() {
     let doc = Document::parse("");
-    assert!(doc.has_error());
+    assert!(!doc.has_error());
+    assert!(doc.paragraphs().is_empty());
+}
+
+#[test]
+fn blank_lines_only_parse_cleanly() {
+    let doc = Document::parse("\n\n");
+    assert!(!doc.has_error());
+    assert!(doc.paragraphs().is_empty());
 }

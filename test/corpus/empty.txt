@@ -1,0 +1,19 @@
+==================
+Empty file
+==================
+
+
+---
+
+(source_file)
+
+==================
+Blank lines only
+==================
+
+
+
+---
+
+(source_file
+  (paragraph_break))

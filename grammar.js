@@ -52,11 +52,15 @@ export default grammar({
     // level. A paragraph is just sentence+, so the parser never ends a
     // paragraph except at a blank line / EOF: it cannot split sentences
     // that share a line into separate paragraphs.
+    // The paragraph core is optional so empty input parses as a bare
+    // source_file instead of an error.
     source_file: $ => seq(
       repeat($.paragraph_break),
-      $.paragraph,
-      repeat(seq(repeat1($.paragraph_break), $.paragraph)),
-      repeat($.paragraph_break)
+      optional(seq(
+        $.paragraph,
+        repeat(seq(repeat1($.paragraph_break), $.paragraph)),
+        repeat($.paragraph_break),
+      )),
     ),
 
     paragraph: $ => repeat1($.sentence),
