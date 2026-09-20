@@ -12,6 +12,9 @@
         packages = with pkgs; [
           tree-sitter
           nodejs
+          cargo
+          rustc
+          rustfmt
           # C compiler comes from Xcode CLT (/usr/bin/cc) on macOS.
           # Set CC if the tree-sitter CLI does not find it.
         ];

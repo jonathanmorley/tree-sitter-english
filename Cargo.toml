@@ -8,7 +8,7 @@ keywords = [ "incremental", "parsing", "tree-sitter", "english" ]
 license = "MIT"
 name = "tree-sitter-english"
 readme = "README.md"
-repository = "https://example.invalid/english_ts"
+repository = "https://tangled.org/xenolandscapes.com/tree-sitter-english"
 version = "0.1.0"
 
 build = "bindings/rust/build.rs"
