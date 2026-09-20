@@ -64,10 +64,12 @@ You need Nix.
 
 1. Start the development shell: `nix develop`.
 2. Generate the parser: `tree-sitter generate`.
-3. Run the corpus tests: `tree-sitter test`.
-4. Parse a file: `tree-sitter parse <file>`.
+3. Run the tests: `cargo test --workspace`. This runs the generated
+   binding tests plus the typed AST crate in `crates/english`,
+   including the full corpus in `test/corpus/`. Plain `cargo test`
+   at the root only covers the root package.
 
-Rust (`nix develop` also provides cargo): `cargo test --workspace`
-runs the generated binding tests plus the typed AST crate in
-`crates/english`. Plain `cargo test` at the root only covers the root
-package.
+The external scanner is written in Rust, which the tree-sitter CLI
+cannot link: `tree-sitter test` and `tree-sitter parse` do not work.
+(If you ran them before the port, delete the stale
+`~/.cache/tree-sitter/lib/english.dylib` first.)
