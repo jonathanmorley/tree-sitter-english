@@ -248,3 +248,97 @@ To lay him down, breath—O Father!—chiefly known.
       (clause
         (word)
         (word)))))
+
+==================
+Trailing that before an em-dash reads as a plain word
+==================
+
+Do this—remember that—and obey.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)))))
+
+==================
+Trailing and before an em-dash reads as a plain word
+==================
+
+It was marvellous and—in this instance—almost fatal.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)))))
+
+==================
+Semicolon plus em-dash introduces elaboration
+==================
+
+As a general thing;—no, I never go.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word))
+      (semicolon)
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Colon plus em-dash introduces elaboration
+==================
+
+The Spouter Inn:—Peter Coffin.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (colon)
+      (em_dash)
+      (clause
+        (word)
+        (word)))))

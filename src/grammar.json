@@ -122,6 +122,18 @@
                         "members": [
                           {
                             "type": "SYMBOL",
+                            "name": "em_dash"
+                          },
+                          {
+                            "type": "BLANK"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
                             "name": "clause"
                           },
                           {
@@ -138,6 +150,18 @@
                       {
                         "type": "SYMBOL",
                         "name": "colon"
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "em_dash"
+                          },
+                          {
+                            "type": "BLANK"
+                          }
+                        ]
                       },
                       {
                         "type": "CHOICE",

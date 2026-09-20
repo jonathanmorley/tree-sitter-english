@@ -161,10 +161,11 @@ unsafe fn skip_whitespace(lexer: *mut TSLexer, paragraph_break_ahead: &mut bool)
     }
 }
 
-// True when only a sentence boundary (or input end) follows the current
-// position: terminal marks, closing delimiters/quotes, or EOF. Newlines
-// deliberately do not count: a subordinate clause may continue on the
-// next line, and only same-line evidence overrules that greedy reading.
+// True when only a clause boundary (or input end) follows the current
+// position: terminal marks, closing delimiters/quotes, clause punctuation
+// (; : em/en-dash), or EOF. Newlines deliberately do not count: a
+// subordinate clause may continue on the next line, and only same-line
+// evidence overrules that greedy reading.
 unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
     unsafe {
         // Lookahead only: advance(false) so mark_end stays at the word end.
@@ -177,6 +178,8 @@ unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
         matches!(
             lookahead(lexer),
             0x2E | 0x3F | 0x21 | // . ? !
+            0x3B | 0x3A | // ; :
+            0x2014 | 0x2013 | // em/en-dash
             0x29 | 0x5D | 0x7D | // ) ] }
             0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
         ) || (*lexer).eof.expect("TSLexer::eof is null")(lexer)
@@ -380,8 +383,9 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             && valid(valid_symbols, TokenType::Word)
             && (dot_passed || end_ahead(lexer))
         {
-            // Trailing closed-class word with nothing after it ("Who did
-            // that?", "Because."): read it as a plain word instead of
+            // Trailing closed-class word with only a boundary after it
+            // ("Who did that?", "Because.", "remember that—and",
+            // "marvellous and—in"): read it as a plain word instead of
             // opening a clause that has no content. Falls through to the
             // WORD emission below, including the memory update.
         } else {

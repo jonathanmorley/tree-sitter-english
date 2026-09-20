@@ -70,8 +70,8 @@ export default grammar({
         choice($.clause, $.subordinate_clause),
         repeat(choice(
           seq($.conjunction, choice($.clause, $.subordinate_clause)),
-          seq($.semicolon, choice($.clause, $.subordinate_clause)),
-          seq($.colon, choice($.clause, $.subordinate_clause)),
+          seq($.semicolon, optional($.em_dash), choice($.clause, $.subordinate_clause)),
+          seq($.colon, optional($.em_dash), choice($.clause, $.subordinate_clause)),
           seq($.em_dash, choice($.clause, $.subordinate_clause)),
           $.subordinate_clause
         )),
