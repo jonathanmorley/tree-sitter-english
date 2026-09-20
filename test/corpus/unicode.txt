@@ -1,0 +1,54 @@
+==================
+Non-ASCII letters lex inside words
+==================
+
+He declared whaling has no æsthetically noble associations.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Ligature after a hyphen stays one word
+==================
+
+Half-formed fœtal suggestions appeared.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Uppercase ligature starts a word
+==================
+
+Æsthetically noble associations matter.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))

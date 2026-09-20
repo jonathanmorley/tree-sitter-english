@@ -10,7 +10,9 @@
 //!   - Collect letters (plus one internal apostrophe run and internal
 //!     hyphen runs, matching compounds like `well-known`), lowercased into
 //!     state. Curly right single quote (U+2019) is accepted as an
-//!     apostrophe and normalized.
+//!     apostrophe and normalized. Non-ASCII letters (æ, œ, é…) are word
+//!     text too, stored as raw UTF-8 bytes that never match the
+//!     ASCII-only closed-class lists.
 //!   - Letter followed by '.' followed by a letter: refuse, so the internal
 //!     `dotted` token absorbs initialism runs (H.M.S., e.g.) wholesale.
 //!   - Closed-class words are emitted as conjunction/subordinator only where
@@ -83,6 +85,17 @@ const ABBREVIATIONS: &[&str] = &[
 
 fn is_alpha(c: i32) -> bool {
     matches!(c, 0x41..=0x5A | 0x61..=0x7A)
+}
+
+/// ASCII letters plus any other Unicode alphabetic codepoint (æ, œ, é…).
+/// Stored words are only ever compared against ASCII-only lists, so
+/// non-ASCII bytes in the buffer simply never match a closed-class entry.
+fn is_word_char(c: i32) -> bool {
+    is_alpha(c)
+        || u32::try_from(c)
+            .ok()
+            .and_then(char::from_u32)
+            .is_some_and(|ch| ch.is_alphabetic())
 }
 
 fn is_space(c: i32) -> bool {
@@ -310,7 +323,7 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
         if paragraph_break_ahead {
             return false;
         }
-        if !is_alpha(lookahead(lexer)) {
+        if !is_word_char(lookahead(lexer)) {
             return false;
         }
 
@@ -332,12 +345,30 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                 mark_end(lexer);
                 continue;
             }
+            if let Some(ch) = u32::try_from(lookahead(lexer))
+                .ok()
+                .and_then(char::from_u32)
+                .filter(|ch| !ch.is_ascii() && ch.is_alphabetic())
+            {
+                // Non-ASCII letter (æ, œ, é…): consume as word text,
+                // storing raw UTF-8 bytes. ASCII-only lists can never
+                // match, so no lowercasing is needed.
+                let mut encoded = [0u8; 4];
+                let bytes = ch.encode_utf8(&mut encoded);
+                if len + bytes.len() <= MAX_WORD {
+                    buf[len..len + bytes.len()].copy_from_slice(bytes.as_bytes());
+                    len += bytes.len();
+                }
+                advance(lexer, false);
+                mark_end(lexer);
+                continue;
+            }
             if lookahead(lexer) == 0x27 || lookahead(lexer) == 0x2019 {
                 // Apostrophe (ASCII or curly right single quote U+2019)
                 // belongs to the word only between letters. Normalized to
                 // ASCII for comparison.
                 advance(lexer, false);
-                if is_alpha(lookahead(lexer)) {
+                if is_word_char(lookahead(lexer)) {
                     if len < MAX_WORD {
                         buf[len] = b'\'';
                         len += 1;
@@ -352,7 +383,7 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                 // hyphen never reaches this loop (the alpha guard above
                 // rejects it); a trailing one stays outside the token.
                 advance(lexer, false);
-                if is_alpha(lookahead(lexer)) {
+                if is_word_char(lookahead(lexer)) {
                     if len < MAX_WORD {
                         buf[len] = b'-';
                         len += 1;

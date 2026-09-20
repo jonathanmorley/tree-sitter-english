@@ -22,6 +22,7 @@ The grammar marks three levels of structure.
   node types.
 - Quote marks. The grammar accepts ASCII and curly quotes. Curly
   apostrophes in possessives such as `ship's` lex as part of the word.
+  Non-ASCII letters such as `æ`, `œ`, and `é` lex as part of words.
 
 The grammar keeps sentence boundaries correct around abbreviations.
 
