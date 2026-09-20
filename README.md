@@ -66,3 +66,7 @@ You need Nix.
 2. Generate the parser: `tree-sitter generate`.
 3. Run the corpus tests: `tree-sitter test`.
 4. Parse a file: `tree-sitter parse <file>`.
+
+Without Nix, `mise` works too: `.tool-versions` pins the Node version,
+and the pinned CLI runs without installing anything, e.g.
+`mise exec -- npx -y tree-sitter-cli@0.27.0 test`.
