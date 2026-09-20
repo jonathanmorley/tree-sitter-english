@@ -1,3 +1,8 @@
+// Template placeholders expand to non-empty string literals, tripping
+// clippy::const_is_empty on every build. The conditions are intentional
+// (they also check the path exists), so silence the lint file-wide.
+#![allow(clippy::const_is_empty)]
+
 fn main() {
     let src_dir = std::path::Path::new("src");
 
