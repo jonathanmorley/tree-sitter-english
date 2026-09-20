@@ -6,11 +6,11 @@
       "camelcase": "English",
       "title": "English",
       "scope": "source.english",
+      "path": ".",
       "file-types": [
         "en",
         "txt"
-      ],
-      "path": "."
+      ]
     }
   ],
   "metadata": {
@@ -25,5 +25,15 @@
     "links": {
       "repository": "https://example.invalid/english_ts"
     }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "java": false,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
   }
 }
