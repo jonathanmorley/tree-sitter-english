@@ -1,10 +1,10 @@
 [package]
-authors = [ "Alexis Purslane" ]
+authors = ["Alexis Purslane"]
 autoexamples = false
-categories = [ "parser-implementations", "parsing", "text-editors" ]
+categories = ["parser-implementations", "parsing", "text-editors"]
 description = "A proof-of-concept tree-sitter grammar for English prose"
 edition = "2024"
-keywords = [ "incremental", "parsing", "tree-sitter", "english" ]
+keywords = ["incremental", "parsing", "tree-sitter", "english"]
 license = "MIT"
 name = "tree-sitter-english"
 readme = "README.md"
@@ -12,7 +12,14 @@ repository = "https://tangled.org/xenolandscapes.com/tree-sitter-english"
 version = "0.1.0"
 
 build = "bindings/rust/build.rs"
-include = [ "bindings/rust/*", "grammar.js", "queries/*", "src/*", "tree-sitter.json", "/LICENSE" ]
+include = [
+  "bindings/rust/*",
+  "grammar.js",
+  "queries/*",
+  "src/*",
+  "tree-sitter.json",
+  "/LICENSE",
+]
 
 [lib]
 path = "bindings/rust/lib.rs"

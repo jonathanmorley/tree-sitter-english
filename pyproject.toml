@@ -1,9 +1,9 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools>=62.4.0", "wheel" ]
+requires = ["setuptools>=62.4.0", "wheel"]
 
 [project]
-authors = [ { email = "PARSER_AUTHOR_EMAIL", name = "Alexis Purslane" } ]
+authors = [{ email = "PARSER_AUTHOR_EMAIL", name = "Alexis Purslane" }]
 classifiers = [
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Compilers",
@@ -11,7 +11,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 description = "A proof-of-concept tree-sitter grammar for English prose"
-keywords = [ "incremental", "parsing", "tree-sitter", "english" ]
+keywords = ["incremental", "parsing", "tree-sitter", "english"]
 license.text = "MIT"
 name = "tree-sitter-english"
 readme = "README.md"
@@ -22,7 +22,7 @@ version = "0.1.0"
 Homepage = "https://example.invalid/english_ts"
 
 [project.optional-dependencies]
-core = [ "tree-sitter~=0.24" ]
+core = ["tree-sitter~=0.24"]
 
 [tool.cibuildwheel]
 build = "cp310-*"

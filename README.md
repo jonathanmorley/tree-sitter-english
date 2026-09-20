@@ -63,8 +63,8 @@ not fit.
 You need Nix.
 
 1. Start the development shell: `nix develop`.
-2. Generate the parser: `tree-sitter generate`.
-3. Run the tests: `cargo test --workspace`. This runs the generated
+1. Generate the parser: `tree-sitter generate`.
+1. Run the tests: `cargo test --workspace`. This runs the generated
    binding tests plus the typed AST crate in `crates/english`,
    including the full corpus in `test/corpus/`. Plain `cargo test`
    at the root only covers the root package.
