@@ -1,15 +1,16 @@
 (source_file [0, 0] - [1, 0]
   (paragraph [0, 0] - [0, 229]
     (sentence [0, 0] - [0, 229]
-      (subordinate_clause [0, 0] - [0, 139]
+      (subordinate_clause [0, 0] - [0, 30]
         (subordinator [0, 0] - [0, 4])
         (word [0, 5] - [0, 7])
         (word [0, 8] - [0, 13])
         (dotted [0, 14] - [0, 20])
-        (ERROR [0, 21] - [0, 22])
+        (quote [0, 21] - [0, 22])
         (word [0, 22] - [0, 28])
-        (ERROR [0, 29] - [0, 30])
-        (word [0, 31] - [0, 33])
+        (quote [0, 29] - [0, 30]))
+      (subordinate_clause [0, 31] - [0, 139]
+        (subordinator [0, 31] - [0, 33])
         (word [0, 34] - [0, 44])
         (word [0, 46] - [0, 47])
         (word [0, 48] - [0, 51])
@@ -44,4 +45,3 @@
       (subordinate_clause [0, 214] - [0, 228]
         (subordinator [0, 214] - [0, 218])
         (word [0, 219] - [0, 228])))))
-examples/origin_of_species.txt	Parse:    0.05 ms	  4517 bytes/ms	(ERROR [0, 21] - [0, 22])
