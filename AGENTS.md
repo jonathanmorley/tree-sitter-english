@@ -59,3 +59,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   `examples/` against `.parse.txt` snapshots. Moby-Dick (Gutenberg 2701,
   kept out of the repo in `/tmp`) is the scale corpus: hyphenated
   compounds dominate its error budget (see audit output).
+
+## Queued (not started)
+
+- Em-dash interruptions (~247× on Moby-Dick) and parentheticals
+  (~256×): the remaining error budget after hyphens. TDD with corpus
+  tests, same as the hyphen slice.
+- Statistical POS tagging as a post-parse pass (never grammar rules —
+  Tier 3 showed why). Train offline in Python (perceptron on
+  Brown/Treebank), export weight tables, pure-Rust inference crate with
+  an accuracy harness. Phrases become projections over tagged flat
+  clauses.
+- `package.json` is still upstream-minimal (no author/repository);
+  expanding it to the full canonical template is a node-bindings
+  decision, not yet taken.
+- Push prep: create the GitHub remote, sign the stack, push.
