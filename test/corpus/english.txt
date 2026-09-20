@@ -172,3 +172,52 @@ The dog chased the cat.
         (word)
         (word)
         (word)))))
+
+==================
+Demonstrative that before a question mark
+==================
+
+Who did that?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)))))
+
+==================
+Trailing subordinator reads as a plain word
+==================
+
+Why? Because.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)))
+    (sentence
+      (clause
+        (word)))))
+
+==================
+Trailing conjunction reads as a plain word
+==================
+
+He came and.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))

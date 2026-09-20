@@ -161,6 +161,28 @@ unsafe fn skip_whitespace(lexer: *mut TSLexer, paragraph_break_ahead: &mut bool)
     }
 }
 
+// True when only a sentence boundary (or input end) follows the current
+// position: terminal marks, closing delimiters/quotes, or EOF. Newlines
+// deliberately do not count: a subordinate clause may continue on the
+// next line, and only same-line evidence overrules that greedy reading.
+unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
+    unsafe {
+        // Lookahead only: advance(false) so mark_end stays at the word end.
+        // advance(true) here would corrupt the token range (zero-length
+        // subordinator) per the external-scanner docs. Input position
+        // rewinds to mark_end on success, so this peeking is free.
+        while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+            advance(lexer, false);
+        }
+        matches!(
+            lookahead(lexer),
+            0x2E | 0x3F | 0x21 | // . ? !
+            0x29 | 0x5D | 0x7D | // ) ] }
+            0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+        ) || (*lexer).eof.expect("TSLexer::eof is null")(lexer)
+    }
+}
+
 unsafe fn scan_dot(scanner: &Scanner, lexer: *mut TSLexer) -> bool {
     unsafe {
         advance(lexer, false);
@@ -291,6 +313,11 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
 
         let mut buf = [0u8; MAX_WORD + 1];
         let mut len = 0usize;
+        // Set when the dot branch below consumes a `.` that turns out not
+        // to start a dotted run: the lexer rewinds to the marked end, so
+        // the dot is re-lexed on the next scan. It still counts as boundary
+        // evidence here (scan_dot will judge it on its own merits).
+        let mut dot_passed = false;
 
         loop {
             if is_alpha(lookahead(lexer)) {
@@ -334,23 +361,38 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             if lookahead(lexer) == 0x2E {
                 // Refuse letter-dot-letter runs so the internal `dotted`
                 // token can absorb them (H.M.S., e.g.). Any other dot is
-                // left for scan_dot.
+                // left for scan_dot (rewound and re-lexed after the mark).
                 advance(lexer, false);
                 if is_alpha(lookahead(lexer)) {
                     return false;
                 }
+                dot_passed = true;
                 break;
             }
             break;
         }
 
-        if in_list(&buf[..len], CONJUNCTIONS) && valid(valid_symbols, TokenType::Conjunction) {
-            (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
-            return true;
-        }
-        if in_list(&buf[..len], SUBORDINATORS) && valid(valid_symbols, TokenType::Subordinator) {
-            (*lexer).result_symbol = TokenType::Subordinator as TSSymbol;
-            return true;
+        let closed_conjunction =
+            in_list(&buf[..len], CONJUNCTIONS) && valid(valid_symbols, TokenType::Conjunction);
+        let closed_subordinator =
+            in_list(&buf[..len], SUBORDINATORS) && valid(valid_symbols, TokenType::Subordinator);
+        if (closed_conjunction || closed_subordinator)
+            && valid(valid_symbols, TokenType::Word)
+            && (dot_passed || end_ahead(lexer))
+        {
+            // Trailing closed-class word with nothing after it ("Who did
+            // that?", "Because."): read it as a plain word instead of
+            // opening a clause that has no content. Falls through to the
+            // WORD emission below, including the memory update.
+        } else {
+            if closed_conjunction {
+                (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
+                return true;
+            }
+            if closed_subordinator {
+                (*lexer).result_symbol = TokenType::Subordinator as TSSymbol;
+                return true;
+            }
         }
 
         // Remember the word for the next period decision.
