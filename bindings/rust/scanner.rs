@@ -7,7 +7,8 @@
 //! re-parse through serialize/deserialize.
 //!
 //! Word lexing:
-//!   - Collect letters (plus one internal apostrophe run), lowercased into
+//!   - Collect letters (plus one internal apostrophe run and internal
+//!     hyphen runs, matching compounds like `well-known`), lowercased into
 //!     state. Curly right single quote (U+2019) is accepted as an
 //!     apostrophe and normalized.
 //!   - Letter followed by '.' followed by a letter: refuse, so the internal
@@ -314,6 +315,21 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                     continue;
                 }
                 break; // trailing apostrophe stays outside the token
+            }
+            if lookahead(lexer) == 0x2D {
+                // Hyphen belongs to the word only between letters, like the
+                // apostrophe above (`well-known`, `Mast-Head`). A leading
+                // hyphen never reaches this loop (the alpha guard above
+                // rejects it); a trailing one stays outside the token.
+                advance(lexer, false);
+                if is_alpha(lookahead(lexer)) {
+                    if len < MAX_WORD {
+                        buf[len] = b'-';
+                        len += 1;
+                    }
+                    continue;
+                }
+                break;
             }
             if lookahead(lexer) == 0x2E {
                 // Refuse letter-dot-letter runs so the internal `dotted`

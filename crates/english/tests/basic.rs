@@ -90,6 +90,18 @@ fn empty_input_parses_cleanly() {
 }
 
 #[test]
+fn hyphenated_compound_is_one_word() {
+    // Mirrors test/corpus/hyphens.txt.
+    let doc = Document::parse("The well-known fact stood.\n");
+    assert!(!doc.has_error());
+
+    let words = doc.paragraphs()[0].sentences()[0].clauses()[0].words();
+    assert_eq!(words.len(), 4);
+    assert_eq!(words[1].kind(), WordKind::Word);
+    assert_eq!(words[1].text(), "well-known");
+}
+
+#[test]
 fn blank_lines_only_parse_cleanly() {
     let doc = Document::parse("\n\n");
     assert!(!doc.has_error());

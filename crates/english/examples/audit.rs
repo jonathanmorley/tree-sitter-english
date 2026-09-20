@@ -137,7 +137,7 @@ fn audit(path: &Path) -> bool {
     let mut ok = true;
     // Inputs are `<name>.txt` and snapshots are `<name>.txt.parse.txt`:
     let candidate = PathBuf::from(format!("{}.parse.txt", path.display()));
-    if let Some(expected) = fs::read_to_string(&candidate).ok() {
+    if let Ok(expected) = fs::read_to_string(&candidate) {
         // Snapshots are pure S-expressions, but one checked-in file also
         // captured the CLI's trailing `<path>\tParse: …` summary line
         // (including nondeterministic timing). Drop footer lines.

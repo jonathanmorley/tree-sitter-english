@@ -1,0 +1,49 @@
+==================
+Hyphenated compound
+==================
+
+The well-known fact stood.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Capitalized hyphenated compound
+==================
+
+The Mast-Head stood tall.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Multiply hyphenated compound
+==================
+
+My mother-in-law arrived.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))
