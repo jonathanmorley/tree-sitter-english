@@ -19,6 +19,8 @@
 
 use tree_sitter_language::LanguageFn;
 
+mod scanner;
+
 unsafe extern "C" {
     fn tree_sitter_english() -> *const ();
 }
