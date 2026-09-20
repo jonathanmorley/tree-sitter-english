@@ -66,3 +66,8 @@ You need Nix.
 2. Generate the parser: `tree-sitter generate`.
 3. Run the corpus tests: `tree-sitter test`.
 4. Parse a file: `tree-sitter parse <file>`.
+
+Rust (`nix develop` also provides cargo): `cargo test --workspace`
+runs the generated binding tests plus the typed AST crate in
+`crates/english`. Plain `cargo test` at the root only covers the root
+package.
