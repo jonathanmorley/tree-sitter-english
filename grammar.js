@@ -79,12 +79,15 @@ export default grammar({
 
     // The hidden external `_end_dot` token is a period the scanner judged
     // terminal. `?` and `!` are unambiguous and stay internal. Trailing
-    // closing quotes/parens belong to the sentence end. These terminal
+    // closing quotes/parens belong to the sentence end, as does an em dash
+    // handing off to the next sentence (`?—Will she stay?`). These terminal
     // quotes use inline regex (not $.quote) so they stay hidden and do not
-    // conflict with visible quote tokens that start a new clause.
+    // conflict with visible quote tokens that start a new clause. The dash
+    // reuses the visible $.em_dash token: after `[?!._end_dot]` nothing else
+    // accepts it, so the join/closer readings never collide.
     _sentence_end: $ => seq(
       choice($._end_dot, /[?!]/),
-      repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/))
+      repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash))
     ),
 
     clause: $ => prec.left(repeat1(

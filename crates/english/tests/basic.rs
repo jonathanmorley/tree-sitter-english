@@ -90,6 +90,18 @@ fn empty_input_parses_cleanly() {
 }
 
 #[test]
+fn em_dash_after_terminal_hands_off() {
+    // Mirrors test/corpus/punctuation.txt.
+    let doc = Document::parse("Will he perish?—Will she stay?\n");
+    assert!(!doc.has_error());
+
+    let sentences = doc.paragraphs()[0].sentences();
+    assert_eq!(sentences.len(), 2);
+    assert_eq!(sentences[0].text(), "Will he perish?—");
+    assert_eq!(sentences[1].text(), "Will she stay?");
+}
+
+#[test]
 fn hyphenated_compound_is_one_word() {
     // Mirrors test/corpus/hyphens.txt.
     let doc = Document::parse("The well-known fact stood.\n");

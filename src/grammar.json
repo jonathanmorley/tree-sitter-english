@@ -214,6 +214,10 @@
               {
                 "type": "PATTERN",
                 "value": "[)\\]}]"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "em_dash"
               }
             ]
           }

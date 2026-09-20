@@ -179,3 +179,72 @@ I doubt whether he will come.
         (word)
         (word)
         (word)))))
+
+==================
+Em-dash after a question hands off to a new sentence
+==================
+
+Will he perish?—Will she stay?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Em-dash after a period hands off to a new sentence
+==================
+
+He came.—She left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Em-dash join and handoff in one sentence pair
+==================
+
+To lay him down, breath—O Father!—chiefly known.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)))))
