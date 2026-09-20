@@ -24,3 +24,7 @@ for sentence in doc.paragraphs()[0].sentences() {
 
 Run with `cargo test --workspace` from the repo root (bare
 `cargo test` only covers the root package).
+
+`cargo run -p english --example audit -- [files...]` parses real prose,
+counts ERROR/MISSING nodes with contexts, and diffs `examples/` output
+against the checked-in `.parse.txt` snapshots.

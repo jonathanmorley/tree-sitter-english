@@ -54,3 +54,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   between the header and `---` are joined verbatim, so N blank lines
   there feed N-1 newlines (single newlines are extras; doubles are
   `paragraph_break`).
+- Prose audit: `cargo run -p english --example audit -- [files...]`
+  counts ERROR/MISSING nodes (with contexts and a histogram) and diffs
+  `examples/` against `.parse.txt` snapshots. Moby-Dick (Gutenberg 2701,
+  kept out of the repo in `/tmp`) is the scale corpus: hyphenated
+  compounds dominate its error budget (see audit output).
