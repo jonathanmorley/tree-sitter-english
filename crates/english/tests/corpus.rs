@@ -9,7 +9,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use tree_sitter::{Node, Parser};
+use tree_sitter::Parser;
 
 struct CorpusTest {
     file: String,
@@ -88,17 +88,6 @@ fn is_divider(line: &str) -> bool {
     line.len() >= 3 && line.chars().all(|c| c == '=')
 }
 
-fn sexp(node: Node, out: &mut String) {
-    out.push('(');
-    out.push_str(node.kind());
-    let mut cursor = node.walk();
-    for child in node.named_children(&mut cursor) {
-        out.push(' ');
-        sexp(child, out);
-    }
-    out.push(')');
-}
-
 fn normalize(sexp: &str) -> String {
     sexp.split_whitespace().collect::<Vec<_>>().join(" ")
 }
@@ -127,8 +116,9 @@ fn corpus() {
             let tree = parser
                 .parse(&test.input, None)
                 .unwrap_or_else(|| panic!("parse returned None for {}", test.name));
-            let mut actual = String::new();
-            sexp(tree.root_node(), &mut actual);
+            // to_sexp includes ERROR and MISSING nodes, matching
+            // `tree-sitter test` comparison semantics.
+            let actual = tree.root_node().to_sexp();
             if normalize(&actual) == normalize(&test.expected) {
                 println!("ok - {}:{}", test.file, test.name);
             } else {

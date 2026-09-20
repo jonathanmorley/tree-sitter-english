@@ -66,6 +66,11 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   `examples/` against `.parse.txt` snapshots. Moby-Dick (Gutenberg 2701,
   kept out of the repo in `/tmp`) is the scale corpus: hyphenated
   compounds dominate its error budget (see audit output).
+- Node iteration (`children()`/`child()`, cursor or index) never yields
+  MISSING nodes for hidden-rule aux symbols (e.g.
+  `_sentence_end_token1`); only `to_sexp()` shows them. The corpus
+  harness compares `to_sexp` output for this reason — a named-only
+  walker passes tests that hide recoveries.
 
 ## Queued (not started)
 

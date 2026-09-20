@@ -164,7 +164,7 @@ fn audit(path: &Path) -> bool {
     }
 
     println!(
-        "{}: {} bytes, {} para / {} sent / {} clauses / {} words, {} error / {} missing, {:?}",
+        "{}: {} bytes, {} para / {} sent / {} clauses / {} words, {} error / {} missing, has_error={}, {:?}",
         path.display(),
         source.len(),
         stats.paragraphs,
@@ -173,6 +173,7 @@ fn audit(path: &Path) -> bool {
         stats.words,
         stats.error_nodes,
         stats.missing_nodes,
+        tree.root_node().has_error(),
         elapsed
     );
     for e in &stats.contexts {
