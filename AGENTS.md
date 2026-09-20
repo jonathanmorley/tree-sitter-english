@@ -46,6 +46,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   break repeat must live *inside* the optional — outside it the leading
   and trailing repeats conflict (`source_file_repeat1` ambiguity) and
   `generate` fails. Zero `generate` conflicts is a hard requirement.
+- `parenthetical` (plain, no inner end) and `complete_parenthetical`
+  (inner end-mark, self-terminated sentence) must stay disjoint by
+  construction: plain dies where an end mark appears, complete dies
+  without one. Overlap (optional inner end on plain, or plain as a
+  sentence alternative) conflicts. Complete takes no trailing closers —
+  they would eat its own `)`. One dot cannot serve two levels, so
+  dot-inside-parens always consumes the mark inside.
 - The typed AST (`crates/english`) covers only nodes the grammar really
   produces (flat clauses; no noun/verb phrases — SVO fields were tried
   upstream and dropped, see `grammar.js` Tier 3).

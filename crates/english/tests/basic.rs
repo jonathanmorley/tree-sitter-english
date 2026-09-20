@@ -90,6 +90,25 @@ fn empty_input_parses_cleanly() {
 }
 
 #[test]
+fn parenthetical_parses_without_error() {
+    // Mirrors test/corpus/parentheticals.txt. Parentheticals are not
+    // exposed on Sentence/Clause yet, so this asserts structure via text.
+    let doc = Document::parse("I saw it (the truth) clearly.\n");
+    assert!(!doc.has_error());
+
+    let sentences = doc.paragraphs()[0].sentences();
+    assert_eq!(sentences.len(), 1);
+    assert_eq!(sentences[0].text(), "I saw it (the truth) clearly.");
+
+    let standalone = Document::parse("(Supplied by an usher.)\n");
+    assert!(!standalone.has_error());
+    assert_eq!(
+        standalone.paragraphs()[0].sentences()[0].text(),
+        "(Supplied by an usher.)"
+    );
+}
+
+#[test]
 fn em_dash_after_terminal_hands_off() {
     // Mirrors test/corpus/punctuation.txt.
     let doc = Document::parse("Will he perish?—Will she stay?\n");

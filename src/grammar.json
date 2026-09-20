@@ -65,124 +65,133 @@
       }
     },
     "sentence": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "clause"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "clause"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "subordinate_clause"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "conjunction"
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "clause"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "subordinate_clause"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "semicolon"
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "clause"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "subordinate_clause"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "colon"
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "clause"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "subordinate_clause"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "em_dash"
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "clause"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "subordinate_clause"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "subordinate_clause"
+                  }
+                ]
+              }
             },
             {
               "type": "SYMBOL",
-              "name": "subordinate_clause"
+              "name": "_sentence_end"
             }
           ]
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "conjunction"
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "clause"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "subordinate_clause"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "semicolon"
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "clause"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "subordinate_clause"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "colon"
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "clause"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "subordinate_clause"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "em_dash"
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "clause"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "subordinate_clause"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "SYMBOL",
-                "name": "subordinate_clause"
-              }
-            ]
-          }
-        },
-        {
           "type": "SYMBOL",
-          "name": "_sentence_end"
+          "name": "complete_parenthetical"
         }
       ]
     },
@@ -247,10 +256,79 @@
             {
               "type": "SYMBOL",
               "name": "quote"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "parenthetical"
             }
           ]
         }
       }
+    },
+    "parenthetical": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "clause"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "subordinate_clause"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "complete_parenthetical": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "clause"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "subordinate_clause"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_end_dot"
+            },
+            {
+              "type": "PATTERN",
+              "value": "[?!]"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
     },
     "subordinate_clause": {
       "type": "SEQ",

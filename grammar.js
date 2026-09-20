@@ -65,16 +65,23 @@ export default grammar({
 
     paragraph: $ => repeat1($.sentence),
 
-    sentence: $ => seq(
-      choice($.clause, $.subordinate_clause),
-      repeat(choice(
-        seq($.conjunction, choice($.clause, $.subordinate_clause)),
-        seq($.semicolon, choice($.clause, $.subordinate_clause)),
-        seq($.colon, choice($.clause, $.subordinate_clause)),
-        seq($.em_dash, choice($.clause, $.subordinate_clause)),
-        $.subordinate_clause
-      )),
-      $._sentence_end
+    sentence: $ => choice(
+      seq(
+        choice($.clause, $.subordinate_clause),
+        repeat(choice(
+          seq($.conjunction, choice($.clause, $.subordinate_clause)),
+          seq($.semicolon, choice($.clause, $.subordinate_clause)),
+          seq($.colon, choice($.clause, $.subordinate_clause)),
+          seq($.em_dash, choice($.clause, $.subordinate_clause)),
+          $.subordinate_clause
+        )),
+        $._sentence_end
+      ),
+      // A parenthetical carrying its own end mark is a complete
+      // sentence: the mark cannot also terminate an outer sentence,
+      // so no outer _sentence_end follows. This keeps `(ab by xy.)`
+      // followed by blank lines parsing.
+      $.complete_parenthetical,
     ),
 
     // The hidden external `_end_dot` token is a period the scanner judged
@@ -91,8 +98,33 @@ export default grammar({
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $.quote)
+      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical)
     )),
+
+    // A parenthetical aside: a single clause in parens (one, not repeat1:
+    // repeating clauses would let each word reduce to its own clause
+    // instead of extending one). It lives only inside clauses (a standalone
+    // `(...)` sentence parses as a clause holding one parenthetical):
+    // allowing it as a direct sentence alternative creates an LR conflict
+    // with clause-internal parentheticals at the sentence end. Terminal
+    // marks are not allowed inside — see complete_parenthetical for the
+    // self-terminated variant.
+    parenthetical: $ => seq(
+      '(',
+      choice($.clause, $.subordinate_clause),
+      ')'
+    ),
+
+    // A parenthetical whose end mark is consumed inside, making it a
+    // complete sentence with no outer _sentence_end. The inner end takes
+    // no trailing closers (unlike _sentence_end): they would greedily eat
+    // the paren's own `)`.
+    complete_parenthetical: $ => seq(
+      '(',
+      choice($.clause, $.subordinate_clause),
+      choice($._end_dot, /[?!]/),
+      ')'
+    ),
 
     subordinate_clause: $ => seq(
       $.subordinator,

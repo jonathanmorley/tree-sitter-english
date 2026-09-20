@@ -1,0 +1,58 @@
+==================
+Parenthetical before sentence end
+==================
+
+He left (and never returned).
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (parenthetical
+          (clause
+            (word)
+            (word)
+            (word)))))))
+
+==================
+Standalone parenthetical sentence
+==================
+
+(Supplied by an usher.)
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (complete_parenthetical
+        (clause
+          (word)
+          (word)
+          (word)
+          (word))))))
+
+==================
+Parenthetical mid-sentence
+==================
+
+I saw it (the truth) clearly.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (parenthetical
+          (clause
+            (word)
+            (word)))
+        (word)))))
