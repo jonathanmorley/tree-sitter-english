@@ -297,6 +297,10 @@
             {
               "type": "SYMBOL",
               "name": "ellipsis"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "currency"
             }
           ]
         }
@@ -413,6 +417,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "ellipsis"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "currency"
                 }
               ]
             }
@@ -468,6 +476,10 @@
     "number": {
       "type": "PATTERN",
       "value": "\\d+(\\.\\d+)?"
+    },
+    "currency": {
+      "type": "PATTERN",
+      "value": "[$£]"
     }
   },
   "extras": [

@@ -1,0 +1,35 @@
+==================
+Dollar amount
+==================
+
+Pay $5 now.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (currency)
+        (number)
+        (word)))))
+
+==================
+Pound amount with grouped thousands
+==================
+
+Upwards of £1,000,000?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (currency)
+        (number)
+        (number)
+        (number)))))

@@ -8,6 +8,10 @@
       "required": false,
       "types": [
         {
+          "type": "currency",
+          "named": true
+        },
+        {
           "type": "dotted",
           "named": true
         },
@@ -167,6 +171,10 @@
           "named": true
         },
         {
+          "type": "currency",
+          "named": true
+        },
+        {
           "type": "dotted",
           "named": true
         },
@@ -219,6 +227,10 @@
   },
   {
     "type": "conjunction",
+    "named": true
+  },
+  {
+    "type": "currency",
     "named": true
   },
   {

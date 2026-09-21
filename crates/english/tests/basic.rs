@@ -90,6 +90,18 @@ fn empty_input_parses_cleanly() {
 }
 
 #[test]
+fn currency_amount_parses_without_error() {
+    // Mirrors test/corpus/currency.txt. Currency signs are not exposed
+    // on Word yet, so this asserts structure via text.
+    let doc = Document::parse("Pay $5 now.\n");
+    assert!(!doc.has_error());
+
+    let sentences = doc.paragraphs()[0].sentences();
+    assert_eq!(sentences.len(), 1);
+    assert_eq!(sentences[0].text(), "Pay $5 now.");
+}
+
+#[test]
 fn trailing_ellipsis_hands_off() {
     // Mirrors test/corpus/ellipses.txt.
     let doc = Document::parse("He left... She stayed.\n");

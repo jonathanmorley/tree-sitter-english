@@ -106,7 +106,7 @@ export default grammar({
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.ellipsis)
+      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.ellipsis, $.currency)
     )),
     // Three dots, mid-sentence only. Terminal `...` lexes as the
     // external ellipsis_end instead (emitted on boundary-ahead, or for
@@ -144,7 +144,7 @@ export default grammar({
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $.quote, $.ellipsis
+        $.subordinate_clause, $.quote, $.ellipsis, $.currency
       )))
     ),
 
@@ -173,5 +173,9 @@ export default grammar({
 
     // Integers and decimals: the internal dot of 3.14 stays inside the token.
     number: $ => /\d+(\.\d+)?/,
+
+    // Currency signs stay visible and flat: `$20,000,000` parses as
+    // currency, number, number, number (commas are hidden).
+    currency: $ => /[$£]/,
   },
 });
