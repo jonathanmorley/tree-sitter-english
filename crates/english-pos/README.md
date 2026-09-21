@@ -19,3 +19,7 @@ Caveat: UD tokenization splits contractions (`do` + `n't`) while the
 `english` crate keeps them whole (`don't`). Tagging whole words works
 but loses the contraction-internal signal; aligning the two
 tokenizations is future work.
+
+Demo: `cargo run -p english-pos --example tag -- <file>` parses with
+the `english` crate and prints `word/TAG` per sentence (subordinators
+included via `Clause::subordinator`, since they are not `Word`s).
