@@ -1,6 +1,6 @@
 //! Statistical part-of-speech tagging for English prose.
 //!
-//! A greedy averaged-perceptron tagger over the 17 Universal POS tags.
+//! A greedy perceptron tagger over the 17 Universal POS tags.
 //! This crate holds the inference side: feature extraction shared with
 //! training, the [`Model`] with greedy decoding, and JSON weight
 //! (de)serialization. Training lives in `crates/english-pos-train`.
@@ -84,7 +84,7 @@ pub fn features(
     feats
 }
 
-/// Greedy averaged-perceptron model: `weights[feature][tag]`.
+/// Greedy perceptron model: `weights[feature][tag]`.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Model {
     weights: HashMap<String, HashMap<String, f32>>,

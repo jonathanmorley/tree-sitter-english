@@ -1,4 +1,4 @@
-//! Offline trainer for the `english-pos` averaged perceptron.
+//! Offline trainer for the `english-pos` perceptron.
 //!
 //! Reads Universal Dependencies CoNLL-U (`--corpus <dir>` holding
 //! `en_ewt-ud-{train,dev,test}.conllu`, fetched separately — the data
