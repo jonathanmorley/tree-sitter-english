@@ -56,6 +56,11 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - The typed AST (`crates/english`) covers only nodes the grammar really
   produces (flat clauses; no noun/verb phrases — SVO fields were tried
   upstream and dropped, see `grammar.js` Tier 3).
+- Scanner lookahead after the token must use `advance(false)`:
+  `advance(true)` past `mark_end` corrupts the token range (observed as
+  a zero-length `subordinator`). Same reason the dot/apostrophe/hyphen
+  branches advance-then-break: the lexer rewinds to the mark on
+  success, so over-consumed tail chars are re-lexed, not lost.
 - Corpus tests are TDD: add the failing expectation to
   `test/corpus/*.txt` first. Note the input model: lines strictly
   between the header and `---` are joined verbatim, so N blank lines
@@ -82,11 +87,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   treatment (`extras`, visible nodes, or a documented input pre-pass)
   is deliberately undecided; the audit buckets it as transcription
   until then. Do not let the transcription count drive grammar design.
+
 - Em-dash residuals: leading-dash dialogue, doubled `——` (redaction).
 
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus
   tests, same as the hyphen slice.
+
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why). Train offline, preferably with a Rust training
   binary in the workspace (perceptron; UD English-EWT corpus, which is
@@ -94,7 +101,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   LDC-licensed). Python only if feature experimentation demands it.
   Export weight tables; pure-Rust inference crate with an accuracy
   harness. Phrases become projections over tagged flat clauses.
+
 - `package.json` is still upstream-minimal (no author/repository);
   expanding it to the full canonical template is a node-bindings
   decision, not yet taken.
+
 - Push prep: create the GitHub remote, sign the stack, push.
