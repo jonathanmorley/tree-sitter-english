@@ -129,9 +129,17 @@ impl Model {
         serde_json::from_str(json)
     }
 
-    /// Serialize weights for committing.
+    /// Serialize weights for committing: compact JSON with sorted keys,
+    /// so retrains diff cleanly. Compact (not pretty) keeps the artifact
+    /// under the 2 MB budget; `treefmt` excludes the weights directory
+    /// (generated file, like `src/*`).
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(self)
+        let sorted: std::collections::BTreeMap<String, std::collections::BTreeMap<String, f32>> =
+            self.weights
+                .iter()
+                .map(|(f, m)| (f.clone(), m.iter().map(|(t, w)| (t.clone(), *w)).collect()))
+                .collect();
+        serde_json::to_string(&serde_json::json!({"weights": sorted}))
     }
 
     /// Train on gold sentences of `(surface word, tag)` with the

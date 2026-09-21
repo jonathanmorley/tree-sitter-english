@@ -65,6 +65,7 @@ fn accuracy(model: &Model, data: &[(Vec<String>, Vec<String>, Vec<String>)]) -> 
     let mut total = 0;
     let mut pred_hist: HashMap<String, usize> = HashMap::new();
     let mut gold_hist: HashMap<String, usize> = HashMap::new();
+    let mut conf: HashMap<(String, String), usize> = HashMap::new();
     for (words, _, gold) in data {
         for (guess, g) in model.tag(words).iter().zip(gold) {
             total += 1;
@@ -72,11 +73,18 @@ fn accuracy(model: &Model, data: &[(Vec<String>, Vec<String>, Vec<String>)]) -> 
             *gold_hist.entry(g.clone()).or_insert(0) += 1;
             if guess.upos() == g {
                 correct += 1;
+            } else {
+                *conf
+                    .entry((g.clone(), guess.upos().to_string()))
+                    .or_insert(0) += 1;
             }
         }
     }
     eprintln!("pred: {pred_hist:?}");
     eprintln!("gold: {gold_hist:?}");
+    let mut conf: Vec<((String, String), usize)> = conf.into_iter().collect();
+    conf.sort_by_key(|item| std::cmp::Reverse(item.1));
+    eprintln!("top confusions (gold->pred): {conf:?}");
     (correct, total)
 }
 

@@ -18,7 +18,7 @@
 //! The bar below documents the committed model on this sample (~80%:
 //! archaic whaling vocabulary); move it deliberately with model changes.
 
-use english_pos::{Model, Tag};
+use english_pos::Model;
 
 const TOKENS: &[&str] = &[
     "That",

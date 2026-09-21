@@ -12,6 +12,7 @@
         ".editorconfig"
         "LICENSE"
         "src/*" # generated parser
+        "crates/english-pos/weights/*" # generated weights (compact JSON)
         "grammar.js" # upstream style, no JS formatter configured
         "binding.gyp"
         "test/corpus/*" # fixtures must stay byte-stable
