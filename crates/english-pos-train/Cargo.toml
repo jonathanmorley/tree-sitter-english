@@ -1,0 +1,16 @@
+[package]
+name = "english-pos-train"
+version = "0.1.0"
+edition = "2024"
+authors = ["Jonathan Morley <morley.jonathan@gmail.com>"]
+license = "MIT"
+description = "Offline trainer for the english-pos perceptron (not published)"
+publish = false
+
+[[bin]]
+name = "english-pos-train"
+path = "src/main.rs"
+
+[dependencies]
+english-pos = { version = "0.1.0", path = "../english-pos" }
+serde_json = "1"

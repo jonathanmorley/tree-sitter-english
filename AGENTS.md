@@ -100,12 +100,12 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   tests, same as the hyphen slice.
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
-  Tier 3 showed why). Train offline, preferably with a Rust training
-  binary in the workspace (perceptron; UD English-EWT corpus, which is
-  freely available with standard splits — not Treebank, which is
-  LDC-licensed). Python only if feature experimentation demands it.
-  Export weight tables; pure-Rust inference crate with an accuracy
-  harness. Phrases become projections over tagged flat clauses.
+  Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
+  greedy perceptron on UD English-EWT, dev 90.35% / test 90.53%,
+  1.29 MB weights). Remains: align UD tokenization (splits
+  contractions) with `english`-crate words (keeps them whole), then
+  wire tagging over parsed clauses. Plain (unaveraged) perceptron beat
+  Collins averaging here (33% vs 88% pilot) — see train README.
 
 - `package.json` is still upstream-minimal (no author/repository);
   expanding it to the full canonical template is a node-bindings
