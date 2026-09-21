@@ -106,6 +106,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   contractions) with `english`-crate words (keeps them whole), then
   wire tagging over parsed clauses. Plain (unaveraged) perceptron beat
   Collins averaging here (33% vs 88% pilot) — see train README.
+- `Clause::words()` drops subordinators (separate accessor), which
+  silently loses tokens for consumers. Cleaner: a `tokens()` iterator
+  yielding an enum over all child kinds.
 
 - `package.json` is still upstream-minimal (no author/repository);
   expanding it to the full canonical template is a node-bindings
