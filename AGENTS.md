@@ -115,4 +115,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   expanding it to the full canonical template is a node-bindings
   decision, not yet taken.
 
-- Push prep: create the GitHub remote, sign the stack, push.
+- Push prep: DONE 2026-09-21 (GitHub remote `origin` created, 38-commit
+  stack signed with SSH key, pushed to
+  github.com/jonathanmorley/tree-sitter-english). Tangled `upstream`
+  push still pending: push-only SSH remote configured, blocked on
+  approving `knot.xenolandscapes.com` host keys into known_hosts.
