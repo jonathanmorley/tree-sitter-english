@@ -2,6 +2,10 @@
 //! (for `examples/`) verify byte-identical output against the checked-in
 //! `.parse.txt` snapshots (proving the Rust scanner matches the old C one).
 //!
+//! Errors split into prose vs transcription (Gutenberg `_`/`*` markup,
+//! which is out of grammar scope): only the prose histogram measures
+//! grammar quality.
+//!
 //! Usage: `cargo run -p english --example audit -- [files...]`
 //! With no files, audits `examples/*.txt`. Snapshots are picked up as
 //! `<input>.parse.txt` siblings.
@@ -21,6 +25,7 @@ struct Stats {
     error_nodes: usize,
     missing_nodes: usize,
     error_kinds: std::collections::HashMap<String, usize>,
+    transcription_kinds: std::collections::HashMap<String, usize>,
     error_examples: std::collections::HashMap<String, String>,
     contexts: Vec<String>,
 }
@@ -50,13 +55,25 @@ fn describe(source: &str, node: Node) -> String {
     )
 }
 
+/// Gutenberg transcription markup, not English prose: italics markers,
+/// footnote markers, and section breaks. Bucketed separately so the
+/// error histogram measures the grammar, not the transcription.
+fn is_transcription(text: &str) -> bool {
+    text.contains('_') || text.contains('*')
+}
+
 fn walk(source: &str, node: Node, stats: &mut Stats, in_error: bool) {
     let nested = in_error || node.is_error();
     if node.is_error() {
         stats.error_nodes += 1;
         if !in_error {
             let text = source[node.start_byte()..node.end_byte()].to_string();
-            *stats.error_kinds.entry(text.clone()).or_insert(0) += 1;
+            let map = if is_transcription(&text) {
+                &mut stats.transcription_kinds
+            } else {
+                &mut stats.error_kinds
+            };
+            *map.entry(text.clone()).or_insert(0) += 1;
             stats
                 .error_examples
                 .entry(text)
@@ -163,8 +180,10 @@ fn audit(path: &Path) -> bool {
         }
     }
 
+    let prose_errors: usize = stats.error_kinds.values().sum();
+    let transcription_errors: usize = stats.transcription_kinds.values().sum();
     println!(
-        "{}: {} bytes, {} para / {} sent / {} clauses / {} words, {} error / {} missing, has_error={}, {:?}",
+        "{}: {} bytes, {} para / {} sent / {} clauses / {} words, {} error ({} prose / {} transcription) / {} missing, has_error={}, {:?}",
         path.display(),
         source.len(),
         stats.paragraphs,
@@ -172,6 +191,8 @@ fn audit(path: &Path) -> bool {
         stats.clauses,
         stats.words,
         stats.error_nodes,
+        prose_errors,
+        transcription_errors,
         stats.missing_nodes,
         tree.root_node().has_error(),
         elapsed
@@ -186,6 +207,11 @@ fn audit(path: &Path) -> bool {
         if let Some(example) = stats.error_examples.get(*text) {
             println!("    e.g. {example}");
         }
+    }
+    let mut transcription: Vec<_> = stats.transcription_kinds.iter().collect();
+    transcription.sort_by(|a, b| b.1.cmp(a.1));
+    for (text, count) in transcription.iter().take(5) {
+        println!("  transcription {count}x: {text:?}");
     }
     ok
 }
