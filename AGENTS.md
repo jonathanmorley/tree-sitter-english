@@ -66,6 +66,11 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   between the header and `---` are joined verbatim, so N blank lines
   there feed N-1 newlines (single newlines are extras; doubles are
   `paragraph_break`).
+- After every `grammar.js` edit, check for duplicate rule keys
+  (`grep -n '^    [a-z_]*: \$' grammar.js` must show each once): JS
+  silently keeps the last, so a duplicated rule shadows the real one
+  and `generate` happily builds the wrong grammar. This has bitten
+  three times (`parenthetical`, `clause`, `_sentence_end`).
 - Prose audit: `cargo run -p english --example audit -- [files...]`
   counts ERROR/MISSING nodes (with contexts and separate prose vs
   transcription histograms) and diffs `examples/` against `.parse.txt`

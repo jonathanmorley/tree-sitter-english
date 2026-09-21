@@ -1,0 +1,74 @@
+==================
+Trailing ellipsis ends the sentence
+==================
+
+He left... She stayed.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (ellipsis))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Ellipsis plus period
+==================
+
+It was huge.... They fled.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (ellipsis))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Mid-sentence ellipsis
+==================
+
+He... left early.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (ellipsis)
+        (word)
+        (word)))))
+
+==================
+Ellipsis before a question mark
+==================
+
+He was... tired?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (ellipsis)
+        (word)))))

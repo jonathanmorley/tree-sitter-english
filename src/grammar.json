@@ -232,6 +232,15 @@
             {
               "type": "PATTERN",
               "value": "[?!]"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "ellipsis_end"
+              },
+              "named": true,
+              "value": "ellipsis"
             }
           ]
         },
@@ -284,10 +293,18 @@
             {
               "type": "SYMBOL",
               "name": "parenthetical"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "ellipsis"
             }
           ]
         }
       }
+    },
+    "ellipsis": {
+      "type": "PATTERN",
+      "value": "\\.{3}"
     },
     "parenthetical": {
       "type": "SEQ",
@@ -392,6 +409,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "quote"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "ellipsis"
                 }
               ]
             }
@@ -477,6 +498,10 @@
     {
       "type": "SYMBOL",
       "name": "subordinator"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "ellipsis_end"
     }
   ],
   "inline": [],

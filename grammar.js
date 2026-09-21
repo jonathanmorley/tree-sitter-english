@@ -37,13 +37,17 @@ export default grammar({
   // Order defines the scanner's enum. `word`, `conjunction` and
   // `subordinator` are external so the scanner can track the last word;
   // the scanner emits each one only where the grammar allows it, which
-  // replaces internal keyword extraction.
+  // replaces internal keyword extraction. `ellipsis_end` is external so
+  // the scanner can tell terminal `...` (boundary ahead) from
+  // mid-sentence `...` (lowercase ahead): the parser cannot, and one
+  // token in both slots is ambiguous.
   externals: $ => [
     $._end_dot,      // a period that ends the sentence (hidden)
     $.period,        // a period inside the sentence
     $.word,          // any open-class word run
     $.conjunction,   // and but or nor so yet for
     $.subordinator,  // because although that which who ...
+    $.ellipsis_end,  // `...` before a boundary (aliased to ellipsis)
   ],
 
   rules: {
@@ -87,19 +91,29 @@ export default grammar({
     // The hidden external `_end_dot` token is a period the scanner judged
     // terminal. `?` and `!` are unambiguous and stay internal. Trailing
     // closing quotes/parens belong to the sentence end, as does an em dash
-    // handing off to the next sentence (`?—Will she stay?`). These terminal
-    // quotes use inline regex (not $.quote) so they stay hidden and do not
-    // conflict with visible quote tokens that start a new clause. The dash
-    // reuses the visible $.em_dash token: after `[?!._end_dot]` nothing else
-    // accepts it, so the join/closer readings never collide.
+    // handing off to the next sentence (`?—Will she stay?`) or a trailing
+    // ellipsis (`He left...`). These terminal quotes use inline regex (not
+    // $.quote) so they stay hidden and do not conflict with visible quote
+    // tokens that start a new clause. The dash reuses the visible $.em_dash
+    // token: after `[?!._end_dot]` nothing else accepts it, so the
+    // join/closer readings never collide. Ellipsis end marks reuse the
+    // external $.ellipsis_end (aliased to ellipsis below): mid-sentence
+    // and terminal `...` in one slot is ambiguous, so the scanner picks
+    // by what follows (boundary ahead or not).
     _sentence_end: $ => seq(
-      choice($._end_dot, /[?!]/),
+      choice($._end_dot, /[?!]/, alias($.ellipsis_end, $.ellipsis)),
       repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash))
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical)
+      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.ellipsis)
     )),
+    // Three dots, mid-sentence only. Terminal `...` lexes as the
+    // external ellipsis_end instead (emitted on boundary-ahead, or for
+    // 4+ runs wholesale); keeping the trailing mark out of this rule
+    // avoids an absorb-vs-outer-end conflict on `....`. Single dots
+    // stay with the period/end-dot logic.
+    ellipsis: $ => /\.{3}/,
 
     // A parenthetical aside: a single clause in parens (one, not repeat1:
     // repeating clauses would let each word reduce to its own clause
@@ -130,7 +144,7 @@ export default grammar({
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $.quote
+        $.subordinate_clause, $.quote, $.ellipsis
       )))
     ),
 

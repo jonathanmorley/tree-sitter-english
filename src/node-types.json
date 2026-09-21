@@ -12,6 +12,10 @@
           "named": true
         },
         {
+          "type": "ellipsis",
+          "named": true
+        },
+        {
           "type": "number",
           "named": true
         },
@@ -112,6 +116,10 @@
           "named": true
         },
         {
+          "type": "ellipsis",
+          "named": true
+        },
+        {
           "type": "em_dash",
           "named": true
         },
@@ -163,6 +171,10 @@
           "named": true
         },
         {
+          "type": "ellipsis",
+          "named": true
+        },
+        {
           "type": "number",
           "named": true
         },
@@ -211,6 +223,10 @@
   },
   {
     "type": "dotted",
+    "named": true
+  },
+  {
+    "type": "ellipsis",
     "named": true
   },
   {

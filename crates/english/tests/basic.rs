@@ -90,6 +90,18 @@ fn empty_input_parses_cleanly() {
 }
 
 #[test]
+fn trailing_ellipsis_hands_off() {
+    // Mirrors test/corpus/ellipses.txt.
+    let doc = Document::parse("He left... She stayed.\n");
+    assert!(!doc.has_error());
+
+    let sentences = doc.paragraphs()[0].sentences();
+    assert_eq!(sentences.len(), 2);
+    assert_eq!(sentences[0].text(), "He left...");
+    assert_eq!(sentences[1].text(), "She stayed.");
+}
+
+#[test]
 fn parenthetical_parses_without_error() {
     // Mirrors test/corpus/parentheticals.txt. Parentheticals are not
     // exposed on Sentence/Clause yet, so this asserts structure via text.

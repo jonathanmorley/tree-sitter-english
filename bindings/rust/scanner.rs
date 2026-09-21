@@ -60,6 +60,8 @@ enum TokenType {
     Word = 2,
     Conjunction = 3,
     Subordinator = 4,
+    // Appended, never reordered: must match `externals` in grammar.js.
+    EllipsisEnd = 5,
 }
 
 const MAX_WORD: usize = 31;
@@ -199,9 +201,61 @@ unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
     }
 }
 
-unsafe fn scan_dot(scanner: &Scanner, lexer: *mut TSLexer) -> bool {
+// `...`: count the run (first dot already consumed). Runs of 4+ always
+// terminate, covering the whole run; a run of exactly 3 terminates on
+// boundary-ahead and otherwise yields to the internal mid-sentence
+// token. Shorter runs are not ellipses (the user: exactly three dots).
+// Refusals rewind fully (like the letter-dot-letter refusal), so the
+// internal rule retries from the run start.
+unsafe fn scan_dot_run(lexer: *mut TSLexer, valid_symbols: *const bool) -> bool {
+    unsafe {
+        let mut count = 1;
+        while lookahead(lexer) == 0x2E {
+            advance(lexer, false);
+            count += 1;
+        }
+        if count < 3 || !valid(valid_symbols, TokenType::EllipsisEnd) {
+            return false;
+        }
+        // Mark the run end before peeking: trailing spaces must not join
+        // the token (rewind-to-mark restores them on success, full rewind
+        // on refusal).
+        mark_end(lexer);
+        if count == 3 && !ellipsis_end_ahead(lexer) {
+            return false;
+        }
+        (*lexer).result_symbol = TokenType::EllipsisEnd as TSSymbol;
+        true
+    }
+}
+
+// Boundary evidence for a terminal `...`: uppercase, EOF, terminal
+// marks, closers and quotes — but not `; :`, dashes, lowercase or
+// openers, which continue the sentence (compare end_ahead, which also
+// excludes newlines; a trailing ellipsis may hand off across a break).
+unsafe fn ellipsis_end_ahead(lexer: *mut TSLexer) -> bool {
+    unsafe {
+        while matches!(lookahead(lexer), 0x20 | 0x09 | 0x0A | 0x0D) {
+            advance(lexer, false);
+        }
+        let c = lookahead(lexer);
+        char::from_u32(c as u32).is_some_and(|ch| ch.is_uppercase())
+            || matches!(
+                c,
+                0x3F | 0x21 | // ? !
+                0x29 | 0x5D | 0x7D | // ) ] }
+                0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+            )
+            || (*lexer).eof.expect("TSLexer::eof is null")(lexer)
+    }
+}
+
+unsafe fn scan_dot(scanner: &Scanner, lexer: *mut TSLexer, valid_symbols: *const bool) -> bool {
     unsafe {
         advance(lexer, false);
+        if lookahead(lexer) == 0x2E {
+            return scan_dot_run(lexer, valid_symbols);
+        }
         mark_end(lexer);
 
         // Spaced single-letter initial (but never a/i: real words).
@@ -308,7 +362,7 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
         if (valid(valid_symbols, TokenType::EndDot) || valid(valid_symbols, TokenType::Period))
             && lookahead(lexer) == 0x2E
         {
-            return scan_dot(scanner, lexer);
+            return scan_dot(scanner, lexer, valid_symbols);
         }
 
         if !valid(valid_symbols, TokenType::Word)
