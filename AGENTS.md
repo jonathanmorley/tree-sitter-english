@@ -103,27 +103,31 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
   greedy perceptron on UD English-EWT, dev 91.70% / test 91.79%,
   1.98 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
-  + `tag_sentence`/`tag_document` in `english-pos/src/wire.rs`; hidden
-  punctuation excluded by construction). DONE speed (2026-09-26):
-  u64 FNV-1a features + dense `[f32; 17]` rows, zero per-token alloc
-  (accuracy bit-identical: 22720/22717); tag 4288→~170 ms on Moby-Dick
-  (~450k tok/s, ~17 µs/sentence). DONE incremental:
-  `Document::update` (prefix/suffix `InputEdit` + `Tree::edit` before
-  reparse — without it reuse reads stale ranges and silently drops
-  shifted text) + `TagCache` (sentence-text key, pieces cached);
-  one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
-  reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
-  `cargo run --release -p english-pos --example bench -- <file>`.
-  Hyperparam note (resolved 2026-09-26): adopted iters=20/min-count=1
-  (dev 91.70%/test 91.79%, canonical intact). The sweep peak,
-  iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips
-  canonical "flies" VERB→NOUN (forensics: plural -s/-ies + noun-noun
-  t-1 memorization outvotes its single VERB observation in EWT; see
-  `forensics` example). w+t-1 and suf+t-1 conjunctions hurt dev at both
-  min-counts (sparse-conjunction overfit). NOT committed — needs a
-  features fix or a deliberate call on the smoke test. Plain
-  (unaveraged) perceptron beat Collins averaging here (33% vs 88%
-  pilot) — see train README.
+
+  - `tag_sentence`/`tag_document` in `english-pos/src/wire.rs`; hidden
+    punctuation excluded by construction). DONE speed (2026-09-26):
+    u64 FNV-1a features + dense `[f32; 17]` rows, zero per-token alloc
+    (accuracy bit-identical: 22720/22717); tag 4288→~170 ms on Moby-Dick
+    (~450k tok/s, ~17 µs/sentence). DONE incremental:
+    `Document::update` (prefix/suffix `InputEdit` + `Tree::edit` before
+    reparse — without it reuse reads stale ranges and silently drops
+    shifted text) + `TagCache` (sentence-text key, pieces cached);
+    one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
+    reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
+    `cargo run --release -p english-pos --example bench -- <file>`.
+    Hyperparam note (resolved 2026-09-26): adopted iters=20/min-count=1
+    (dev 91.70%/test 91.79%, canonical intact). The sweep peak,
+    iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips
+    canonical "flies" VERB→NOUN (forensics: plural -s/-ies + noun-noun
+    t-1 memorization outvotes its single VERB observation in EWT; see
+    `forensics` example). w+t-1 and suf+t-1 conjunctions hurt dev at both
+    min-counts (sparse-conjunction overfit); neither was adopted. Plain
+    (unaveraged) perceptron beat Collins averaging here (33% vs 88%
+    pilot) — see train README. Training data stays out of the repo
+    (`scripts/fetch-ud.sh` pins revisions: GUM/LinES are CC BY-NC-SA and
+    cannot ship here, EWT is CC BY-SA). Multi-treebank concat rejected
+    2026-09-26 (EWT+GUM -0.5, EWT+LinES -2.1 on EWT test: PROPN/NOUN
+    naming, AUX/VERB, DET/PRON convention conflicts — see train README).
 
 - `Clause::words()` drops subordinators (separate accessor), which
   silently loses tokens for consumers. DONE: `tokens()` iterator

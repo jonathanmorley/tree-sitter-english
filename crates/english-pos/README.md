@@ -19,7 +19,7 @@ let tags = model.tag(&["Time", "flies", "like", "an", "arrow", "."]);
 ```
 
 Wired: `english_pos::tag_sentence` parses with the `english` crate,
-reads lossless [`english::Sentence::tokens`] (no dropped subordinators
+reads lossless \[`english::Sentence::tokens`\] (no dropped subordinators
 or joiners), expands contractions into UD pieces (`don't` → `do` +
 `n't`, curly `’` normalized), and tags. Hidden punctuation (commas,
 sentence-final marks) has no grammar node and is excluded.
@@ -29,8 +29,7 @@ Demo: `cargo run -p english-pos --example tag -- <file>` prints
 
 ## Performance
 
-From `cargo run --release -p english-pos --example bench --
-<file>` on Moby-Dick (Gutenberg 2701, from `CHAPTER 1. Loomings.`
+From `cargo run --release -p english-pos --example bench -- <file>` on Moby-Dick (Gutenberg 2701, from `CHAPTER 1. Loomings.`
 onward: 1.23 MB, 10,542 sentences, 225,138 pieces; medians of 5):
 
 | Stage | Time |

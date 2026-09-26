@@ -33,6 +33,7 @@
       programs.mdformat.enable = true; # markdown
       programs.rustfmt.enable = true; # rust
       programs.taplo.enable = true; # toml
+      programs.shfmt.enable = true; # shell (scripts/fetch-ud.sh)
     };
   };
 }
