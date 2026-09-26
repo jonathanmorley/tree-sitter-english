@@ -62,6 +62,7 @@ enum TokenType {
     Subordinator = 4,
     // Appended, never reordered: must match `externals` in grammar.js.
     EllipsisEnd = 5,
+    Interruption = 6,
 }
 
 const MAX_WORD: usize = 31;
@@ -250,6 +251,90 @@ unsafe fn ellipsis_end_ahead(lexer: *mut TSLexer) -> bool {
     }
 }
 
+fn is_dash(c: i32) -> bool {
+    matches!(c, 0x2014 | 0x2013)
+}
+
+fn is_closer(c: i32) -> bool {
+    matches!(
+        c,
+        0x29 | 0x5D | 0x7D | // ) ] }
+        0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+    )
+}
+
+// Abandoned clause: an em/en-dash run (one or more, wholesale) emitted
+// only on boundary-ahead — a blank line or EOF after optional closing
+// quotes/parens, which the token absorbs (`Faith, sir, I've——` +
+// blank, `said—"` + blank, trailing run at EOF). Anywhere else
+// (clause text ahead, single newline) refuse, so the internal em_dash
+// join reading applies.
+//
+// Lexer-contract notes (see also AGENTS.md):
+// - A refusal rewinds fully (like the letter-dot-letter refusal), so
+//   probing is free: `DashRefused` returns false and the internal
+//   em_dash matches from the run start.
+// - `advance(true)` excludes chars from the token range (leading
+//   whitespace skipping); `advance(false)` includes them. The leading
+//   skip below must stay `true`, or a `NoDash` fall-through would
+//   yield space-prefixed word tokens.
+// - The caller must distinguish the refusals: `DashRefused` returns
+//   false (dash belongs to the internal join); `NoDash` falls through
+//   to word/conjunction/subordinator lexing (words are external-only —
+//   returning false there would make them unlexable).
+#[derive(PartialEq, Eq)]
+enum Interruption {
+    Emitted,
+    DashRefused,
+    NoDash,
+}
+
+unsafe fn scan_interruption(lexer: *mut TSLexer) -> Interruption {
+    unsafe {
+        while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+            advance(lexer, true);
+        }
+        if !is_dash(lookahead(lexer)) {
+            return Interruption::NoDash;
+        }
+        while is_dash(lookahead(lexer)) {
+            advance(lexer, false);
+        }
+        mark_end(lexer);
+        while is_closer(lookahead(lexer)) {
+            advance(lexer, false);
+        }
+        mark_end(lexer);
+        // Boundary-ahead: blank line, or EOF (after at most one
+        // single line break plus spaces — a trailing newline at EOF
+        // still hands off to nothing). A single break with text after
+        // it refuses: same-line semantics make that a join.
+        while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+            advance(lexer, false);
+        }
+        let c = lookahead(lexer);
+        if c == 0x0A || c == 0x0D {
+            if c == 0x0D {
+                advance(lexer, false);
+            }
+            if lookahead(lexer) == 0x0A {
+                advance(lexer, false);
+            }
+            while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+                advance(lexer, false);
+            }
+            let c2 = lookahead(lexer);
+            if c2 != 0x0A && c2 != 0x0D && !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
+                return Interruption::DashRefused;
+            }
+        } else if !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
+            return Interruption::DashRefused;
+        }
+        (*lexer).result_symbol = TokenType::Interruption as TSSymbol;
+        Interruption::Emitted
+    }
+}
+
 unsafe fn scan_dot(scanner: &Scanner, lexer: *mut TSLexer, valid_symbols: *const bool) -> bool {
     unsafe {
         advance(lexer, false);
@@ -363,6 +448,23 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             && lookahead(lexer) == 0x2E
         {
             return scan_dot(scanner, lexer, valid_symbols);
+        }
+
+        // Abandoned clause hands off at a dash run: like the dot check
+        // above, this sits before the word/conjunction/subordinator
+        // early-return, because at a clause boundary none of those are
+        // valid while the interruption may be. The outcome decides:
+        // Emitted returns true; DashRefused returns false (the run
+        // rewinds, the internal em_dash joins); NoDash falls through
+        // to word lexing below (words are external-only).
+        if valid(valid_symbols, TokenType::Interruption)
+            && (is_dash(lookahead(lexer)) || lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09)
+        {
+            match scan_interruption(lexer) {
+                Interruption::Emitted => return true,
+                Interruption::DashRefused => return false,
+                Interruption::NoDash => {}
+            }
         }
 
         if !valid(valid_symbols, TokenType::Word)

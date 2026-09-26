@@ -40,7 +40,10 @@ export default grammar({
   // replaces internal keyword extraction. `ellipsis_end` is external so
   // the scanner can tell terminal `...` (boundary ahead) from
   // mid-sentence `...` (lowercase ahead): the parser cannot, and one
-  // token in both slots is ambiguous.
+  // token in both slots is ambiguous. `_interruption` is external for
+  // the same reason: an em-dash run hands off (abandoned clause) only
+  // on boundary-ahead (blank line / EOF); mid-sentence it joins. The
+  // scanner decides by what follows.
   externals: $ => [
     $._end_dot,      // a period that ends the sentence (hidden)
     $.period,        // a period inside the sentence
@@ -48,6 +51,15 @@ export default grammar({
     $.conjunction,   // and but or nor so yet for
     $.subordinator,  // because although that which who ...
     $.ellipsis_end,  // `...` before a boundary (aliased to ellipsis)
+    // Abandoned clause: an em-dash run (one or more, wholesale, like
+    // `ellipsis_end` on 4+ dots) whose only sequel is a boundary. The
+    // scanner absorbs trailing closing quotes/parens into the token and
+    // emits it solely on boundary-ahead (blank line / EOF); anywhere
+    // else the internal `em_dash` join reading holds. Aliased to
+    // `em_dash` at the use site like the trailing handoff dash, so
+    // queries see one dash kind. A complete parenthetical followed by
+    // an interruption (`(...)——`) is not covered (residual).
+    $._interruption,
   ],
 
   rules: {
@@ -79,7 +91,14 @@ export default grammar({
           seq($.em_dash, choice($.clause, $.subordinate_clause)),
           $.subordinate_clause
         )),
-        $._sentence_end
+        // A sentence ends at a mark — or at an abandoned clause: an
+        // em-dash run with only a boundary after it (`Faith, sir,
+        // I've——` + blank). The two ends take disjoint first sets
+        // (marks vs the interruption token), so no conflict. The
+        // interruption aliases to `em_dash` inline (same as
+        // `ellipsis_end` → `ellipsis`): no wrapper rule, so queries
+        // see one dash kind.
+        choice($._sentence_end, alias($._interruption, $.em_dash))
       ),
       // A parenthetical carrying its own end mark is a complete
       // sentence: the mark cannot also terminate an outer sentence,
@@ -158,6 +177,7 @@ export default grammar({
     semicolon: $ => ';',
     colon: $ => ':',
     em_dash: $ => /—|–/,
+
 
     // Quote marks, visible inside clauses so they are queryable.
     quote: $ => /["'\u2018\u2019\u201C\u201D]/,

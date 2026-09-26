@@ -61,6 +61,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   a zero-length `subordinator`). Same reason the dot/apostrophe/hyphen
   branches advance-then-break: the lexer rewinds to the mark on
   success, so over-consumed tail chars are re-lexed, not lost.
+- External-scanner refusal rewinds fully (letter-dot-letter precedent),
+  but the *caller* still decides: `DashRefused` (dash consumed, no
+  boundary) must `return false` so the internal token matches from the
+  run start; `NoDash` (spaces only) must FALL THROUGH to word lexing,
+  because words are external-only and unreachable after a `false`.
+  Returning false at a word position, or falling through past a
+  consumed dash, both silently corrupt the tree (observed as vanished
+  words, a swallowed em-dash joining two clauses, and 50+ corpus
+  failures). `advance(true)` excludes chars from the token range
+  (leading-whitespace skipping); `advance(false)` includes them — a
+  `NoDash` fall-through with false-skipped spaces yields
+  space-prefixed word tokens.
 - Corpus tests are TDD: add the failing expectation to
   `test/corpus/*.txt` first. Note the input model: lines strictly
   between the header and `---` are joined verbatim, so N blank lines
@@ -97,7 +109,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus
-  tests, same as the hyphen slice.
+  tests, same as the hyphen slice. DONE interruptions 2026-09-26:
+  external `_interruption` token (dash run + absorbed closers, emitted
+  only on blank/EOF — same arbitration as `ellipsis_end`), sentence
+  alternative aliased to `em_dash`, zero `generate` conflicts. Audit
+  prose errors 35→30, verify 22→15. Remaining dash errors are
+  transcription fallout (`rises_.)`). NOTE: generated with the flake's
+  0.26.11 CLI (npx 0.27.0 binary needs GLIBC_2.39, absent here); ABI
+  still 15 and the full suite is green, but `src/parser.c` carries
+  0.26-vs-0.27 generator churn — regenerate with pinned 0.27.0 when
+  the toolchain allows and confirm the diff collapses to the feature.
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,

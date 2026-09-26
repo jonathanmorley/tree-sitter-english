@@ -208,8 +208,22 @@
               }
             },
             {
-              "type": "SYMBOL",
-              "name": "_sentence_end"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_sentence_end"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_interruption"
+                  },
+                  "named": true,
+                  "value": "em_dash"
+                }
+              ]
             }
           ]
         },
@@ -514,6 +528,10 @@
     {
       "type": "SYMBOL",
       "name": "ellipsis_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_interruption"
     }
   ],
   "inline": [],

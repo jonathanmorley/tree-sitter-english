@@ -342,3 +342,69 @@ The Spouter Inn:—Peter Coffin.
       (clause
         (word)
         (word)))))
+
+==================
+Interrupted speech ends the sentence at a blank line
+==================
+
+Faith, sir, I've——
+
+Faith?
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)))))
+
+==================
+Interruption before a closing quote and a blank line
+==================
+
+He said—”
+
+She left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Interruption at end of input
+==================
+
+He was caught in——
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word))
+      (em_dash))))

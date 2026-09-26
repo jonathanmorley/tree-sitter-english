@@ -18,7 +18,8 @@ The grammar marks three levels of structure.
   `till`, `whenever`, `where`, `whereas`, `wherever`, and `whether` start
   subordinate clauses.
 - Clause punctuation. A semicolon joins two coordinate clauses. A colon
-  or an em dash introduces an elaborating clause. Both produce visible
+  or an em dash introduces an elaborating clause. A sentence abandoned
+  at an em dash hands off at a blank line. All produce visible
   node types.
 - Quote marks. The grammar accepts ASCII and curly quotes. Curly
   apostrophes in possessives such as `ship's` lex as part of the word.
