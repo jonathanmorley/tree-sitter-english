@@ -126,8 +126,11 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     pilot) — see train README. Training data stays out of the repo
     (`scripts/fetch-ud.sh` pins revisions: GUM/LinES are CC BY-NC-SA and
     cannot ship here, EWT is CC BY-SA). Multi-treebank concat rejected
-    2026-09-26 (EWT+GUM -0.5, EWT+LinES -2.1 on EWT test: PROPN/NOUN
-    naming, AUX/VERB, DET/PRON convention conflicts — see train README).
+    2026-09-26, and mechanical harmonization
+    (`scripts/harmonize-ud.mjs`, rules M1–M6 + J3) recovers only ~0.4
+    of ~1.9 points — remainder is domain divergence plus deferred items
+    (participles, name parts). EWT-only stands; full record in
+    `crates/english-pos-train/CANONICAL.md`).
 
 - `Clause::words()` drops subordinators (separate accessor), which
   silently loses tokens for consumers. DONE: `tokens()` iterator

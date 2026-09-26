@@ -71,6 +71,28 @@ fn sentence_pieces_keep_joiners() {
 }
 
 #[test]
+fn sentence_pieces_merge_abbreviation_dots() {
+    // UD keeps abbreviation dots attached (EWT `Mr.` is one token).
+    let doc = first_sentence("Mr. Smith arrived.\n");
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert_eq!(
+        sentence_pieces(&sent),
+        vec![
+            "Mr.".to_string(),
+            "Smith".to_string(),
+            "arrived".to_string()
+        ]
+    );
+
+    let doc = first_sentence("J. Smith arrived.\n");
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert_eq!(
+        sentence_pieces(&sent),
+        vec!["J.".to_string(), "Smith".to_string(), "arrived".to_string()]
+    );
+}
+
+#[test]
 fn sentence_pieces_split_contractions() {
     let doc = first_sentence("I don't know.\n");
     let sent = doc.paragraphs()[0].sentences()[0];

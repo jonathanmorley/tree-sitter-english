@@ -27,6 +27,7 @@
         "Package.swift" # generated
         "Makefile" # generated
         "CMakeLists.txt" # generated
+        "scripts/harmonize-ud.mjs" # node transform, no JS formatter configured
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

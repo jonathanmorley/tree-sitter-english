@@ -89,7 +89,7 @@ pub fn token_pieces(token: &english::Token) -> Vec<String> {
 
 /// UD-style pieces for a parsed clause, in order.
 pub fn clause_pieces(clause: &english::Clause) -> Vec<String> {
-    clause.tokens().iter().flat_map(token_pieces).collect()
+    collect_pieces(&clause.tokens())
 }
 
 /// UD-style pieces for a parsed sentence, in order.
@@ -97,8 +97,40 @@ pub fn clause_pieces(clause: &english::Clause) -> Vec<String> {
 /// Includes clause joiners (`and`, `;`, `:`, `—`, …) via
 /// [`english::Sentence::tokens`]; hidden punctuation (commas,
 /// sentence-final marks) is excluded.
+///
+/// Abbreviation dots merge into the preceding word (`Mr` + `.` →
+/// `Mr.`), matching UD tokenization, which keeps them attached
+/// (EWT `Mr.` is one token). Sentence-final dots need no merge: the
+/// grammar hides them, and UD splits those off as PUNCT (out of
+/// scope — pieces exclude all terminal punctuation by design).
 pub fn sentence_pieces(sentence: &english::Sentence) -> Vec<String> {
-    sentence.tokens().iter().flat_map(token_pieces).collect()
+    collect_pieces(&sentence.tokens())
+}
+
+/// Expand tokens to pieces, merging in-sentence `period` into a
+/// byte-adjacent preceding `Word`/`Dotted` token.
+fn collect_pieces(tokens: &[english::Token]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    // End byte + wordishness of the previous token, for dot merging.
+    let mut prev: Option<(usize, bool)> = None;
+    for tok in tokens {
+        let span = tok.span();
+        if tok.kind() == english::TokenKind::Period
+            && matches!(prev, Some((end, true)) if end == span.start)
+            && let Some(last) = out.last_mut()
+        {
+            last.push_str(tok.text());
+            prev = Some((span.end, false));
+            continue;
+        }
+        let wordish = matches!(
+            tok.kind(),
+            english::TokenKind::Word | english::TokenKind::Dotted
+        );
+        out.extend(token_pieces(tok));
+        prev = Some((span.end, wordish));
+    }
+    out
 }
 
 /// Tag a parsed clause: `(surface piece, tag)` pairs in order.
