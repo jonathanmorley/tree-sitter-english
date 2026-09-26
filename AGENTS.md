@@ -115,6 +115,12 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
     reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
     `cargo run --release -p english-pos --example bench -- <file>`.
+    DONE moby prose eval (2026-09-26): `tests/moby.rs` gains 19
+    hand-tagged sentences from Moby-Dick ch.1-2 (~190 tokens, bar
+    0.84; measured 0.87 with 24 misses: titlecase OOV both directions,
+    preposition-chain collapse, -s/imperative verbs, this-DET
+    cascades). Oracle calls documented in-file; next oracle-train data
+    works from this eval.
     DONE verify (2026-09-26): `verify` example (parse + `tag_margins`
     coherence checks: error / no-predicate / joiner kinds, transcription
     bucketing, title/fragment excuses, lowest-margin review list).
