@@ -42,3 +42,16 @@ Interactive edits avoid the full pass: `Document::update` re-parses
 incrementally (~18 ms) and `TagCache` retags only changed sentences
 (one-word edit: 29 ms, 10,541 hits / 1 miss). Keystroke path ≈ 47 ms
 on book-size input.
+
+## Verification
+
+`cargo run -p english-pos --example verify -- [files...]` parses,
+tags (`Model::tag_margins`), and reports incoherent sentences:
+`error` (ERROR/MISSING nodes, transcription `_`/`*` bucketed
+separately), `no-predicate` (verbless multi-word runs outside
+fragments, titles, and headings), `joiner` (leading `;`/`:`), plus
+the lowest-margin (most ambiguous) sentences for review. On Moby-Dick
+it surfaces real tagger misses (`wears`/`glitters`→NOUN,
+imperatives→NOUN) alongside grammar gaps (em-dash interruptions,
+dialogue) — the former feed accuracy work, the latter the grammar
+backlog. Exit status is always 0 (analysis tool, not a gate).

@@ -149,6 +149,15 @@ impl<'a> Sentence<'a> {
         clauses
     }
 
+    /// True when this sentence's subtree contains ERROR or MISSING nodes.
+    ///
+    /// Walks all children (not just named ones), so hidden-rule
+    /// recoveries are included — unlike a named-only walk, which never
+    /// yields MISSING aux symbols (see AGENTS.md).
+    pub fn has_error(&self) -> bool {
+        subtree_has_error(self.node)
+    }
+
     /// Every visible terminal in this sentence, in order, with no drops.
     ///
     /// This flattens clause joiners (`conjunction`, `semicolon`, `colon`,
@@ -199,6 +208,12 @@ impl<'a> Clause<'a> {
     /// True for `subordinate_clause` (introduced by a subordinator).
     pub fn is_subordinate(&self) -> bool {
         self.node.kind() == "subordinate_clause"
+    }
+
+    /// True when this clause's subtree contains ERROR or MISSING nodes.
+    /// See [`Sentence::has_error`] for walk semantics.
+    pub fn has_error(&self) -> bool {
+        subtree_has_error(self.node)
     }
 
     /// The introducing subordinator (`because`, `who`, …), if any.
@@ -382,6 +397,17 @@ fn push_clause_tokens<'a>(node: Node<'a>, source: &'a str, out: &mut Vec<Token<'
 fn named_children(node: Node<'_>) -> Vec<Node<'_>> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor).collect()
+}
+
+/// True when `node` or any descendant (named or anonymous) is ERROR or
+/// MISSING. Anonymous children matter: MISSING nodes for hidden-rule
+/// aux symbols never appear in named iteration.
+fn subtree_has_error(node: Node<'_>) -> bool {
+    if node.is_error() || node.is_missing() {
+        return true;
+    }
+    let mut cursor = node.walk();
+    node.children(&mut cursor).any(subtree_has_error)
 }
 
 fn children_of_kind<'a>(node: Node<'a>, kind: &str) -> Vec<Node<'a>> {

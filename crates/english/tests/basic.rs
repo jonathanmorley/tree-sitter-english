@@ -174,3 +174,17 @@ fn update_reparses_incrementally() {
     let texts: Vec<_> = words.iter().map(|w| w.text()).collect();
     assert_eq!(texts, ["Hello", "brave", "world"]);
 }
+
+#[test]
+fn sentence_and_clause_report_errors() {
+    let doc = Document::parse("Hello world.\n");
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert!(!sent.has_error());
+    assert!(!sent.clauses()[0].has_error());
+
+    // `_` is outside the grammar: an ERROR node inside the sentence.
+    let doc = Document::parse("Hello _ world.\n");
+    assert!(doc.has_error());
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert!(sent.has_error());
+}

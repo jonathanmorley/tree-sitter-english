@@ -115,6 +115,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
     reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
     `cargo run --release -p english-pos --example bench -- <file>`.
+    DONE verify (2026-09-26): `verify` example (parse + `tag_margins`
+    coherence checks: error / no-predicate / joiner kinds, transcription
+    bucketing, title/fragment excuses, lowest-margin review list).
+    Needs `Sentence::has_error`/`Clause::has_error` (full-subtree walk,
+    anonymous children included) and `Model::tag_margins` (best minus
+    runner-up). On Moby-Dick it finds real tagger misses (3sg `-s`
+    verbs → NOUN, imperatives → NOUN) and grammar gaps (fed to the
+    em-dash/parenthetical backlog below). Exit 0 by design (analysis,
+    not a gate).
     Hyperparam note (resolved 2026-09-26): adopted iters=20/min-count=1
     (dev 91.70%/test 91.79%, canonical intact). The sweep peak,
     iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips

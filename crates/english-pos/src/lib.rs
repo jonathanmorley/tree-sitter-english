@@ -169,12 +169,26 @@ impl Model {
     /// internally; shape features read the raw forms). Steady-state
     /// allocation: none per token (scratch buffer reused).
     pub fn tag<S: AsRef<str>>(&self, words: &[S]) -> Vec<Tag> {
+        self.decode(words).0
+    }
+
+    /// Decode like [`Model::tag`], pairing each tag with its margin:
+    /// best score minus runner-up score (≥ 0). Tiny margins mark
+    /// genuinely ambiguous tokens — the `verify` example surfaces the
+    /// lowest-margin sentences instead of failing them.
+    pub fn tag_margins<S: AsRef<str>>(&self, words: &[S]) -> Vec<(Tag, f32)> {
+        let (tags, margins) = self.decode(words);
+        tags.into_iter().zip(margins).collect()
+    }
+
+    fn decode<S: AsRef<str>>(&self, words: &[S]) -> (Vec<Tag>, Vec<f32>) {
         let lower: Vec<String> = words.iter().map(|w| w.as_ref().to_lowercase()).collect();
         let raw: Vec<String> = words.iter().map(|w| w.as_ref().to_string()).collect();
         let mut prev1 = START1.to_string();
         let mut prev2 = START2.to_string();
         let mut feats = Vec::with_capacity(20);
-        let mut out = Vec::with_capacity(words.len());
+        let mut tags = Vec::with_capacity(words.len());
+        let mut margins = Vec::with_capacity(words.len());
         for i in 0..words.len() {
             features(&raw, &lower, i, &prev1, &prev2, &mut feats);
             let mut acc = [0.0f32; 17];
@@ -185,18 +199,23 @@ impl Model {
                     }
                 }
             }
-            // Strict `>` keeps the fixed TAGS order as tie-break,
-            // matching the old per-tag scoring.
+            // Single pass tracks best and runner-up; strict `>` keeps
+            // the fixed TAGS order as tie-break.
             let mut best = 0;
+            let mut second = f32::NEG_INFINITY;
             for t in 1..17 {
                 if acc[t] > acc[best] {
+                    second = acc[best];
                     best = t;
+                } else if acc[t] > second {
+                    second = acc[t];
                 }
             }
-            out.push(Tag::from_upos(TAGS[best]).expect("fixed tag list is valid"));
+            tags.push(Tag::from_upos(TAGS[best]).expect("fixed tag list is valid"));
+            margins.push(acc[best] - second);
             prev2 = std::mem::replace(&mut prev1, TAGS[best].to_string());
         }
-        out
+        (tags, margins)
     }
 
     /// Per-tag weights for one feature id, or `None` when the feature

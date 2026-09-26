@@ -50,3 +50,24 @@ fn tag_enum_roundtrips() {
     assert_eq!(Tag::Noun.upos(), "NOUN");
     assert_eq!(Tag::from_upos("BOGUS"), None);
 }
+
+#[test]
+fn tag_margins_agree_with_tags() {
+    let model = Model::from_json(include_str!("../weights/upos.json")).unwrap();
+    let words = ["Time", "flies", "like", "an", "arrow", "."];
+    let tags = model.tag(&words);
+    let margined = model.tag_margins(&words);
+    assert_eq!(margined.len(), tags.len());
+    for ((t, m), expected) in margined.iter().zip(&tags) {
+        assert_eq!(t, expected);
+        assert!(*m >= 0.0, "margin is best minus runner-up");
+        assert!(m.is_finite());
+    }
+    // Ambiguous `flies` decodes less confidently than closed-class `an`.
+    let flies_margin = margined[1].1;
+    let an_margin = margined[3].1;
+    assert!(
+        flies_margin < an_margin,
+        "flies {flies_margin} vs an {an_margin}"
+    );
+}
