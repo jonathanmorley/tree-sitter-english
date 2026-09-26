@@ -1,7 +1,7 @@
 //! Wiring tests: parse prose with the `english` crate, convert to UD
 //! pieces, and tag with the committed weights.
 //!
-//! The model itself is unchanged (dev 90.35% / test 90.53% on UD EWT;
+//! The model itself is unchanged (dev 91.70% / test 91.79% on UD EWT;
 //! Moby-Dick sample bar ~80%), so these tests pin the wiring behavior:
 //! no silently dropped tokens, UD contraction splits, and sane tags on
 //! canonical input.

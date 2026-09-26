@@ -101,8 +101,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
-  greedy perceptron on UD English-EWT, dev 90.35% / test 90.53%,
-  1.51 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
+  greedy perceptron on UD English-EWT, dev 91.70% / test 91.79%,
+  1.98 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
   + `tag_sentence`/`tag_document` in `english-pos/src/wire.rs`; hidden
   punctuation excluded by construction). DONE speed (2026-09-26):
   u64 FNV-1a features + dense `[f32; 17]` rows, zero per-token alloc
@@ -114,12 +114,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
   reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
   `cargo run --release -p english-pos --example bench -- <file>`.
-  Hyperparam note: iters=15/min-count=1 reaches dev 92.09/test 91.85
-  but flips canonical "flies" VERB→NOUN (suffix memorization; "flies"
-  is 1× VERB in EWT); w+t-1 and suf+t-1 conjunctions hurt dev at both
-  min-counts. NOT committed — needs a features fix or a deliberate
-  call on the smoke test. Plain (unaveraged) perceptron beat
-  Collins averaging here (33% vs 88% pilot) — see train README.
+  Hyperparam note (resolved 2026-09-26): adopted iters=20/min-count=1
+  (dev 91.70%/test 91.79%, canonical intact). The sweep peak,
+  iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips
+  canonical "flies" VERB→NOUN (forensics: plural -s/-ies + noun-noun
+  t-1 memorization outvotes its single VERB observation in EWT; see
+  `forensics` example). w+t-1 and suf+t-1 conjunctions hurt dev at both
+  min-counts (sparse-conjunction overfit). NOT committed — needs a
+  features fix or a deliberate call on the smoke test. Plain
+  (unaveraged) perceptron beat Collins averaging here (33% vs 88%
+  pilot) — see train README.
 
 - `Clause::words()` drops subordinators (separate accessor), which
   silently loses tokens for consumers. DONE: `tokens()` iterator

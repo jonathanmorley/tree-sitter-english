@@ -39,7 +39,13 @@ const FNV_PRIME: u64 = 0x100000001b3;
 
 /// Hash one feature template: `discriminant` namespaces the template,
 /// `parts` are fed with separators so ("ab","c") != ("a","bc").
-fn hash_feature(discriminant: u8, parts: &[&str]) -> u64 {
+/// Public so forensics tooling can re-derive the id of any template
+/// and look up its weights (hashes are one-way; re-derivation is the
+/// only way back). Discriminants used by [`features`]: `0x10` word,
+/// `0x11` prev word, `0x12` next word, `0x13`/`0x14` prev tags,
+/// `0x15` tag bigram, `0x21`-`0x23` prefixes 1-3, `0x25`-`0x27`
+/// suffixes 1-3.
+pub fn hash_feature(discriminant: u8, parts: &[&str]) -> u64 {
     let mut h = FNV_OFFSET_BASIS;
     h ^= discriminant as u64;
     h = h.wrapping_mul(FNV_PRIME);
@@ -191,6 +197,13 @@ impl Model {
             prev2 = std::mem::replace(&mut prev1, TAGS[best].to_string());
         }
         out
+    }
+
+    /// Per-tag weights for one feature id, or `None` when the feature
+    /// never survived training. Introspection for forensics tooling
+    /// (re-derive ids with [`hash_feature`]); decoding never calls this.
+    pub fn feature_weights(&self, id: u64) -> Option<[f32; 17]> {
+        self.weights.get(&id).copied()
     }
 
     /// Deserialize weights written by the trainer. Unknown tag codes are

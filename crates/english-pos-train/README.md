@@ -7,12 +7,18 @@ Fetches nothing: point it at a Universal Dependencies checkout
 
 ```sh
 cargo run --release -p english-pos-train -- \
-  --corpus /tmp/ud --iters 10 --min-count 2
+  --corpus /tmp/ud --iters 20 --min-count 1
 ```
 
 Trains on `en_ewt-ud-train.conllu`, reports dev/test accuracy, and
-writes `../english-pos/weights/upos.json`. Re-evaluate committed
-weights any time with `--eval-only test` (or `dev`).
+writes `../english-pos/weights/upos.json` (committed: dev 91.70%,
+test 91.79%, 1.98 MB). Re-evaluate committed weights any time with
+`--eval-only test` (or `dev`). Hyperparams are dev-selected: a sweep
+over iters {5,10,15,20,30} × min-count {1,2} peaked at iters=15 /
+min-count=1 (dev 92.09%) but flipped canonical "flies" VERB→NOUN
+(suffix memorization beats its single VERB observation in EWT), so
+iters=20 / min-count=1 was adopted instead (dev 91.70%, canonical
+intact). See AGENTS.md.
 
 Notes:
 
