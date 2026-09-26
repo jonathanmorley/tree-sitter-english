@@ -408,3 +408,69 @@ He was caught in——
         (word)
         (word))
       (em_dash))))
+
+==================
+Colon plus em-dash hands off at a blank line
+==================
+
+something like this:—
+
+Quohog mark.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (colon)
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Colon hands off at a blank line
+==================
+
+He said:
+
+Hello there.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (colon)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Colon hands off at end of input
+==================
+
+Take notes:
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (colon))))

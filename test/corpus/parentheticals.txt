@@ -56,3 +56,114 @@ I saw it (the truth) clearly.
             (word)
             (word)))
         (word)))))
+
+==================
+Parenthetical inside a subordinate clause
+==================
+
+The kind came in, which (as I was informed), besides oil, did afford baleen.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (parenthetical
+          (subordinate_clause
+            (subordinator)
+            (word)
+            (word)
+            (word)))
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Plain parenthetical inside a subordinate clause
+==================
+
+He left although (to be frank) he was tired.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (parenthetical
+          (clause
+            (word)
+            (word)
+            (word)))
+        (word)
+        (word)
+        (word)))))
+
+==================
+Semicolon joins clauses inside a parenthetical
+==================
+
+They stayed (it will do; it is easy).
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (parenthetical
+          (clause
+            (word)
+            (word)
+            (word))
+          (semicolon)
+          (clause
+            (word)
+            (word)
+            (word)))))))
+
+==================
+Em-dash joins clauses inside a parenthetical
+==================
+
+They left (he rang the bell; she—half asleep—answered).
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (parenthetical
+          (clause
+            (word)
+            (word)
+            (word)
+            (word))
+          (semicolon)
+          (clause
+            (word))
+          (em_dash)
+          (clause
+            (word)
+            (word))
+          (em_dash)
+          (clause
+            (word)))))))

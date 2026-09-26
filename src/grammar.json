@@ -222,6 +222,33 @@
                   },
                   "named": true,
                   "value": "em_dash"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "colon"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_interruption"
+                      },
+                      "named": true,
+                      "value": "em_dash"
+                    }
+                  ]
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_colon_handoff"
+                  },
+                  "named": true,
+                  "value": "colon"
                 }
               ]
             }
@@ -345,6 +372,58 @@
           ]
         },
         {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "semicolon"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "clause"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "subordinate_clause"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "em_dash"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "clause"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "subordinate_clause"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
           "type": "STRING",
           "value": ")"
         }
@@ -423,6 +502,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "subordinate_clause"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "parenthetical"
                 },
                 {
                   "type": "SYMBOL",
@@ -532,6 +615,10 @@
     {
       "type": "SYMBOL",
       "name": "_interruption"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_colon_handoff"
     }
   ],
   "inline": [],

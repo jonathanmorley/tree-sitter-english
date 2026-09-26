@@ -52,6 +52,24 @@ It was good but costly.
         (word)))))
 
 ==================
+Compound with "&"
+==================
+
+Enderby & Sons came.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word))
+      (conjunction)
+      (clause
+        (word)
+        (word)))))
+
+==================
 Subordinate clause with "because"
 ==================
 

@@ -109,16 +109,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus
-  tests, same as the hyphen slice. DONE interruptions 2026-09-26:
-  external `_interruption` token (dash run + absorbed closers, emitted
-  only on blank/EOF — same arbitration as `ellipsis_end`), sentence
-  alternative aliased to `em_dash`, zero `generate` conflicts. Audit
-  prose errors 35→30, verify 22→15. Remaining dash errors are
-  transcription fallout (`rises_.)`). NOTE: generated with the flake's
-  0.26.11 CLI (npx 0.27.0 binary needs GLIBC_2.39, absent here); ABI
-  still 15 and the full suite is green, but `src/parser.c` carries
-  0.26-vs-0.27 generator churn — regenerate with pinned 0.27.0 when
-  the toolchain allows and confirm the diff collapses to the feature.
+  tests, same as the hyphen slice. DONE 2026-09-26, in slices:
+  (a) interruptions (external `_interruption`, dash run + absorbed
+  closers on blank/EOF, sentence alternative aliased to `em_dash`);
+  (b) colon+dash handoff (`this:—` + blank, same token after an
+  internal colon); (c) colon handoff (external `_colon_handoff`,
+  aliased to `colon`; times like `10:30` refuse, unchanged);
+  (d) parentheticals inside subordinate clauses; (e) `;`- and em-dash
+  joins inside parentheticals; (f) `&` as conjunction where valid;
+  (g) apostrophe-hyphen elisions (`sou'-wester`). Audit prose errors
+  35→9, verify 15→4; every residual is front/back matter, epitaphs,
+  speaker labels, stage directions with markup, or transcription
+  fallout — no in-scope book-prose error remains except deferred
+  items. Residuals deliberately left: leading-dash dialogue, `10:30`
+  times, complete-parenthetical interiors without joins, `R&D`-style
+  mid-clause `&`.
+  NOTE: generated with the flake's 0.26.11 CLI (npx 0.27.0 binary needs
+  GLIBC_2.39, absent here); ABI still 15 and the full suite is green,
+  but `src/parser.c` carries 0.26-vs-0.27 generator churn — regenerate
+  with pinned 0.27.0 when the toolchain allows and confirm the diff
+  collapses to the feature.
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,

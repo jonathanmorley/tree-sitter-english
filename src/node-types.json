@@ -81,11 +81,19 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "clause",
+          "named": true
+        },
+        {
+          "type": "em_dash",
+          "named": true
+        },
+        {
+          "type": "semicolon",
           "named": true
         },
         {
@@ -184,6 +192,10 @@
         },
         {
           "type": "number",
+          "named": true
+        },
+        {
+          "type": "parenthetical",
           "named": true
         },
         {

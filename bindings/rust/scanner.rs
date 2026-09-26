@@ -63,6 +63,7 @@ enum TokenType {
     // Appended, never reordered: must match `externals` in grammar.js.
     EllipsisEnd = 5,
     Interruption = 6,
+    ColonHandoff = 7,
 }
 
 const MAX_WORD: usize = 31;
@@ -263,39 +264,43 @@ fn is_closer(c: i32) -> bool {
     )
 }
 
+// Outcome of probing for a boundary-handoff token: the scanner
+// arbitrates where the grammar cannot — a mark with only a boundary
+// after it ends the sentence, while text after it continues the
+// join/elaboration.
+//
+// Lexer-contract notes (see also AGENTS.md):
+// - A refusal rewinds fully (like the letter-dot-letter refusal), so
+//   probing is free: `Refused` returns false and the internal token
+//   matches from the mark start.
+// - `advance(true)` excludes chars from the token range (leading
+//   whitespace skipping); `advance(false)` includes them. Leading
+//   skips below must stay `true`, or an `Absent` fall-through would
+//   yield space-prefixed word tokens.
+// - The caller must distinguish the refusals: `Refused` (mark seen,
+//   text ahead) returns false; `Absent` (no mark seen) falls through
+//   to word/conjunction/subordinator lexing (words are external-only —
+//   returning false there would make them unlexable).
+#[derive(PartialEq, Eq)]
+enum Handoff {
+    Emitted,
+    Refused,
+    Absent,
+}
+
 // Abandoned clause: an em/en-dash run (one or more, wholesale) emitted
 // only on boundary-ahead — a blank line or EOF after optional closing
 // quotes/parens, which the token absorbs (`Faith, sir, I've——` +
 // blank, `said—"` + blank, trailing run at EOF). Anywhere else
 // (clause text ahead, single newline) refuse, so the internal em_dash
 // join reading applies.
-//
-// Lexer-contract notes (see also AGENTS.md):
-// - A refusal rewinds fully (like the letter-dot-letter refusal), so
-//   probing is free: `DashRefused` returns false and the internal
-//   em_dash matches from the run start.
-// - `advance(true)` excludes chars from the token range (leading
-//   whitespace skipping); `advance(false)` includes them. The leading
-//   skip below must stay `true`, or a `NoDash` fall-through would
-//   yield space-prefixed word tokens.
-// - The caller must distinguish the refusals: `DashRefused` returns
-//   false (dash belongs to the internal join); `NoDash` falls through
-//   to word/conjunction/subordinator lexing (words are external-only —
-//   returning false there would make them unlexable).
-#[derive(PartialEq, Eq)]
-enum Interruption {
-    Emitted,
-    DashRefused,
-    NoDash,
-}
-
-unsafe fn scan_interruption(lexer: *mut TSLexer) -> Interruption {
+unsafe fn scan_interruption(lexer: *mut TSLexer) -> Handoff {
     unsafe {
         while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
             advance(lexer, true);
         }
         if !is_dash(lookahead(lexer)) {
-            return Interruption::NoDash;
+            return Handoff::Absent;
         }
         while is_dash(lookahead(lexer)) {
             advance(lexer, false);
@@ -325,13 +330,55 @@ unsafe fn scan_interruption(lexer: *mut TSLexer) -> Interruption {
             }
             let c2 = lookahead(lexer);
             if c2 != 0x0A && c2 != 0x0D && !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
-                return Interruption::DashRefused;
+                return Handoff::Refused;
             }
         } else if !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
-            return Interruption::DashRefused;
+            return Handoff::Refused;
         }
         (*lexer).result_symbol = TokenType::Interruption as TSSymbol;
-        Interruption::Emitted
+        Handoff::Emitted
+    }
+}
+
+// Abandoned elaboration: a colon with only a boundary after it
+// (`He said:` + blank, trailing colon at EOF). Same arbitration as
+// the interruption: text after the colon refuses (internal colon
+// elaborates), so this fires exactly where elaboration is
+// impossible. The colon itself is the token (single char, no run,
+// no closers — closers after a colon belong to the elaboration).
+unsafe fn scan_colon_handoff(lexer: *mut TSLexer) -> Handoff {
+    unsafe {
+        while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+            advance(lexer, true);
+        }
+        if lookahead(lexer) != 0x3A {
+            return Handoff::Absent;
+        }
+        advance(lexer, false);
+        mark_end(lexer);
+        while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+            advance(lexer, false);
+        }
+        let c = lookahead(lexer);
+        if c == 0x0A || c == 0x0D {
+            if c == 0x0D {
+                advance(lexer, false);
+            }
+            if lookahead(lexer) == 0x0A {
+                advance(lexer, false);
+            }
+            while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+                advance(lexer, false);
+            }
+            let c2 = lookahead(lexer);
+            if c2 != 0x0A && c2 != 0x0D && !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
+                return Handoff::Refused;
+            }
+        } else if !(*lexer).eof.expect("TSLexer::eof is null")(lexer) {
+            return Handoff::Refused;
+        }
+        (*lexer).result_symbol = TokenType::ColonHandoff as TSSymbol;
+        Handoff::Emitted
     }
 }
 
@@ -454,16 +501,29 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
         // above, this sits before the word/conjunction/subordinator
         // early-return, because at a clause boundary none of those are
         // valid while the interruption may be. The outcome decides:
-        // Emitted returns true; DashRefused returns false (the run
-        // rewinds, the internal em_dash joins); NoDash falls through
-        // to word lexing below (words are external-only).
+        // Emitted returns true; Refused returns false (the run rewinds,
+        // the internal em_dash joins); Absent falls through to word
+        // lexing below (words are external-only).
         if valid(valid_symbols, TokenType::Interruption)
             && (is_dash(lookahead(lexer)) || lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09)
         {
             match scan_interruption(lexer) {
-                Interruption::Emitted => return true,
-                Interruption::DashRefused => return false,
-                Interruption::NoDash => {}
+                Handoff::Emitted => return true,
+                Handoff::Refused => return false,
+                Handoff::Absent => {}
+            }
+        }
+
+        // Abandoned elaboration hands off at a colon: same placement
+        // and outcome discipline as the interruption above. A colon
+        // with text after it refuses (internal colon elaborates).
+        if valid(valid_symbols, TokenType::ColonHandoff)
+            && (lookahead(lexer) == 0x3A || lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09)
+        {
+            match scan_colon_handoff(lexer) {
+                Handoff::Emitted => return true,
+                Handoff::Refused => return false,
+                Handoff::Absent => {}
             }
         }
 
@@ -472,6 +532,26 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             && !valid(valid_symbols, TokenType::Subordinator)
         {
             return false;
+        }
+
+        // `&` joins like `and` (Enderby & Sons) where conjunctions are
+        // valid — the closed-class discipline (emit only where the
+        // grammar allows). Spaces skipped with advance(true) so a miss
+        // falls through to word lexing below with a clean token start;
+        // never `return false` here (words are external-only). Plain
+        // clause interiors disallow conjunctions, so mid-clause `&`
+        // (R&D) keeps erroring there; subordinate interiors accept it
+        // as a join, which reads fine.
+        if valid(valid_symbols, TokenType::Conjunction) {
+            while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+                advance(lexer, true);
+            }
+            if lookahead(lexer) == 0x26 {
+                advance(lexer, false);
+                mark_end(lexer);
+                (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
+                return true;
+            }
         }
 
         let mut paragraph_break_ahead = false;
@@ -530,6 +610,24 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                         len += 1;
                     }
                     continue;
+                }
+                // Elided compound (sou'-wester): apostrophe-hyphen-letter
+                // all belong to the word. A hyphen-then-junk breaks
+                // instead; the rewind-to-mark on success re-lexes from
+                // the apostrophe, so nothing is lost.
+                if lookahead(lexer) == 0x2D {
+                    advance(lexer, false);
+                    if is_word_char(lookahead(lexer)) {
+                        if len < MAX_WORD {
+                            buf[len] = b'\'';
+                            len += 1;
+                        }
+                        if len < MAX_WORD {
+                            buf[len] = b'-';
+                            len += 1;
+                        }
+                        continue;
+                    }
                 }
                 break; // trailing apostrophe stays outside the token
             }

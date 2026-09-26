@@ -60,6 +60,12 @@ export default grammar({
     // queries see one dash kind. A complete parenthetical followed by
     // an interruption (`(...)——`) is not covered (residual).
     $._interruption,
+    // Abandoned elaboration: a colon with only a boundary after it
+    // (`He said:` + blank). Same arbitration: text after the colon
+    // refuses (internal colon elaborates). Aliased to `colon` at the
+    // use site. Times (`10:30`) are untouched: digits after the colon
+    // refuse, and mid-clause colons were errors before too.
+    $._colon_handoff,
   ],
 
   rules: {
@@ -93,12 +99,21 @@ export default grammar({
         )),
         // A sentence ends at a mark — or at an abandoned clause: an
         // em-dash run with only a boundary after it (`Faith, sir,
-        // I've——` + blank). The two ends take disjoint first sets
-        // (marks vs the interruption token), so no conflict. The
-        // interruption aliases to `em_dash` inline (same as
-        // `ellipsis_end` → `ellipsis`): no wrapper rule, so queries
-        // see one dash kind.
-        choice($._sentence_end, alias($._interruption, $.em_dash))
+        // I've——` + blank), optionally introduced by a colon
+        // (`something like this:—` + blank, where the elaboration never
+        // comes), or at an abandoned elaboration: a bare colon with
+        // only a boundary after it (`He said:` + blank). The ends take
+        // disjoint first sets (marks, dash run, colon), and the colon
+        // prefix is shared with elaborations only up to the dash, where
+        // the scanner has already arbitrated (boundary → handoff token,
+        // text → internal join dash) — so no conflict. Times (`10:30`)
+        // refuse in the scanner (digits ahead) and behave as before.
+        choice(
+          $._sentence_end,
+          alias($._interruption, $.em_dash),
+          seq($.colon, alias($._interruption, $.em_dash)),
+          alias($._colon_handoff, $.colon)
+        )
       ),
       // A parenthetical carrying its own end mark is a complete
       // sentence: the mark cannot also terminate an outer sentence,
@@ -134,17 +149,26 @@ export default grammar({
     // stay with the period/end-dot logic.
     ellipsis: $ => /\.{3}/,
 
-    // A parenthetical aside: a single clause in parens (one, not repeat1:
-    // repeating clauses would let each word reduce to its own clause
-    // instead of extending one). It lives only inside clauses (a standalone
-    // `(...)` sentence parses as a clause holding one parenthetical):
-    // allowing it as a direct sentence alternative creates an LR conflict
-    // with clause-internal parentheticals at the sentence end. Terminal
-    // marks are not allowed inside — see complete_parenthetical for the
-    // self-terminated variant.
+    // A parenthetical aside: a clause in parens, with `;`- and
+    // em-dash-joined follow-ups (`(it will do; it is easy)`,
+    // `(Captain—Mounttop; Mounttop—the captain)`). One clause core,
+    // not repeat1: repeating bare clauses would let each word reduce
+    // to its own clause instead of extending one — the join tokens
+    // keep every continuation deterministic. Conjunction joins are
+    // deliberately absent (a leading `and` degrades to a plain word,
+    // as in `(and never returned)`). It lives only inside clauses (a
+    // standalone `(...)` sentence parses as a clause holding one
+    // parenthetical): allowing it as a direct sentence alternative
+    // creates an LR conflict with clause-internal parentheticals at
+    // the sentence end. Terminal marks are not allowed inside — see
+    // complete_parenthetical for the self-terminated variant.
     parenthetical: $ => seq(
       '(',
       choice($.clause, $.subordinate_clause),
+      repeat(choice(
+        seq($.semicolon, choice($.clause, $.subordinate_clause)),
+        seq($.em_dash, choice($.clause, $.subordinate_clause)),
+      )),
       ')'
     ),
 
@@ -159,11 +183,16 @@ export default grammar({
       ')'
     ),
 
+    // A parenthetical aside is also allowed inside subordinate clauses
+    // (`which (as I was informed), besides ...`): `(` unambiguously
+    // opens it there, exactly as inside plain clauses. Terminal marks
+    // stay excluded (a dot before `)` reads as in-sentence `period`,
+    // matching clause interiors).
     subordinate_clause: $ => seq(
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $.quote, $.ellipsis, $.currency
+        $.subordinate_clause, $.parenthetical, $.quote, $.ellipsis, $.currency
       )))
     ),
 

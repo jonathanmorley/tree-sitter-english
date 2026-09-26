@@ -47,3 +47,27 @@ My mother-in-law arrived.
         (word)
         (word)
         (word)))))
+
+==================
+Elided compound with apostrophe-hyphen
+==================
+
+Here comes another with a sou’-wester and a bombazine cloak.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)
+        (word))
+      (conjunction)
+      (clause
+        (word)
+        (word)
+        (word)))))

@@ -19,7 +19,9 @@ The grammar marks three levels of structure.
   subordinate clauses.
 - Clause punctuation. A semicolon joins two coordinate clauses. A colon
   or an em dash introduces an elaborating clause. A sentence abandoned
-  at an em dash hands off at a blank line. All produce visible
+  at an em dash or a bare colon hands off at a blank line. Parenthetical
+  asides hold clauses joined by `;` and em dashes, and `&` joins like
+  `and` where conjunctions are valid. All produce visible
   node types.
 - Quote marks. The grammar accepts ASCII and curly quotes. Curly
   apostrophes in possessives such as `ship's` lex as part of the word.
