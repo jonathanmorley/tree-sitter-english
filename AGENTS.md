@@ -101,8 +101,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
-  greedy perceptron on UD English-EWT, dev 91.70% / test 91.79%,
-  1.98 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
+  greedy perceptron on UD English-EWT (dev 91.84% / test 92.05%
+  with in-domain oracle data, 1.98 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
 
   - `tag_sentence`/`tag_document` in `english-pos/src/wire.rs`; hidden
     punctuation excluded by construction). DONE speed (2026-09-26):
@@ -131,7 +131,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     em-dash/parenthetical backlog below). Exit 0 by design (analysis,
     not a gate).
     Hyperparam note (resolved 2026-09-26): adopted iters=20/min-count=1
-    (dev 91.70%/test 91.79%, canonical intact). The sweep peak,
+    (dev 91.70%/test 91.79%, canonical intact), then joint oracle
+    training (see train README: dev 91.84%/test 92.05%; a finetune
+    variant scored 91.88%/91.99% but was an accidental two-stage, so
+    the clean single-run joint protocol won). The sweep peak,
     iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips
     canonical "flies" VERB→NOUN (forensics: plural -s/-ies + noun-noun
     t-1 memorization outvotes its single VERB observation in EWT; see

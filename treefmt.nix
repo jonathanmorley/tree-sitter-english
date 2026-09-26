@@ -17,6 +17,7 @@
         "binding.gyp"
         "test/corpus/*" # fixtures must stay byte-stable
         "examples/*" # snapshots must stay byte-stable
+        "crates/english-pos-train/data/*" # gold oracle labels, byte-stable
         "bindings/c/*" # generated
         "bindings/go/*" # generated
         "bindings/node/*" # generated

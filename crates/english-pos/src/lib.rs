@@ -272,6 +272,67 @@ impl Model {
         serde_json::to_string(&serde_json::json!({"weights": sorted}))
     }
 
+    /// Fine-tune in-domain: more perceptron passes over `data starting
+    /// from these weights (rather than from scratch). Few iters (2–4):
+    /// the base already converges EWT, and a small in-domain set would
+    /// otherwise shake shared weights with noisy updates (measured:
+    /// 159 Moby tokens mixed into full joint training fix some misses
+    /// but flip others). Counts — and therefore the min-count gate —
+    /// are computed on `data` with threshold 1: every in-domain
+    /// observation counts.
+    pub fn finetune(&mut self, data: &[(Vec<String>, Vec<String>)], iters: usize) {
+        let mut counts: HashMap<u64, usize> = HashMap::new();
+        let mut feats = Vec::with_capacity(20);
+        for (raw, gold) in data {
+            let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
+            let mut prev1 = START1.to_string();
+            let mut prev2 = START2.to_string();
+            for (i, g) in gold.iter().enumerate() {
+                features(raw, &lower, i, &prev1, &prev2, &mut feats);
+                for f in &feats {
+                    *counts.entry(*f).or_insert(0) += 1;
+                }
+                prev2 = std::mem::replace(&mut prev1, g.clone());
+            }
+        }
+
+        for _ in 0..iters {
+            for (raw, gold) in data {
+                let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
+                let mut prev1 = START1.to_string();
+                let mut prev2 = START2.to_string();
+                for (i, g) in gold.iter().enumerate() {
+                    features(raw, &lower, i, &prev1, &prev2, &mut feats);
+                    let mut acc = [0.0f32; 17];
+                    for f in &feats {
+                        if let Some(arr) = self.weights.get(f) {
+                            for (a, w) in acc.iter_mut().zip(arr.iter()) {
+                                *a += *w;
+                            }
+                        }
+                    }
+                    let mut best = 0;
+                    for t in 1..17 {
+                        if acc[t] > acc[best] {
+                            best = t;
+                        }
+                    }
+                    let gold_idx = tag_index(g).expect("training tag must be a UPOS code");
+                    if best != gold_idx {
+                        for f in &feats {
+                            let arr = self.weights.entry(*f).or_insert([0.0; 17]);
+                            arr[gold_idx] += 1.0;
+                            arr[best] -= 1.0;
+                        }
+                    }
+                    prev2 = std::mem::replace(&mut prev1, g.clone());
+                }
+            }
+        }
+
+        self.weights.retain(|_, arr| arr.iter().any(|w| *w != 0.0));
+    }
+
     /// Train on gold sentences of `(surface word, tag)` with the
     /// (unaveraged) perceptron for `iters` passes. `min_count` drops rare
     /// features (below threshold) to bound model size.

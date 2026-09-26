@@ -14,13 +14,53 @@ cargo run --release -p english-pos-train -- \
 
 Trains on the preset's `en_ewt-ud-train.conllu`, reports dev/test
 accuracy, and writes `../english-pos/weights/upos.json` (committed:
-dev 91.70%, test 91.79%, 1.98 MB). Re-evaluate committed weights any
-time with `--eval-only test` (or `dev`). Hyperparams are dev-selected:
-a sweep over iters {5,10,15,20,30} × min-count {1,2} peaked at
-iters=15 / min-count=1 (dev 92.09%) but flipped canonical "flies"
-VERB→NOUN (suffix memorization beats its single VERB observation in
-EWT), so iters=20 / min-count=1 was adopted instead (dev 91.70%,
-canonical intact). See AGENTS.md.
+dev 91.84%, test 92.05%, 2.01 MB — EWT plus in-domain oracle data
+below, at iters=20/min-count=1). Re-evaluate committed weights any
+time with `--eval-only test` (or `dev`). Base hyperparams are
+dev-selected: a sweep over iters {5,10,15,20,30} × min-count {1,2}
+peaked at iters=15 / min-count=1 (dev 92.09%) but flipped canonical
+"flies" VERB→NOUN (suffix memorization beats its single VERB
+observation in EWT), so iters=20 / min-count=1 was adopted instead
+(dev 91.70%, canonical intact). See AGENTS.md.
+
+## In-domain oracle data (committed)
+
+Oracle labels live in-repo under `data/` (Moby-Dick is public domain;
+unlike the NC-licensed UD treebanks it can ship here):
+`moby-oracle-01.conllu` (14 sentences, ch.4–6) and
+`moby-oracle-02.conllu` (10 sentences, ch.5–6), hand-tagged EWT-side
+per CANONICAL.md and disjoint from the ch.1–2 prose eval. Reproduce:
+
+```sh
+scripts/fetch-ud.sh --dir /tmp/ud ewt
+cat /tmp/ud/ewt/en_ewt-ud-train.conllu data/moby-oracle-*.conllu \
+  > /tmp/ud-oracle/en_ewt-ud-train.conllu
+cp /tmp/ud/ewt/en_ewt-ud-{dev,test}.conllu /tmp/ud-oracle/
+cargo run --release -p english-pos-train -- --corpus /tmp/ud-oracle \
+  --iters 20 --min-count 1
+```
+
+Measured (EWT dev/test gates, Moby prose eval at bar 0.84):
+
+| setup | EWT dev | EWT test | Moby prose |
+|---|---|---|---|
+| EWT base (20,1) | 91.70% | 91.79% | 87.3% (24 miss) |
+| + joint oracle (354 tok, committed) | 91.84% | 92.05% | 85.7% (27 miss) |
+| + finetune oracle, 3 iters | 91.88% | 91.99% | 85.7% (27 miss) |
+
+Joint training was adopted over fine-tuning: dev differs by 10
+tokens (noise), test favors joint, and the protocol is a single
+reproducible train run rather than an accidental two-stage. Moby
+dips 24→27 misses in both variants — boundary churn on a 189-token
+eval (possessive-`have`, long-distance `does`, `the`-PRON wobbles),
+while EWT gains on 50k tokens; the eval is too small to resolve ±3
+tokens, so EWT rules. `--finetune` mode stays available for future
+bounded top-ups. Next oracle batches should target the stable miss
+classes (titlecase OOV, preposition chains, `-s`/imperative verbs)
+with more examples per class. Oracle discipline learned the hard
+way: never contradict EWT-majority on frequent words (checked
+sentence-initial `So`→ADV 88:0 and `open`→ADJ 31:17 before keeping
+those labels).
 
 ## More data (tried, rejected)
 

@@ -1,0 +1,173 @@
+# Moby-Dick oracle batch 1 (public domain, Melville d. 1891).
+# Hand-tagged UPOS, UD tokenization (punctuation split, ASCII
+# apostrophes), EWT-side conventions per CANONICAL.md (predicative
+# participles ADJ, temporal-when ADV, honorifics PROPN). Sentences
+# from chapters 4-6 - disjoint from the ch.1-2 prose eval.
+1	Upon	_	ADP	_	_	_	_	_	_
+2	waking	_	VERB	_	_	_	_	_	_
+3	next	_	ADJ	_	_	_	_	_	_
+4	morning	_	NOUN	_	_	_	_	_	_
+5	about	_	ADP	_	_	_	_	_	_
+6	daylight	_	NOUN	_	_	_	_	_	_
+7	,	_	PUNCT	_	_	_	_	_	_
+8	I	_	PRON	_	_	_	_	_	_
+9	found	_	VERB	_	_	_	_	_	_
+10	Queequeg	_	PROPN	_	_	_	_	_	_
+11	's	_	PART	_	_	_	_	_	_
+12	arm	_	NOUN	_	_	_	_	_	_
+13	thrown	_	VERB	_	_	_	_	_	_
+14	over	_	ADP	_	_	_	_	_	_
+15	me	_	PRON	_	_	_	_	_	_
+16	in	_	ADP	_	_	_	_	_	_
+17	the	_	DET	_	_	_	_	_	_
+18	most	_	ADV	_	_	_	_	_	_
+19	loving	_	ADJ	_	_	_	_	_	_
+20	and	_	CCONJ	_	_	_	_	_	_
+21	affectionate	_	ADJ	_	_	_	_	_	_
+22	manner	_	NOUN	_	_	_	_	_	_
+23	.	_	PUNCT	_	_	_	_	_	_
+
+1	You	_	PRON	_	_	_	_	_	_
+2	had	_	AUX	_	_	_	_	_	_
+3	almost	_	ADV	_	_	_	_	_	_
+4	thought	_	VERB	_	_	_	_	_	_
+5	I	_	PRON	_	_	_	_	_	_
+6	had	_	AUX	_	_	_	_	_	_
+7	been	_	AUX	_	_	_	_	_	_
+8	his	_	PRON	_	_	_	_	_	_
+9	wife	_	NOUN	_	_	_	_	_	_
+10	.	_	PUNCT	_	_	_	_	_	_
+
+1	My	_	PRON	_	_	_	_	_	_
+2	sensations	_	NOUN	_	_	_	_	_	_
+3	were	_	AUX	_	_	_	_	_	_
+4	strange	_	ADJ	_	_	_	_	_	_
+5	.	_	PUNCT	_	_	_	_	_	_
+
+1	Let	_	VERB	_	_	_	_	_	_
+2	me	_	PRON	_	_	_	_	_	_
+3	try	_	VERB	_	_	_	_	_	_
+4	to	_	PART	_	_	_	_	_	_
+5	explain	_	VERB	_	_	_	_	_	_
+6	them	_	PRON	_	_	_	_	_	_
+7	.	_	PUNCT	_	_	_	_	_	_
+
+1	whether	_	SCONJ	_	_	_	_	_	_
+2	it	_	PRON	_	_	_	_	_	_
+3	was	_	AUX	_	_	_	_	_	_
+4	a	_	DET	_	_	_	_	_	_
+5	reality	_	NOUN	_	_	_	_	_	_
+6	or	_	CCONJ	_	_	_	_	_	_
+7	a	_	DET	_	_	_	_	_	_
+8	dream	_	NOUN	_	_	_	_	_	_
+9	,	_	PUNCT	_	_	_	_	_	_
+10	I	_	PRON	_	_	_	_	_	_
+11	never	_	ADV	_	_	_	_	_	_
+12	could	_	AUX	_	_	_	_	_	_
+13	entirely	_	ADV	_	_	_	_	_	_
+14	settle	_	VERB	_	_	_	_	_	_
+15	.	_	PUNCT	_	_	_	_	_	_
+
+1	I	_	PRON	_	_	_	_	_	_
+2	felt	_	VERB	_	_	_	_	_	_
+3	dreadfully	_	ADV	_	_	_	_	_	_
+4	.	_	PUNCT	_	_	_	_	_	_
+
+1	I	_	PRON	_	_	_	_	_	_
+2	lay	_	VERB	_	_	_	_	_	_
+3	there	_	ADV	_	_	_	_	_	_
+4	dismally	_	ADV	_	_	_	_	_	_
+5	calculating	_	VERB	_	_	_	_	_	_
+6	that	_	SCONJ	_	_	_	_	_	_
+7	sixteen	_	NUM	_	_	_	_	_	_
+8	entire	_	ADJ	_	_	_	_	_	_
+9	hours	_	NOUN	_	_	_	_	_	_
+10	must	_	AUX	_	_	_	_	_	_
+11	elapse	_	VERB	_	_	_	_	_	_
+12	before	_	SCONJ	_	_	_	_	_	_
+13	I	_	PRON	_	_	_	_	_	_
+14	could	_	AUX	_	_	_	_	_	_
+15	hope	_	VERB	_	_	_	_	_	_
+16	for	_	ADP	_	_	_	_	_	_
+17	a	_	DET	_	_	_	_	_	_
+18	resurrection	_	NOUN	_	_	_	_	_	_
+19	.	_	PUNCT	_	_	_	_	_	_
+
+1	Sixteen	_	NUM	_	_	_	_	_	_
+2	hours	_	NOUN	_	_	_	_	_	_
+3	in	_	ADP	_	_	_	_	_	_
+4	bed	_	NOUN	_	_	_	_	_	_
+5	!	_	PUNCT	_	_	_	_	_	_
+
+1	At	_	ADP	_	_	_	_	_	_
+2	last	_	ADJ	_	_	_	_	_	_
+3	I	_	PRON	_	_	_	_	_	_
+4	must	_	AUX	_	_	_	_	_	_
+5	have	_	AUX	_	_	_	_	_	_
+6	fallen	_	VERB	_	_	_	_	_	_
+7	into	_	ADP	_	_	_	_	_	_
+8	a	_	DET	_	_	_	_	_	_
+9	troubled	_	ADJ	_	_	_	_	_	_
+10	nightmare	_	NOUN	_	_	_	_	_	_
+11	of	_	ADP	_	_	_	_	_	_
+12	a	_	DET	_	_	_	_	_	_
+13	doze	_	NOUN	_	_	_	_	_	_
+14	;	_	PUNCT	_	_	_	_	_	_
+
+1	Instantly	_	ADV	_	_	_	_	_	_
+2	I	_	PRON	_	_	_	_	_	_
+3	felt	_	VERB	_	_	_	_	_	_
+4	a	_	DET	_	_	_	_	_	_
+5	shock	_	NOUN	_	_	_	_	_	_
+6	running	_	VERB	_	_	_	_	_	_
+7	through	_	ADP	_	_	_	_	_	_
+8	all	_	DET	_	_	_	_	_	_
+9	my	_	PRON	_	_	_	_	_	_
+10	frame	_	NOUN	_	_	_	_	_	_
+11	;	_	PUNCT	_	_	_	_	_	_
+
+1	nothing	_	PRON	_	_	_	_	_	_
+2	was	_	AUX	_	_	_	_	_	_
+3	to	_	PART	_	_	_	_	_	_
+4	be	_	AUX	_	_	_	_	_	_
+5	seen	_	VERB	_	_	_	_	_	_
+6	,	_	PUNCT	_	_	_	_	_	_
+7	and	_	CCONJ	_	_	_	_	_	_
+8	nothing	_	PRON	_	_	_	_	_	_
+9	was	_	AUX	_	_	_	_	_	_
+10	to	_	PART	_	_	_	_	_	_
+11	be	_	AUX	_	_	_	_	_	_
+12	heard	_	VERB	_	_	_	_	_	_
+13	;	_	PUNCT	_	_	_	_	_	_
+
+1	I	_	PRON	_	_	_	_	_	_
+2	knew	_	VERB	_	_	_	_	_	_
+3	not	_	PART	_	_	_	_	_	_
+4	how	_	ADV	_	_	_	_	_	_
+5	this	_	DET	_	_	_	_	_	_
+6	consciousness	_	NOUN	_	_	_	_	_	_
+7	at	_	ADP	_	_	_	_	_	_
+8	last	_	ADJ	_	_	_	_	_	_
+9	glided	_	VERB	_	_	_	_	_	_
+10	away	_	ADV	_	_	_	_	_	_
+11	from	_	ADP	_	_	_	_	_	_
+12	me	_	PRON	_	_	_	_	_	_
+13	;	_	PUNCT	_	_	_	_	_	_
+
+1	Nay	_	INTJ	_	_	_	_	_	_
+2	,	_	PUNCT	_	_	_	_	_	_
+3	to	_	ADP	_	_	_	_	_	_
+4	this	_	DET	_	_	_	_	_	_
+5	very	_	ADV	_	_	_	_	_	_
+6	hour	_	NOUN	_	_	_	_	_	_
+7	,	_	PUNCT	_	_	_	_	_	_
+8	I	_	PRON	_	_	_	_	_	_
+9	often	_	ADV	_	_	_	_	_	_
+10	puzzle	_	VERB	_	_	_	_	_	_
+11	myself	_	PRON	_	_	_	_	_	_
+12	with	_	ADP	_	_	_	_	_	_
+13	it	_	PRON	_	_	_	_	_	_
+14	.	_	PUNCT	_	_	_	_	_	_
+
+1	Queequeg	_	PROPN	_	_	_	_	_	_
+2	!	_	PUNCT	_	_	_	_	_	_

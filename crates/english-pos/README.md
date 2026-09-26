@@ -9,8 +9,8 @@ A greedy perceptron: `Model::tag` decodes surface tokens left to right
 are 64-bit FNV-1a hashes extracted with zero per-token allocation
 (scratch buffer reused; weights ride dense `[f32; 17]` arrays), so
 tagging runs ~450k tokens/sec. Weights live in `weights/upos.json`,
-trained by `crates/english-pos-train` on UD English-EWT: dev 91.70%,
-test 91.79%, 1.98 MB.
+trained by `crates/english-pos-train` on UD English-EWT plus
+in-domain oracle data: dev 91.84%, test 92.05%, 1.98 MB.
 
 ```rust
 let model = english_pos::Model::from_json(include_str!("weights/upos.json"))?;

@@ -52,6 +52,18 @@ fn tag_enum_roundtrips() {
 }
 
 #[test]
+fn finetune_teaches_new_mapping() {
+    // Base model knows "dog" as NOUN; a conflicting in-domain pass
+    // moves it (few passes, tiny data — direction, not convergence).
+    let data = tiny_data();
+    let mut model = Model::train(&data, 20, 1);
+    assert_eq!(model.tag(&["dog"]), vec![Tag::Noun]);
+    let fix = vec![(vec!["dog".to_string()], vec!["VERB".to_string()])];
+    model.finetune(&fix, 5);
+    assert_eq!(model.tag(&["dog"]), vec![Tag::Verb]);
+}
+
+#[test]
 fn tag_margins_agree_with_tags() {
     let model = Model::from_json(include_str!("../weights/upos.json")).unwrap();
     let words = ["Time", "flies", "like", "an", "arrow", "."];
