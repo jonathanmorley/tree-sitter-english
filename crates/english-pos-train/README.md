@@ -36,11 +36,16 @@ dev/test as gates):
 | all | 90.27% | 90.19% |
 
 The treebanks contradict each other on specific conventions, so the
-perceptron averages them into worse-than-either. Largest conflicts
-(EWT+LinES top-confusion deltas on EWT dev): PROPN→NOUN +237 (LinES
-tags mid-sentence Titlecase as NOUN nearly 2× more often —
-PROPN:NOUN 2.2:1 vs EWT 3.7:1), AUX→VERB +60 (LinES uses AUX
-relatively less), plus DET/PRON and ADP/ADV drift. GUM is milder
+perceptron averages them into worse-than-either. Confirmed at word
+level (same forms, opposite tags): LinES tags honorifics/titles as
+NOUN (`Mr` 50×, `Mrs` 23×, `President` 13×, `Jews` 14×, `Lord` 6×)
+where EWT/GUM tag them PROPN — LinES is the outlier, EWT and GUM
+agree. Mid-sentence Titlecase PROPN:NOUN ratios tell the same story
+(EWT 3.7:1, LinES 2.2:1, GUM 13.8:1 the other way). Largest
+EWT+LinES top-confusion deltas on EWT dev: PROPN→NOUN +237, AUX→VERB
++60 (LinES main-verb be/have uses check out clean, so this one is
+still untraced — likely subtler auxiliary contexts), plus DET/PRON
+and ADP/ADV drift. GUM is milder
 (-0.5) but still negative, including on its own test (90.64% vs
 91.37% for the EWT-only model). Keep EWT-only until a
 per-construction harmonization exists; the fetch script preserves
