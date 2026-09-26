@@ -102,14 +102,29 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
   greedy perceptron on UD English-EWT, dev 90.35% / test 90.53%,
-  1.29 MB weights). Remains: align UD tokenization (splits
-  contractions) with `english`-crate words (keeps them whole), then
-  wire tagging over parsed clauses. Plain (unaveraged) perceptron beat
+  1.51 MB weights). DONE wiring (`Sentence::tokens` + `split_contraction`
+  + `tag_sentence`/`tag_document` in `english-pos/src/wire.rs`; hidden
+  punctuation excluded by construction). DONE speed (2026-09-26):
+  u64 FNV-1a features + dense `[f32; 17]` rows, zero per-token alloc
+  (accuracy bit-identical: 22720/22717); tag 4288→~170 ms on Moby-Dick
+  (~450k tok/s, ~17 µs/sentence). DONE incremental:
+  `Document::update` (prefix/suffix `InputEdit` + `Tree::edit` before
+  reparse — without it reuse reads stale ranges and silently drops
+  shifted text) + `TagCache` (sentence-text key, pieces cached);
+  one-word-edit keystroke path ≈ 47 ms on book-size input (17 ms
+  reparse + 29 ms retag, 10541/1 hit/miss). Bench harness:
+  `cargo run --release -p english-pos --example bench -- <file>`.
+  Hyperparam note: iters=15/min-count=1 reaches dev 92.09/test 91.85
+  but flips canonical "flies" VERB→NOUN (suffix memorization; "flies"
+  is 1× VERB in EWT); w+t-1 and suf+t-1 conjunctions hurt dev at both
+  min-counts. NOT committed — needs a features fix or a deliberate
+  call on the smoke test. Plain (unaveraged) perceptron beat
   Collins averaging here (33% vs 88% pilot) — see train README.
 
 - `Clause::words()` drops subordinators (separate accessor), which
-  silently loses tokens for consumers. Cleaner: a `tokens()` iterator
-  yielding an enum over all child kinds.
+  silently loses tokens for consumers. DONE: `tokens()` iterator
+  (`Token`/`TokenKind` over all visible child kinds, parentheticals
+  flattened) on `Clause` and `Sentence`; `words()` kept for backcompat.
 
 - `package.json` is still upstream-minimal (no author/repository);
   expanding it to the full canonical template is a node-bindings

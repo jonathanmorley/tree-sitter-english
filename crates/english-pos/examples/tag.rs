@@ -1,13 +1,14 @@
 //! Demo: parse a text file with the `english` crate and POS-tag every
-//! word with the committed weights.
+//! token with the committed weights.
 //!
 //! Usage: `cargo run -p english-pos --example tag -- <file>`
 //!
-//! Note the tokenization caveat from the README: `english` words keep
-//! contractions whole (`don't`) where UD splits them, so contraction
-//! tags come from whole-word features.
+//! Wired via [`english_pos::tag_sentence`]: sentence tokens (no drops)
+//! expanded into UD pieces (contractions split, curly apostrophes
+//! normalized), then tagged. Hidden punctuation (commas, sentence-final
+//! marks) has no grammar node and is not tagged.
 
-use english_pos::Model;
+use english_pos::{Model, tag_sentence};
 
 fn main() {
     let path = std::env::args().nth(1).expect("usage: tag <file>");
@@ -17,15 +18,7 @@ fn main() {
     let doc = english::Document::parse(text);
     for para in doc.paragraphs() {
         for sent in para.sentences() {
-            let mut words = Vec::new();
-            for clause in sent.clauses() {
-                // Subordinators are not Words; include their text so
-                // nothing is silently dropped (see Clause::subordinator).
-                words.extend(clause.subordinator().into_iter().map(str::to_string));
-                words.extend(clause.words().iter().map(|w| w.text().to_string()));
-            }
-            let tags = model.tag(&words);
-            for (w, t) in words.iter().zip(&tags) {
+            for (w, t) in tag_sentence(&model, &sent) {
                 print!("{w}/{t} ");
             }
             println!();

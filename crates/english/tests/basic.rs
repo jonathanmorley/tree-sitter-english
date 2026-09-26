@@ -162,3 +162,15 @@ fn blank_lines_only_parse_cleanly() {
     assert!(!doc.has_error());
     assert!(doc.paragraphs().is_empty());
 }
+
+#[test]
+fn update_reparses_incrementally() {
+    let mut doc = Document::parse("Hello world.\n");
+    doc.update("Hello brave world.\n");
+    assert!(!doc.has_error());
+    assert_eq!(doc.source(), "Hello brave world.\n");
+
+    let words = doc.paragraphs()[0].sentences()[0].clauses()[0].words();
+    let texts: Vec<_> = words.iter().map(|w| w.text()).collect();
+    assert_eq!(texts, ["Hello", "brave", "world"]);
+}
