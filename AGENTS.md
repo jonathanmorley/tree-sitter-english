@@ -290,13 +290,12 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   recorded before work). Acceptance: chunker runs inside bench
   budget, eval recorded, grammar untouched.
 
-- Input-contract formalization (NOT STARTED): write the README
-  error-recovery / scope contract the audit already implements
-  (prose histogram is the quality measure; `_`/`*` markup and
-  front/back matter, epitaphs, speaker labels, stage directions are
-  out of scope). CCG / Link Grammar stay as `garden_path` test
-  inspiration only. Acceptance: one README paragraph + audit bucket
-  names match it exactly.
+- Input-contract formalization (DONE 2026-09-27): README gained
+  the Scope and error-recovery contract section (prose histogram is
+  the quality measure; transcription bucket named exactly as the
+  audit counts it). Also fixed a stale line claiming ellipses are
+  unhandled (mid-sentence `ellipsis` nodes + terminal `...` exist
+  with corpus tests).
 
 - Second-genre eval set (NOT STARTED): Moby-Dick overfit guard.
   Add a small hand-tagged eval (~20 sentences, accuracy bar set

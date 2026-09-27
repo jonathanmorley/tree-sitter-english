@@ -39,12 +39,26 @@ The grammar keeps sentence boundaries correct around abbreviations.
 The grammar recovers from unknown characters. A bad character produces an
 ERROR node, and the parse continues.
 
+## Scope and error recovery contract
+
+The grammar covers running English prose. The prose error histogram
+(counted by the `audit` example, excluding transcription) is the
+quality measure: an ERROR node on ordinary prose is a grammar miss.
+Out of scope, bucketed separately as transcription rather than prose:
+Gutenberg markup (`_` italics, `*` markers, `[...]` illustration
+captions, `M^{r.}`-style superscript), front and back matter (title
+pages, contents, transcriber's notes), epitaphs, speaker labels
+(`AZORE SAILOR.`), stage directions, verse and song lyrics, and
+navigation notation (`62o 17′ 20″`). These parse by error recovery,
+not by grammar rules, by design.
+
 ## What the grammar does not do
 
 - It does not mark subjects, verbs, or objects.
 - It does not classify words. A clause is a flat run of words. Conjunctive
   adverbs such as `however` and `therefore` parse as plain words.
-- It does not handle ellipses.
+- Mid-sentence ellipses parse as `ellipsis` nodes; terminal `...`
+  ends the sentence.
 - It does not represent ambiguity. Garden-path sentences parse as flat
   clauses.
 
