@@ -299,6 +299,29 @@ It was marvellous and—in this instance—almost fatal.
         (word)))))
 
 ==================
+ASCII dashes join and degrade like em-dashes
+==================
+
+Do this--remember that--and obey.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)))))
+
+==================
 Semicolon plus em-dash introduces elaboration
 ==================
 
@@ -474,3 +497,53 @@ Take notes:
         (word)
         (word))
       (colon))))
+
+==================
+Double hyphen joins elaborating clause
+==================
+
+He left early--the train was departing.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Double-hyphen interruption hands off at a blank line
+==================
+
+I’ll smoke no more--
+
+He tossed the pipe.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word))
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))

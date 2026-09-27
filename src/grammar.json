@@ -542,8 +542,17 @@
       "value": ":"
     },
     "em_dash": {
-      "type": "PATTERN",
-      "value": "—|–"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "—|–"
+        },
+        {
+          "type": "PATTERN",
+          "value": "--+"
+        }
+      ]
     },
     "quote": {
       "type": "PATTERN",

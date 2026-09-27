@@ -56,8 +56,17 @@ fn check_sentence(
     let text = sent.text().replace('\n', "\\n");
     if sent.has_error() {
         // Gutenberg transcription markup is out of grammar scope
-        // (same bucketing as the audit).
-        let kind = if text.contains('_') || text.contains('*') {
+        // (same bucketing as the audit: italics/footnote markers,
+        // `[...]` edition artifacts like illustration captions, and
+        // `M^{r.}`-style superscript markup).
+        let kind = if text.contains('_')
+            || text.contains('*')
+            || text.contains('[')
+            || text.contains(']')
+            || text.contains('^')
+            || text.contains('{')
+            || text.contains('}')
+        {
             "error-transcription"
         } else {
             "error"

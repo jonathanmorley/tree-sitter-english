@@ -56,10 +56,20 @@ fn describe(source: &str, node: Node) -> String {
 }
 
 /// Gutenberg transcription markup, not English prose: italics markers,
-/// footnote markers, and section breaks. Bucketed separately so the
-/// error histogram measures the grammar, not the transcription.
+/// footnote markers, section breaks, edition artifacts (the
+/// `[Illustration...]` captions of illustrated editions — matched on
+/// either bracket, since error recovery often splits them across the
+/// caption boundary — and `M^{r.}`-style superscript markup).
+/// Bucketed separately so the error histogram measures the grammar,
+/// not the transcription.
 fn is_transcription(text: &str) -> bool {
-    text.contains('_') || text.contains('*')
+    text.contains('_')
+        || text.contains('*')
+        || text.contains('[')
+        || text.contains(']')
+        || text.contains('^')
+        || text.contains('{')
+        || text.contains('}')
 }
 
 fn walk(source: &str, node: Node, stats: &mut Stats, in_error: bool) {

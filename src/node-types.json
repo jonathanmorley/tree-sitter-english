@@ -62,6 +62,11 @@
     }
   },
   {
+    "type": "em_dash",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "paragraph",
     "named": true,
     "fields": {},
@@ -251,10 +256,6 @@
   },
   {
     "type": "ellipsis",
-    "named": true
-  },
-  {
-    "type": "em_dash",
     "named": true
   },
   {

@@ -109,26 +109,39 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus
-  tests, same as the hyphen slice. DONE 2026-09-26, in slices:
+  tests, same as the hyphen slice. DONE 2026-09-26/27, in slices:
   (a) interruptions (external `_interruption`, dash run + absorbed
   closers on blank/EOF, sentence alternative aliased to `em_dash`);
   (b) colon+dash handoff (`this:—` + blank, same token after an
   internal colon); (c) colon handoff (external `_colon_handoff`,
   aliased to `colon`; times like `10:30` refuse, unchanged);
   (d) parentheticals inside subordinate clauses; (e) `;`- and em-dash
-  joins inside parentheticals; (f) `&` as conjunction where valid;
-  (g) apostrophe-hyphen elisions (`sou'-wester`). Audit prose errors
-  35→9, verify 15→4; every residual is front/back matter, epitaphs,
-  speaker labels, stage directions with markup, or transcription
-  fallout — no in-scope book-prose error remains except deferred
-  items. Residuals deliberately left: leading-dash dialogue, `10:30`
-  times, complete-parenthetical interiors without joins, `R&D`-style
-  mid-clause `&`.
-  NOTE: generated with the flake's 0.26.11 CLI (npx 0.27.0 binary needs
-  GLIBC_2.39, absent here); ABI still 15 and the full suite is green,
-  but `src/parser.c` carries 0.26-vs-0.27 generator churn — regenerate
-  with pinned 0.27.0 when the toolchain allows and confirm the diff
-  collapses to the feature.
+  joins inside parentheticals (note: em-dash joins in subordinate
+  interiors were tried and REVERTED — bare-word continuation after
+  the join makes `but` strand alone; only delimited joins are safe
+  inside non-sentence repeats);
+  (f) `&` as conjunction where valid;
+  (g) apostrophe-hyphen elisions (`sou'-wester`);
+  (h) ASCII `--` dashes: internal `--+` → `em_dash`, interruption
+  runs extended, `end_ahead` + hyphen-branch `dash_run_passed`
+  (trailing closed-class degrades before `--`, mirroring unicode).
+  Audit prose errors 35→9 (Moby), verify 15→4. Cross-book (Austen /
+  Doyle / Stevenson prose): `--` support collapses Austen 450→4
+  and Stevenson 336→37 verify-error sentences (Doyle steady at 16);
+  remaining classes are verse/song lyrics, headings with verbs,
+  navigation coordinates (`62o 17′ 20″`), epitaphs, speaker labels,
+  illustration captions (bucketed as transcription with `[]^{}`),
+  and front/back matter.
+  Residuals deliberately left: leading-dash dialogue, `10:30`
+  times, complete-parenthetical interiors without joins (`(unasked too!)` needs paren-architecture rethink), `R&D`-style mid-clause
+  `&`, em-dash joins in subordinate interiors (attach ambiguity).
+  NOTE (resolved 2026-09-27): built the real 0.27.0 CLI from source
+  (`cargo install tree-sitter-cli --version 0.27.0 --root /tmp/tscli`)
+  and regenerated — zero `src/` delta, so the 0.26.11 output was
+  already identical and the big `parser.c` diff is 100%
+  feature-driven table renumbering (2 new externals + new rules), not
+  version churn. Source-built CLI remains the fallback whenever the
+  npx prebuilt breaks (here: it needed absent GLIBC_2.39).
 
 - Statistical POS tagging as a post-parse pass (never grammar rules —
   Tier 3 showed why): DONE v1 (`crates/english-pos` + train binary,
@@ -195,3 +208,70 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   github.com/jonathanmorley/tree-sitter-english). Tangled `upstream`
   push still pending: push-only SSH remote configured, blocked on
   approving `knot.xenolandscapes.com` host keys into known_hosts.
+
+- External-oracle sentence diff (NOT STARTED): use Punkt / spaCy
+  `ssplit` offline as differential oracles, never as runtime deps
+  (Python, heavy, non-incremental; would break the 37 ms reparse /
+  58 MB budget in `README.md` and the dependency-free runtime).
+  Goal: find sentence-boundary disagreements against this grammar.
+  Steps: (1) small throwaway script under `scripts/` (not a crate
+  dep) runs Punkt + spaCy over `examples/*.txt` and Moby-Dick from
+  `CHAPTER 1. Loomings.` onward; (2) diff against
+  `cargo run -p english --example audit`; (3) triage each delta as
+  grammar miss / oracle miss / transcription (`_`/`*`); (4) grammar
+  misses feed corpus TDD in `test/corpus/*.txt` per the input-model
+  note above. Acceptance: script documented, disagreements listed
+  with counts, at least the top prose class converted to corpus
+  tests or a constrained scanner fix with zero `generate` conflicts.
+  License: dev-time use only, nothing copied into the repo.
+
+- PDTB subordinator audit (NOT STARTED): audit `SUBORDINATORS` in
+  `bindings/rust/scanner.rs` (currently 24 items) against the PDTB
+  explicit-connective list. Goal: close coverage gaps (`lest`,
+  `albeit`, etc.). Non-goal: importing PDTB hierarchy or typing
+  elaboration vs contrast in-grammar (would reintroduce the LR
+  conflicts Tier 2 removed; classification belongs in a post-pass
+  over `Sentence::tokens`). Steps: (1) build candidate list with
+  PDTB source cited; (2) check each against Moby-Dick audit +
+  corpus; (3) add only words with prose evidence, one corpus test
+  per word, TDD first. Acceptance: audit table (candidate / evidence
+  / added-or-rejected-with-reason), full suite green, zero
+  `generate` conflicts. `however`/`therefore` stay plain words.
+
+- Abbreviation harvest (NOT STARTED): audit `ABBREVIATIONS` in
+  `bindings/rust/scanner.rs` (currently 15 items) the same way.
+  Goal: harvest candidates via Punkt + Moby-Dick audit misses
+  (`p.`, `ch.`, `vol.` already partly covered; check `fig/no/st/jr`
+  gaps). Non-goal: a large auto-imported list — over-listing keeps
+  real sentence breaks wrongly open and is worse than a miss.
+  Steps: hand-curate minimal additions with prose evidence, one
+  corpus test each (`test/corpus/abbreviations.txt`). Acceptance:
+  list delta with per-item justification, suite green.
+
+- Greedy NP-chunker post-pass (NOT STARTED): CoNLL-2000 chunking as
+  pattern, not code import. New crate (e.g. `crates/english-chunk`)
+  over `tag_sentence` output (`english-pos/src/wire.rs`), never new
+  NP/VP rules in `grammar.js` (Tier 3 showed why). Linear greedy
+  only — must hold the keystroke budget (~47 ms on book-size input;
+  bench via `cargo run --release -p english-pos --example bench`).
+  Steps: (1) spec chunk tagset + `split_contraction` handling;
+  (2) implement + unit tests; (3) Moby spot-eval mirroring
+  `crates/english-pos/tests/moby.rs` (small hand-tagged set, bar
+  recorded before work). Acceptance: chunker runs inside bench
+  budget, eval recorded, grammar untouched.
+
+- Input-contract formalization (NOT STARTED): write the README
+  error-recovery / scope contract the audit already implements
+  (prose histogram is the quality measure; `_`/`*` markup and
+  front/back matter, epitaphs, speaker labels, stage directions are
+  out of scope). CCG / Link Grammar stay as `garden_path` test
+  inspiration only. Acceptance: one README paragraph + audit bucket
+  names match it exactly.
+
+- Second-genre eval set (NOT STARTED): Moby-Dick overfit guard.
+  Add a small hand-tagged eval (~20 sentences, accuracy bar set
+  before work) from a different genre (e.g. news or academic prose
+  in `examples/` style) alongside `tests/moby.rs`. Training data
+  rules unchanged (`scripts/fetch-ud.sh` pins; GUM/LinES eval-only,
+  CC BY-NC-SA cannot ship). Acceptance: eval committed, bar
+  recorded, no model change in the same commit.

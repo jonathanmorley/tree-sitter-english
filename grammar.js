@@ -192,7 +192,8 @@ export default grammar({
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $.parenthetical, $.quote, $.ellipsis, $.currency
+        $.subordinate_clause, $.parenthetical,
+        $.quote, $.ellipsis, $.currency
       )))
     ),
 
@@ -202,10 +203,14 @@ export default grammar({
 
     // Clause-joining punctuation. Semicolons conjoin coordinate clauses.
     // Colons and em-dashes introduce elaborating material. En dash (U+2013)
-    // is included as an em-dash substitute.
+    // is included as an em-dash substitute, as are ASCII double-hyphen
+    // runs (`--`, the Gutenberg ASCII-edition substitute): single `-`
+    // stays word-internal (compounds) or an error. The word scanner
+    // leaves `--` runs alone (hyphen branch takes only letter-flanked
+    // singles), so this token sees them whole.
     semicolon: $ => ';',
     colon: $ => ':',
-    em_dash: $ => /—|–/,
+    em_dash: $ => choice(/—|–/, /--+/),
 
 
     // Quote marks, visible inside clauses so they are queryable.

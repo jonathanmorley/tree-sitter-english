@@ -180,9 +180,9 @@ unsafe fn skip_whitespace(lexer: *mut TSLexer, paragraph_break_ahead: &mut bool)
 
 // True when only a clause boundary (or input end) follows the current
 // position: terminal marks, closing delimiters/quotes, clause punctuation
-// (; : em/en-dash), or EOF. Newlines deliberately do not count: a
-// subordinate clause may continue on the next line, and only same-line
-// evidence overrules that greedy reading.
+// (; : em/en-dash, ASCII `--` runs), or EOF. Newlines deliberately do
+// not count: a subordinate clause may continue on the next line, and
+// only same-line evidence overrules that greedy reading.
 unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
     unsafe {
         // Lookahead only: advance(false) so mark_end stays at the word end.
@@ -191,6 +191,15 @@ unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
         // rewinds to mark_end on success, so this peeking is free.
         while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
             advance(lexer, false);
+        }
+        // ASCII dash run (`--`, the Gutenberg substitute) counts as
+        // boundary, like em/en-dash (`sailed for--treasure` degrades
+        // `for` to a plain word). A lone hyphen does not (compounds):
+        // return false directly, since only the run was consumed and
+        // `-` can never start a boundary match below.
+        if lookahead(lexer) == 0x2D {
+            advance(lexer, false);
+            return lookahead(lexer) == 0x2D;
         }
         matches!(
             lookahead(lexer),
@@ -288,22 +297,35 @@ enum Handoff {
     Absent,
 }
 
-// Abandoned clause: an em/en-dash run (one or more, wholesale) emitted
-// only on boundary-ahead — a blank line or EOF after optional closing
-// quotes/parens, which the token absorbs (`Faith, sir, I've——` +
-// blank, `said—"` + blank, trailing run at EOF). Anywhere else
-// (clause text ahead, single newline) refuse, so the internal em_dash
-// join reading applies.
+// Abandoned clause: an em/en-dash run — or an ASCII double-hyphen
+// run, the Gutenberg edition substitute — emitted (one or more,
+// wholesale) only on boundary-ahead: a blank line or EOF after
+// optional closing quotes/parens, which the token absorbs (`Faith,
+// sir, I've——` + blank, `said—"` + blank, trailing run at EOF).
+// Anywhere else (clause text ahead, single newline) refuse, so the
+// internal em_dash join reading applies. A lone hyphen is neither:
+// it returns `Refused` (rewind → today's ERROR path), never falling
+// through, so `-` keeps erroring exactly as before.
 unsafe fn scan_interruption(lexer: *mut TSLexer) -> Handoff {
     unsafe {
         while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
             advance(lexer, true);
         }
-        if !is_dash(lookahead(lexer)) {
+        if is_dash(lookahead(lexer)) {
+            while is_dash(lookahead(lexer)) {
+                advance(lexer, false);
+            }
+        } else if lookahead(lexer) == 0x2D {
+            let mut count = 0;
+            while lookahead(lexer) == 0x2D {
+                advance(lexer, false);
+                count += 1;
+            }
+            if count < 2 {
+                return Handoff::Refused;
+            }
+        } else {
             return Handoff::Absent;
-        }
-        while is_dash(lookahead(lexer)) {
-            advance(lexer, false);
         }
         mark_end(lexer);
         while is_closer(lookahead(lexer)) {
@@ -500,12 +522,17 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
         // Abandoned clause hands off at a dash run: like the dot check
         // above, this sits before the word/conjunction/subordinator
         // early-return, because at a clause boundary none of those are
-        // valid while the interruption may be. The outcome decides:
-        // Emitted returns true; Refused returns false (the run rewinds,
-        // the internal em_dash joins); Absent falls through to word
-        // lexing below (words are external-only).
+        // valid while the interruption may be. The gate includes `-`
+        // (ASCII runs reach the probe; lone hyphens refuse inside).
+        // The outcome decides: Emitted returns true; Refused returns
+        // false (the run rewinds, the internal em_dash joins or errors
+        // as before); Absent falls through to word lexing below
+        // (words are external-only).
         if valid(valid_symbols, TokenType::Interruption)
-            && (is_dash(lookahead(lexer)) || lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09)
+            && (is_dash(lookahead(lexer))
+                || lookahead(lexer) == 0x2D
+                || lookahead(lexer) == 0x20
+                || lookahead(lexer) == 0x09)
         {
             match scan_interruption(lexer) {
                 Handoff::Emitted => return true,
@@ -570,6 +597,12 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
         // the dot is re-lexed on the next scan. It still counts as boundary
         // evidence here (scan_dot will judge it on its own merits).
         let mut dot_passed = false;
+        // Set when the hyphen branch below consumes the first `-` of a
+        // `--` run: same rewind story (the run re-lexes whole, either as
+        // the internal `--+` join dash or via the interruption probe),
+        // and the run counts as boundary evidence for trailing
+        // closed-class words (`remember that--and` degrades `that`).
+        let mut dash_run_passed = false;
 
         loop {
             if is_alpha(lookahead(lexer)) {
@@ -636,6 +669,10 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                 // apostrophe above (`well-known`, `Mast-Head`). A leading
                 // hyphen never reaches this loop (the alpha guard above
                 // rejects it); a trailing one stays outside the token.
+                // A `--` run is different: it is the ASCII dash handoff /
+                // join mark, so flag it (like dot_passed) for the trailing
+                // closed-class decision below, then break — emission
+                // rewinds to the mark and the run re-lexes whole.
                 advance(lexer, false);
                 if is_word_char(lookahead(lexer)) {
                     if len < MAX_WORD {
@@ -643,6 +680,9 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                         len += 1;
                     }
                     continue;
+                }
+                if lookahead(lexer) == 0x2D {
+                    dash_run_passed = true;
                 }
                 break;
             }
@@ -666,13 +706,14 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             in_list(&buf[..len], SUBORDINATORS) && valid(valid_symbols, TokenType::Subordinator);
         if (closed_conjunction || closed_subordinator)
             && valid(valid_symbols, TokenType::Word)
-            && (dot_passed || end_ahead(lexer))
+            && (dot_passed || dash_run_passed || end_ahead(lexer))
         {
             // Trailing closed-class word with only a boundary after it
             // ("Who did that?", "Because.", "remember that—and",
-            // "marvellous and—in"): read it as a plain word instead of
-            // opening a clause that has no content. Falls through to the
-            // WORD emission below, including the memory update.
+            // "marvellous and—in", "remember that--and"): read it as a
+            // plain word instead of opening a clause that has no content.
+            // Falls through to the WORD emission below, including the
+            // memory update.
         } else {
             if closed_conjunction {
                 (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
