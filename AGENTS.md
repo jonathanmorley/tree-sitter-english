@@ -264,15 +264,19 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (absent from EWT) with suite green. `however`/`therefore` stay
   plain words.
 
-- Abbreviation harvest (NOT STARTED): audit `ABBREVIATIONS` in
-  `bindings/rust/scanner.rs` (currently 15 items) the same way.
-  Goal: harvest candidates via Punkt + Moby-Dick audit misses
-  (`p.`, `ch.`, `vol.` already partly covered; check `fig/no/st/jr`
-  gaps). Non-goal: a large auto-imported list — over-listing keeps
-  real sentence breaks wrongly open and is worse than a miss.
-  Steps: hand-curate minimal additions with prose evidence, one
-  corpus test each (`test/corpus/abbreviations.txt`). Acceptance:
-  list delta with per-item justification, suite green.
+- Abbreviation harvest (SLICE DONE 2026-09-27; Punkt port still
+  open): Moby pattern `\b[A-Z][a-z]{1,4}\. [A-Z]` shows only covered
+  abbrevs (Mr/Mrs/St/Dr/No) plus true sentence ends (`Ahab. A`,
+  `Whale. I`, `sun. W`) — no unknown-abbrev gap there. Extended
+  search adds: `rev` (Rev. Henry, 2x, EWT-absent) and `mt`
+  (Mt. Hecla, 1x, title-pattern; EWT mt words don't constrain dots)
+  → ADDED with corpus tests. Rejected: `etc` (2x, genuinely
+  ambiguous mid-list vs sentence-final — statistical, not list),
+  `Ex` (single odd `U.S. Ex. Ex.`), `albeit` (0x). List delta:
+  15 → 17. Suite green; EWT-safe (both absent from EWT).
+  Full Punkt-port harvest remains future work. Standing rule:
+  no large auto-imported list — over-listing keeps real sentence
+  breaks wrongly open and is worse than a miss.
 
 - Greedy NP-chunker post-pass (NOT STARTED): CoNLL-2000 chunking as
   pattern, not code import. New crate (e.g. `crates/english-chunk`)
@@ -430,3 +434,28 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   slower, so spike, not plan. ONNX itself: open protobuf op-graph
   format + runtime (train in torch, ship without it; int8 quant,
   graph fusion; `ort` Rust crate over C++ ~15MB).
+
+- Accuracy roadmap 92→95, SOTA 97 out of scope (AGREED 2026-09-27):
+  ceiling for a linear discrete-feature model is ~94.5-95.5; the last
+  ~2 points need a context-sensitive encoder that breaks every budget
+  (see item above). Declare victory at 95 with 2MB deterministic, not
+  97 with 400MB. Ordered by ROI, all inside size/latency budgets:
+  (1) silver distillation at scale — large per-class-targeted oracle
+  batches (titlecase OOV, prep-chains, 3sg, imperatives) over
+  book-domain text, ch.36 batch-size discipline (small batches drift
+  shared priors); zero runtime change; expect +1-2;
+  (2) char n-gram + cluster features — suffixes 4-5,
+  Titlecase×position, cap-split backoff, Brown/word2vec-256 clusters
+  as one feature (~1MB word→u8 map, hashing absorbs it, min-count
+  prunes to ~2-4MB); expect +1-1.5;
+  (3) lexicon backoffs (bytes) — verb-base-form list, name
+  gazetteer, `-ness`/`-ous` vetoes, consulted only below margin τ
+  (EWT-safe by construction, same argument as `lest`/`supposing`);
+  expect +0.5, mostly Moby-side;
+  (4) beam-2 re-decode of low-margin spans only (~2× on \<10% of
+  sentences, keystroke stays ~30ms); expect +0.2-0.5, mainly
+  `this`-cascades. Not to do: wider dense features without data
+  (`w+t-1` overfit repeats), tagdict behavior change, averaging
+  (falsified), morphology-without-lexicon rules (both Brill rules
+  rejected with measurements). Each step: EWT dev/test + Moby,
+  canonical-`flies` veto, eval-before-model-change, md5 hygiene.

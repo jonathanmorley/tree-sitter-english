@@ -115,6 +115,14 @@ const SUBORDINATORS: &[&str] = &[
 const ABBREVIATIONS: &[&str] = &[
     "mr", "mrs", "ms", "dr", "st", "jr", "sr", "vs", "inc", "ltd", "co", "no", "fig", "vol",
     "approx",
+    // Abbreviation harvest 2026-09-27 (Moby evidence + EWT check):
+    // `rev` (Rev. Henry, 2x, EWT-absent), `mt` (Mt. Hecla, 1x, title
+    // pattern like mr/dr/st; EWT has mt as NOUN/PROPN words, which
+    // only constrains tags, not dot handling). Rejected: `etc`
+    // (genuinely ambiguous mid-list vs sentence-final — needs
+    // statistical treatment, not list membership), `Ex` (single odd
+    // instance in `U.S. Ex. Ex.`), `albeit` n/a.
+    "rev", "mt",
 ];
 
 fn is_alpha(c: i32) -> bool {

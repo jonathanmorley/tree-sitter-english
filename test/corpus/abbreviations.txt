@@ -165,6 +165,40 @@ It is I. You are next.
         (word)))))
 
 ==================
+Title does not end the sentence
+==================
+
+Rev. Henry arrived.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (period)
+        (word)
+        (word)))))
+
+==================
+Mount does not end the sentence
+==================
+
+Mt. Hecla erupted.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (period)
+        (word)
+        (word)))))
+
+==================
 Conjunction word at sentence start lexes as a word
 ==================
 
