@@ -178,7 +178,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     (dev 91.70%/test 91.79%, canonical intact), then joint oracle
     training (see train README: dev 91.84%/test 92.05%; a finetune
     variant scored 91.88%/91.99% but was an accidental two-stage, so
-    the clean single-run joint protocol won). The sweep peak,
+    the clean single-run joint protocol won). A third oracle batch
+    (ch.36, ~170 tok) was measured and REJECTED 2026-09-27: EWT dev
+    -51 / test -27 (Moby -5): forensics shows closed-class turbulence
+    both ways (`that` SCONJ↔PRON ±50s, ADP→ADV +40, ADJ overfire)
+    from shared-prior drift — small-data noise, not signal. Banked in
+    /tmp; oracle at scale needs bigger batches or per-class targeting.
+    Training hygiene (learned 2026-09-27): md5-tag weight files at
+    every step, verify bytes (not echoed intent) after each
+    train/restore, and rebuild test binaries after weights change
+    (`include_str!` is compile-time). Retrains are deterministic
+    (proven by identical md5s) — suspect inputs/paths first. The sweep peak,
     iters=15/min-count=1 (dev 92.09%/test 91.85%), was rejected: it flips
     canonical "flies" VERB→NOUN (forensics: plural -s/-ies + noun-noun
     t-1 memorization outvotes its single VERB observation in EWT; see
@@ -275,3 +285,95 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   rules unchanged (`scripts/fetch-ud.sh` pins; GUM/LinES eval-only,
   CC BY-NC-SA cannot ship). Acceptance: eval committed, bar
   recorded, no model change in the same commit.
+
+- NLTK Punkt trainer port, harvest-only offline (NOT STARTED):
+  source `nltk/tokenize/punkt.py` (1880 lines; Kiss & Strunk 2006).
+  Trainer passes: word-split keeping periods glued → type counts →
+  Dunning log-likelihood reclassify (hardcoded `p2=0.99`, scalings
+  for length/period-count/no-period penalty, `ABBREV=0.3`) →
+  first-pass annotate → orthography bitmask table → pair pass
+  (rare-abbrev backoff `<5`, sent-starter counts, initial/ordinal-
+  only collocations) → finalize (`COLLOCATION=7.88`,
+  `SENT_STARTER=30`). Reference English params: 155 abbrev types,
+  36 collocations, 38 sent starters, ~20k ortho entries (~237KB,
+  WSJ-trained — carries `sales`/WSJ names, proves retrain need).
+  Runtime order per boundary: collocation veto → abbr+ortho adds
+  break → abbr+starter adds break → initial/number+ortho-false
+  removes break. New vs `bindings/rust/scanner.rs:22-32`: (a)
+  unsupervised discovery ranking, (b) per-type ortho bitmasks
+  (ours fires rule ③ on any lowercase-next), (c) sent-starter list
+  for abbr-dot-that-ends-sentence, (d) initial/ordinal collocations.
+  Scope: offline `scripts/` binary only (same pattern as
+  `crates/english-pos-train`), outputs sorted candidate lists for
+  human curation into the abbreviation-harvest item — never runtime
+  tables (breaks 37ms/58MB budget). Faithful port ~600-900 lines;
+  harvest-only subset (tokenize+counts+LL ranking) ~250 lines.
+  Pitfalls: `_word_tokenize_fmt` keeps periods glued; numeric/initial
+  regexes use `[^\W\d]` (Unicode letters count); `typ[:-1]` slicing
+  is verbatim-don't-fix; overlap-dedup load-bearing; train on
+  literary prose, not WSJ. License: NLTK Apache-2.0 — reimplement,
+  don't copy regexes/wordlists verbatim. Acceptance: candidate
+  lists with LL scores on Moby-Dick, top items dispositioned per
+  harvest criteria, zero grammar/runtime changes in this item.
+
+- Scanner micro-guards from NLTK tokenizers (NOT STARTED):
+  (a) digit-guarded colon: `treebank.py` `([:,])([^\d])` and
+  `toktok.py` `:(?!//)` are the exact shape for the `10:30` residual
+  — apply same guard in `scan_colon_handoff`
+  (`bindings/rust/scanner.rs`), TDD in `test/corpus/*.txt`;
+  (b) dash coverage: `destructive.py` `[\u2012-\u2015]` vs scanner
+  `is_dash` U+2013/2014 only — extend to U+2012/U+2015 or map them,
+  corpus test each; (c) MacIntyre contractions (`gonna→gon+na`,
+  `cannot→can+not`, `destructive.py`) as `split_contraction`
+  candidates only after UD-EWT verification (EWT may keep `gonna`
+  whole). Reject: global-munge `split()` pipelines (non-incremental,
+  breaks `advance`/`mark_end` contract), TweetTokenizer monolith
+  (URLs/handles/emoji belong in transcription; its own `redos`
+  timeouts prove the budget miss), sonority syllabifier, TextTiling
+  as detector (topic shifts ≠ paragraphs; quadratic + numpy deps —
+  oracle at most).
+
+- Tagger correction layer, Brill-style post-pass (NOT STARTED):
+  source `nltk/tag/brill.py:137-166` templates, `brill_trainer.py:93`
+  admission (`max_rules`, `min_score=2` net-error-reduction).
+  Two rules target the recorded misses: (1) NOUN→VBZ where word
+  matches `[a-z]+s$` (not `ss`/`-ness`), prev ∈ {PRON,NOUN,PROPN},
+  next ∈ {DET,ADV,ADP,end} — fixes `wears/glitters→NOUN`;
+  (2) pos-0 NOUN→VB where word is verb-base-form and next ∈
+  {DET,ADJ,ADP,PRON} — fixes imperatives. Gate both on
+  `tag_margins` < τ (`lib.rs:175-182`; precedent
+  `sequential.py:648-660` `cutoff_prob`), so the 92% stays
+  untouched. Companion OOV work: Titlecase×position shape
+  conjunction + TnT-style cap-split suffix backoff
+  (`tnt.py:202-206,501-665`, infrequent≤10, maxlen 10) + suffixes
+  4-5 (`-tion/-ment`) with stem-length guard; prep-chains need
+  right-tag context (only a post-pass sees it); `this`-cascades need
+  2-wide re-decode of low-margin spans, never tagdict (locks the
+  wrong tag early). Admit rules only with EWT-majority + oracle-set
+  support (CANONICAL.md discipline; EWT-domain rules hurt Moby —
+  same divergence that killed concat). Cost: predicate list, bytes
+  not MB; features (`lib.rs:101-102`) and `TagCache` untouched.
+  Explicitly rejected: Collins averaging (falsified 33% vs 88%),
+  HMM Baum-Welch EM, tagdict behavior change (fast-path-only
+  optional), more `w+t-1` conjunctions (already hurt dev),
+  stemming-as-backoff (destroys the `-s` signal; `flies→fli`
+  conflates the rejected direction). Reporting steal: TnT
+  seen/OOV-split scores + first-N-errors printer
+  (`tnt.py:1023-1119`) → extend `verify` columns with seen/OOV +
+  margin. Acceptance: rules + τ recorded, Moby + EWT-dev deltas
+  reported separately, bench budget held.
+
+- NP-chunker implementation notes (extends the greedy-chunker item
+  above; NOT STARTED): source `nltk/chunk/regexp.py` rule semantics
+  only — ChunkRule→maximal-run wrapper starting from
+  `{<DT|PRP$>?<JJ.*>*<NN.*>+}` translated to UD tags;
+  StripRule→strip leading VBG/IN; SplitRule→split on DT/CC;
+  MergeRule→optional `of`-PP attach. Implement as single-pass state
+  machine over `tag_sentence` (piece, Tag) vecs, NOT regex-over
+  -`<DT><NN>`-string (`regexp.py:211-219` ReDoS timeouts prove the
+  cost; O(rules×n) with backtracking breaks keystroke budget).
+  `split_contraction` pieces already carry tags — consume directly.
+  Do not import PTB patterns verbatim. Later candidate (not this
+  item): `mwe.py` longest-match trie post-pass over
+  `Sentence::tokens` for `in spite of`-class multiwords — same
+  never-grammar reason as Tier 3.
