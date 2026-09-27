@@ -81,9 +81,31 @@ pub fn split_contraction(word: &str) -> Vec<String> {
 /// passes through whole.
 pub fn token_pieces(token: &english::Token) -> Vec<String> {
     if token.kind() == english::TokenKind::Word {
+        if let Some(fused) = split_fused(token.text()) {
+            return fused;
+        }
         split_contraction(token.text())
     } else {
         vec![token.text().to_string()]
+    }
+}
+
+/// Split fused informal contractions without apostrophes (MacIntyre):
+/// `gonna` → `gon` + `na`, `cannot` → `can` + `not`. UD splits them
+/// (EWT `gon`/VERB + `na`/PART; UD convention for `cannot`), so whole
+/// words would train/infer mismatched. Stem keeps surface case
+/// (`Gonna` → `Gon` + `na`, matching UD surface forms); tail is
+/// lowercase. `wanna`/`gotta` deliberately excluded: zero gold
+/// instances in EWT+GUM combined, and `wan` collides with the pale
+/// adjective — revisit with evidence.
+fn split_fused(word: &str) -> Option<Vec<String>> {
+    // ASCII-only forms below, so byte index 3 is always a boundary.
+    let lower = word.to_lowercase();
+    if lower == "gonna" || lower == "cannot" {
+        let (stem, tail) = word.split_at(3);
+        Some(vec![stem.to_string(), tail.to_lowercase()])
+    } else {
+        None
     }
 }
 

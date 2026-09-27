@@ -346,10 +346,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (`bindings/rust/scanner.rs`), TDD in `test/corpus/*.txt`;
   (b) dash coverage: `destructive.py` `[\u2012-\u2015]` vs scanner
   `is_dash` U+2013/2014 only — extend to U+2012/U+2015 or map them,
-  corpus test each; (c) MacIntyre contractions (`gonna→gon+na`,
-  `cannot→can+not`, `destructive.py`) as `split_contraction`
-  candidates only after UD-EWT verification (EWT may keep `gonna`
-  whole). Reject: global-munge `split()` pipelines (non-incremental,
+  corpus test each (DONE 2026-09-27: range extended + bar test);
+  (c) MacIntyre contractions as `split_contraction` candidates —
+  DONE 2026-09-27 for `gonna→gon+na` (EWT gon/VERB + na/PART; GUM
+  88/104 confirms) and `cannot→can+not` (zero gold instances
+  anywhere, but UD-convention-unambiguous with ultra-known parts —
+  zero-risk); DEFERRED `wanna`/`gotta` (zero gold + `wan`/pale
+  collision). Reject: global-munge `split()` pipelines (non-incremental,
   breaks `advance`/`mark_end` contract), TweetTokenizer monolith
   (URLs/handles/emoji belong in transcription; its own `redos`
   timeouts prove the budget miss), sonority syllabifier, TextTiling

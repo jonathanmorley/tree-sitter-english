@@ -93,6 +93,35 @@ fn sentence_pieces_merge_abbreviation_dots() {
 }
 
 #[test]
+fn sentence_pieces_split_fused_contractions() {
+    // UD splits these (EWT gon/VERB + na/PART); whole words would
+    // train/infer mismatched.
+    let doc = first_sentence("We gonna win.\n");
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert_eq!(
+        sentence_pieces(&sent),
+        vec![
+            "We".to_string(),
+            "gon".to_string(),
+            "na".to_string(),
+            "win".to_string()
+        ]
+    );
+
+    let doc = first_sentence("I cannot go.\n");
+    let sent = doc.paragraphs()[0].sentences()[0];
+    assert_eq!(
+        sentence_pieces(&sent),
+        vec![
+            "I".to_string(),
+            "can".to_string(),
+            "not".to_string(),
+            "go".to_string()
+        ]
+    );
+}
+
+#[test]
 fn sentence_pieces_split_contractions() {
     let doc = first_sentence("I don't know.\n");
     let sent = doc.paragraphs()[0].sentences()[0];
