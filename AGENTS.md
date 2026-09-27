@@ -297,13 +297,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   unhandled (mid-sentence `ellipsis` nodes + terminal `...` exist
   with corpus tests).
 
-- Second-genre eval set (NOT STARTED): Moby-Dick overfit guard.
-  Add a small hand-tagged eval (~20 sentences, accuracy bar set
-  before work) from a different genre (e.g. news or academic prose
-  in `examples/` style) alongside `tests/moby.rs`. Training data
-  rules unchanged (`scripts/fetch-ud.sh` pins; GUM/LinES eval-only,
-  CC BY-NC-SA cannot ship). Acceptance: eval committed, bar
-  recorded, no model change in the same commit.
+- Second-genre eval set (DONE 2026-09-27): `tests/genre.rs` — 20
+  hand-composed sentences (10 news-report, 10 academic-expository),
+  hand-tagged UD-style with oracle discipline (EWT counts checked:
+  `several`→ADJ 49:0, existential `is`→VERB 249:5; guideline
+  overridden once by EWT-majority: `such`→ADJ 72:24; attributive
+  `tenth`→ADJ despite EWT's single nominal). Original text (no
+  license exposure: GUM/LinES cannot ship, EWT test would
+  double-count). Measured 0.884 with 20 genuine misses (titlecase
+  OOV, preposition chains, `-s`/imperative verbs, `that`-cascades),
+  bar 0.86, no model change in this commit. Cross-genre gold table
+  (GUM test splits) lives in train README alongside.
 
 - NLTK Punkt trainer port, harvest-only offline (NOT STARTED):
   source `nltk/tokenize/punkt.py` (1880 lines; Kiss & Strunk 2006).
