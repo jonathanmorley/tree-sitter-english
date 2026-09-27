@@ -62,6 +62,29 @@ way: never contradict EWT-majority on frequent words (checked
 sentence-initial `So`→ADV 88:0 and `open`→ADJ 31:17 before keeping
 those labels).
 
+## Cross-genre standing (GUM test, gold)
+
+Committed weights measured per GUM genre (split its test file by
+`# meta::genre`; EWT test 92.05% for reference). GUM-side conventions
+(predicative participles →VERB, discourse-`like`→INTJ — see
+CANONICAL.md J2/J4) count as errors here, so this table mixes real
+gaps with known disagreements:
+
+| genre | acc | | genre | acc |
+|---|---|---|---|---|
+| conversation | 93.36% | | essay | 92.92% |
+| podcast | 92.17% | | whow | 91.96% |
+| news | 91.80% | | academic | 91.75% |
+| vlog | 91.73% | | speech | 91.38% |
+| interview | 91.11% | | letter | 90.97% |
+| court | 90.65% | | fiction | 90.64% |
+| voyage | 89.84% | | textbook | 89.14% |
+| bio | 88.92% | | | |
+
+Weakest (bio/textbook/voyage) is OOV-heavy specialist vocabulary;
+fiction trails EWT by 1.4 points. This is the baseline any
+domain-data or Brill-rule work moves deliberately.
+
 ## More data (tried, rejected)
 
 `fetch-ud.sh` also builds `ewt+gum`, `ewt+lines`, and `all` presets,

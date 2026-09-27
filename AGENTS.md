@@ -135,6 +135,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Residuals deliberately left: leading-dash dialogue, `10:30`
   times, complete-parenthetical interiors without joins (`(unasked too!)` needs paren-architecture rethink), `R&D`-style mid-clause
   `&`, em-dash joins in subordinate interiors (attach ambiguity).
+  Revisit triggers (2026-09-27): times get a real token only if they
+  start *erroring* (today they misread cleanly as elaboration, and
+  pieces already align with UD `10`/`:`/`30`), or if a scheduling
+  domain or NER consumer needs time entities — never for aesthetics.
   NOTE (resolved 2026-09-27): built the real 0.27.0 CLI from source
   (`cargo install tree-sitter-cli --version 0.27.0 --root /tmp/tscli`)
   and regenerated — zero `src/` delta, so the 0.26.11 output was

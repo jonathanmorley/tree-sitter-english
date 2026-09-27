@@ -262,7 +262,11 @@ unsafe fn ellipsis_end_ahead(lexer: *mut TSLexer) -> bool {
 }
 
 fn is_dash(c: i32) -> bool {
-    matches!(c, 0x2014 | 0x2013)
+    // Em/en dash plus figure dash (U+2012) and horizontal bar (U+2015):
+    // the destructive-tokenizer range U+2012-U+2015. Words never contain
+    // them (the word loop takes ASCII hyphen only), so they always reach
+    // dash handling whole.
+    matches!(c, 0x2012..=0x2015)
 }
 
 fn is_closer(c: i32) -> bool {
@@ -378,6 +382,13 @@ unsafe fn scan_colon_handoff(lexer: *mut TSLexer) -> Handoff {
         }
         advance(lexer, false);
         mark_end(lexer);
+        // Digit-guarded colon (treebank `([:,])([^\\d])` shape): a digit
+        // after the colon is a time (`10:30`), never a handoff — refuse
+        // immediately so times behave exactly as before (currently an
+        // error; full time support needs number-token work, residual).
+        if lookahead(lexer) >= 0x30 && lookahead(lexer) <= 0x39 {
+            return Handoff::Refused;
+        }
         while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
             advance(lexer, false);
         }

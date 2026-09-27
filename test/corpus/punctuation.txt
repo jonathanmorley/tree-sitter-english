@@ -521,6 +521,48 @@ He left early--the train was departing.
         (word)))))
 
 ==================
+Horizontal bar joins elaborating clause
+==================
+
+He left early―the train was departing.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Time expression with colon keeps parsing (residual shape)
+==================
+
+Meet at 10:30 sharp.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (number))
+      (colon)
+      (clause
+        (number)
+        (word)))))
+
+==================
 Double-hyphen interruption hands off at a blank line
 ==================
 
