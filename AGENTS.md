@@ -250,18 +250,19 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   tests or a constrained scanner fix with zero `generate` conflicts.
   License: dev-time use only, nothing copied into the repo.
 
-- PDTB subordinator audit (NOT STARTED): audit `SUBORDINATORS` in
-  `bindings/rust/scanner.rs` (currently 24 items) against the PDTB
-  explicit-connective list. Goal: close coverage gaps (`lest`,
-  `albeit`, etc.). Non-goal: importing PDTB hierarchy or typing
-  elaboration vs contrast in-grammar (would reintroduce the LR
-  conflicts Tier 2 removed; classification belongs in a post-pass
-  over `Sentence::tokens`). Steps: (1) build candidate list with
-  PDTB source cited; (2) check each against Moby-Dick audit +
-  corpus; (3) add only words with prose evidence, one corpus test
-  per word, TDD first. Acceptance: audit table (candidate / evidence
-  / added-or-rejected-with-reason), full suite green, zero
-  `generate` conflicts. `however`/`therefore` stay plain words.
+- PDTB subordinator audit (DONE 2026-09-27): candidate PDTB
+  subordinators checked against Moby evidence + EWT tags. ADDED
+  `lest` (7x Moby, pure subordinator, EWT-absent) and `supposing`
+  (5x conditional, EWT-absent) with corpus tests; multiword `so that`/`as if` verified parsing via composition (no action).
+  REJECTED with reasons: `provided`/`given`/`considering` (EWT
+  VERB-dominant main verbs — adding would break those parses),
+  `granted` (1 conditional vs main-verb use + EWT VERB),
+  `albeit` (no Moby evidence), `regardless` (ADV) /
+  `notwithstanding` (prepositional). Moby error counts unchanged
+  (these parsed as flat words before — the win is structural:
+  subordinate clauses now marked); EWT-safe by construction
+  (absent from EWT) with suite green. `however`/`therefore` stay
+  plain words.
 
 - Abbreviation harvest (NOT STARTED): audit `ABBREVIATIONS` in
   `bindings/rust/scanner.rs` (currently 15 items) the same way.

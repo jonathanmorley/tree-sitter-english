@@ -130,6 +130,44 @@ The book that I read was good.
         (word)))))
 
 ==================
+Subordinate clause with "lest"
+==================
+
+I fear lest thy friend return.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Subordinate clause with "supposing"
+==================
+
+Supposing he comes, we stay.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
 Two sentences in one paragraph
 ==================
 

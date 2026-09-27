@@ -15,8 +15,8 @@ The grammar marks three levels of structure.
   `yet`, and `for` join clauses. Subordinators such as `because`,
   `although`, `that`, `if`, `when`, `while`, `since`, `unless`, `before`,
   `after`, `until`, `which`, `who`, `whom`, `whose`, `as`, `once`, `than`,
-  `till`, `whenever`, `where`, `whereas`, `wherever`, and `whether` start
-  subordinate clauses.
+  `till`, `whenever`, `where`, `whereas`, `wherever`, `whether`, `lest`,
+  and `supposing` start subordinate clauses.
 - Clause punctuation. A semicolon joins two coordinate clauses. A colon
   or an em dash (including ASCII `--` runs) introduces an elaborating
   clause. A sentence abandoned at an em dash or a bare colon hands off

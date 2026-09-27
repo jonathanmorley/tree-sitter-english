@@ -77,9 +77,39 @@ struct Scanner {
 const CONJUNCTIONS: &[&str] = &["and", "but", "or", "nor", "so", "yet", "for"];
 
 const SUBORDINATORS: &[&str] = &[
-    "because", "although", "though", "if", "when", "while", "since", "unless", "before", "after",
-    "until", "that", "which", "who", "whom", "whose", "as", "once", "than", "till", "whenever",
-    "where", "whereas", "wherever", "whether",
+    "because",
+    "although",
+    "though",
+    "if",
+    "when",
+    "while",
+    "since",
+    "unless",
+    "before",
+    "after",
+    "until",
+    "that",
+    "which",
+    "who",
+    "whom",
+    "whose",
+    "as",
+    "once",
+    "than",
+    "till",
+    "whenever",
+    "where",
+    "whereas",
+    "wherever",
+    "whether",
+    // PDTB audit 2026-09-27: `lest` (7x Moby, pure subordinator, no
+    // main-verb use in either corpus) and `supposing` (5x Moby,
+    // conditional only; EWT-absent) join. Main-verb `provided`/`given`
+    // /`considering` stay out (EWT VERB-dominant); `albeit` has no
+    // Moby evidence; `regardless`/`notwithstanding` are
+    // prepositional/ADV. See AGENTS.md for the audit table.
+    "lest",
+    "supposing",
 ];
 
 const ABBREVIATIONS: &[&str] = &[
