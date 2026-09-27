@@ -1,0 +1,94 @@
+//! Brill-style correction post-pass over greedy perceptron output.
+//!
+//! The perceptron decodes left-to-right with local features, so it has
+//! systematic blind spots the training data cannot fix at this model
+//! size: 3sg `-s` verbs read as plural nouns (`wears`, `glitters`),
+//! and subjectless sentence-initial verbs read as nouns
+//! (`Better sleep ...`). Correction rules rewrite tags where lexical
+//! shape plus neighbor tags outweigh the perceptron — gated on the
+//! decode margin so confident predictions are never touched.
+//!
+//! Admission discipline (CANONICAL.md): a rule ships only with
+//! EWT-majority and oracle-set support measured on EWT dev plus the
+//! Moby evals. Gated rules cannot move confident tokens by
+//! construction; the gate threshold is calibrated per rule in the
+//! trainer (`--correct` reporting) and recorded here.
+//!
+//! REJECTED (2026-09-27, kept out of `RULES`): an `s-verb` rule
+//! (NOUN→VERB for `[a-z]+s$` non-`ss`/-`ness` words after nominals).
+//! Measured net-negative on EWT at every threshold (τ=2: dev ±0 /
+//! test −2 on margin-0.0 ties `theories`, `status`; τ=8: dev −4 /
+//! test −2 across 19 fires) and zero fires on the Moby eval —
+//! plural `-ies` nouns and `-us` words share the shape, and only a
+//! lexicon (rejected: tagdicts lock the wrong tag early) tells them
+//! apart. The engine below stays for rules that pass admission; its
+//! tests use a local toy rule.
+//!
+//! Background: `docs/references.md` (Brill 1992/1995 for the
+//! post-pass shape; Collins 2002 for the perceptron).
+//!
+//! Deliberately NOT here: tagdicts (lock the wrong tag early),
+//! stemming backoff (destroys the `-s` signal), more `w+t-1`
+//! conjunctions (hurt dev), Collins averaging, HMM EM.
+
+use crate::Tag;
+
+/// A correction rule: a name plus a predicate over the token stream.
+/// Predicates see surface pieces, current predicted tags, and margins;
+/// they return the replacement tag (or `None` to leave the token).
+/// Conditions use *predicted* tags (what the decoder actually saw,
+/// including its mistakes) — never gold.
+#[derive(Clone, Copy)]
+pub struct Rule {
+    /// Short identifier (`s-verb`, `imperative-0`, …).
+    pub name: &'static str,
+    /// Margin gate: applies only when the token decoded with margin
+    /// strictly inside `(0, threshold)`. Calibrated per rule.
+    pub threshold: f32,
+    /// The rewrite test. `i` indexes `pieces`/`tags`/`margins`.
+    pub test: fn(&[String], &[Tag], usize) -> Option<Tag>,
+}
+
+/// Margin gates are double-bounded `0 < margin < threshold`: exact
+/// ties (margin 0) carry no model signal, and shape-only guesses there
+/// lose on base rates (measured: `theories`, `status` flip wrong) —
+/// a rule may only override a weak-but-present signal, never invent
+/// one from silence. Thresholds calibrate per rule in the trainer
+/// (`--correct` reporting); Moby evals move only deliberately.
+///
+/// No rules ship yet: the `s-verb` candidate (NOUN→VERB for 3sg-shaped
+/// words after nominals) measured net-negative on EWT at every
+/// threshold (τ=2: dev ±0 / test −2; τ=8: dev −4 / test −2) with zero
+/// Moby fires — plural `-ies` nouns and `-us` words share the shape.
+/// See the rejection note at the top of this module.
+///
+/// All shipped rules, in application order. Empty until a rule passes
+/// admission.
+pub const RULES: &[Rule] = &[];
+
+/// Apply `rules` to decoded `(tag, margin)` pairs in place.
+/// Each token takes the first matching rule whose gate opens
+/// (`0 < margin < threshold`). Pieces are needed for shape tests.
+/// Predicates all see the pre-pass tag sequence (snapshotted once),
+/// not mid-rewrite state — later rules never observe earlier rewrites
+/// within a pass.
+pub fn apply_rules(pieces: &[String], tagged: &mut [(Tag, f32)], rules: &[Rule]) {
+    let snapshot = tags_snapshot(tagged);
+    for (i, (tag, margin)) in tagged.iter_mut().enumerate() {
+        for rule in rules {
+            if *margin > 0.0
+                && *margin < rule.threshold
+                && let Some(fix) = (rule.test)(pieces, &snapshot, i)
+            {
+                *tag = fix;
+                break;
+            }
+        }
+    }
+}
+
+/// Snapshot current tags for predicate reads (predicates must see a
+/// stable tag sequence, not mid-rewrite state).
+fn tags_snapshot(tagged: &[(Tag, f32)]) -> Vec<Tag> {
+    tagged.iter().map(|(t, _)| *t).collect()
+}

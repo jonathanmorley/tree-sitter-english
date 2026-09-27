@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use english_pos::{Model, Tag};
+use english_pos::{Model, RULES, Tag, apply_rules};
 
 /// Parse CoNLL-U, skipping multiword/pre-tokenized lines (IDs with `-`
 /// or `.`) and empty nodes. Returns `(surface, lowercased, tags)`.
@@ -97,9 +97,85 @@ fn accuracy(model: &Model, data: &[(Vec<String>, Vec<String>, Vec<String>)]) -> 
     (correct, total)
 }
 
+/// Accuracy with correction `RULES` applied (via `tag_margins` +
+/// `apply_rules`). Returns (correct, total, fires) where fires counts
+/// tokens whose tag changed. Used by `--correct` reporting; the plain
+/// `accuracy` above stays the gate.
+fn accuracy_corrected(
+    model: &Model,
+    data: &[(Vec<String>, Vec<String>, Vec<String>)],
+) -> (usize, usize, usize) {
+    let mut correct = 0;
+    let mut total = 0;
+    let mut fires = 0;
+    let mut shown = 0;
+    for (words, _, gold) in data {
+        let mut tagged: Vec<(Tag, f32)> = model.tag_margins(words);
+        let before: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
+        let pieces: Vec<String> = words.to_vec();
+        apply_rules(&pieces, &mut tagged, RULES);
+        for (i, ((t, m), b)) in tagged.iter().zip(&before).enumerate() {
+            if t != b && shown < 15 {
+                // First-N-errors printer (TnT style): word, neighbor
+                // predicted tags, rewrite, gold, margin.
+                let prev = if i > 0 {
+                    before[i - 1].upos()
+                } else {
+                    "<START>"
+                };
+                let next = before.get(i + 1).map(|x| x.upos()).unwrap_or("<END>");
+                eprintln!(
+                    "  fire: {} [{}/{}] {}->{} gold={} margin={m:.1}",
+                    words[i],
+                    prev,
+                    next,
+                    b.upos(),
+                    t.upos(),
+                    gold[i]
+                );
+                shown += 1;
+            }
+        }
+        fires += tagged
+            .iter()
+            .zip(&before)
+            .filter(|((t, _), b)| t != *b)
+            .count();
+        for ((guess, _), g) in tagged.iter().zip(gold) {
+            total += 1;
+            if guess.upos() == g {
+                correct += 1;
+            }
+        }
+    }
+    (correct, total, fires)
+}
+
+/// Report accuracy for one split, plus the corrected numbers when
+/// `--correct` is set (fires counts rule rewrites).
+fn report(
+    model: &Model,
+    data: &[(Vec<String>, Vec<String>, Vec<String>)],
+    which: &str,
+    correct: bool,
+) {
+    let (ok, total) = accuracy(model, data);
+    println!(
+        "{which}: {ok}/{total} = {:.2}%",
+        100.0 * ok as f64 / total.max(1) as f64
+    );
+    if correct {
+        let (cok, _, fires) = accuracy_corrected(model, data);
+        println!(
+            "{which}+rules: {cok}/{total} = {:.2}% ({fires} fires)",
+            100.0 * cok as f64 / total.max(1) as f64
+        );
+    }
+}
+
 fn usage() -> ! {
     eprintln!(
-        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N]]"
+        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N]] [--correct]"
     );
     std::process::exit(2);
 }
@@ -111,6 +187,7 @@ fn main() {
     let mut eval_only: Option<String> = None;
     let mut finetune: Option<PathBuf> = None;
     let mut finetune_iters = 3usize;
+    let mut correct = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -142,6 +219,7 @@ fn main() {
                     .parse()
                     .unwrap_or_else(|_| usage())
             }
+            "--correct" => correct = true,
             _ => usage(),
         }
     }
@@ -159,11 +237,7 @@ fn main() {
         let json = fs::read_to_string(&weights_path)
             .unwrap_or_else(|e| panic!("failed to read {}: {e}", weights_path.display()));
         let model = Model::from_json(&json).expect("invalid weights JSON");
-        let (correct, total) = accuracy(&model, &data);
-        println!(
-            "{which}: {correct}/{total} = {:.2}%",
-            100.0 * correct as f64 / total.max(1) as f64
-        );
+        report(&model, &data, &which, correct);
         return;
     }
 
@@ -188,11 +262,7 @@ fn main() {
 
         for which in ["dev", "test"] {
             let data = parse_conllu(&split(which));
-            let (correct, total) = accuracy(&model, &data);
-            println!(
-                "{which}: {correct}/{total} = {:.2}%",
-                100.0 * correct as f64 / total.max(1) as f64
-            );
+            report(&model, &data, which, correct);
         }
         return;
     }
@@ -215,10 +285,6 @@ fn main() {
 
     for which in ["dev", "test"] {
         let data = parse_conllu(&split(which));
-        let (correct, total) = accuracy(&model, &data);
-        println!(
-            "{which}: {correct}/{total} = {:.2}%",
-            100.0 * correct as f64 / total.max(1) as f64
-        );
+        report(&model, &data, which, correct);
     }
 }

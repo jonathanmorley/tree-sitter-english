@@ -176,7 +176,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
     `cargo run --release -p english-pos --example bench -- <file>`.
     DONE moby prose eval (2026-09-26): `tests/moby.rs` gains 19
     hand-tagged sentences from Moby-Dick ch.1-2 (~190 tokens, bar
-    0.84; measured 0.87 with 24 misses: titlecase OOV both directions,
+    0.84; measured 0.855 with 27 misses: titlecase OOV both directions,
     preposition-chain collapse, -s/imperative verbs, this-DET
     cascades). Oracle calls documented in-file; next oracle-train data
     works from this eval.
@@ -348,9 +348,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   as detector (topic shifts ≠ paragraphs; quadratic + numpy deps —
   oracle at most).
 
-- Tagger correction layer, Brill-style post-pass (NOT STARTED):
-  source `nltk/tag/brill.py:137-166` templates, `brill_trainer.py:93`
-  admission (`max_rules`, `min_score=2` net-error-reduction).
+- Tagger correction layer, Brill-style post-pass (ENGINE DONE
+  2026-09-27, NO RULES SHIPPED): `english-pos/src/correction.rs`
+  holds `Rule` + `apply_rules` (pre-pass snapshot semantics) with unit
+  tests, `Model::tag_margins` feeds it, trainer `--correct` reports
+  accuracy + fires with a first-N printer. Rule (1) (`s-verb`)
+  measured and REJECTED: net-negative on EWT at every threshold
+  (τ=2: dev ±0 / test −2 on ties; τ=8: dev −4 / test −2) with zero
+  Moby fires — plural `-ies`/`-us` share the shape; gates are now
+  double-bounded `0 < margin < threshold`. Rule (2) (imperatives)
+  still needs its base-form predicate. Source
+  `nltk/tag/brill.py:137-166` templates, `brill_trainer.py:93`
   Two rules target the recorded misses: (1) NOUN→VBZ where word
   matches `[a-z]+s$` (not `ss`/`-ness`), prev ∈ {PRON,NOUN,PROPN},
   next ∈ {DET,ADV,ADP,end} — fixes `wears/glitters→NOUN`;

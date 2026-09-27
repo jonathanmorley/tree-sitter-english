@@ -40,6 +40,11 @@ cargo run --release -p english-pos-train -- --corpus /tmp/ud-oracle \
   --iters 20 --min-count 1
 ```
 
+`--correct` reports accuracy with the correction rules applied
+(`tag_margins` + `apply_rules`), including fire counts and a
+first-N fire printer on stderr — the measurement harness for rule
+admission (no rules ship yet, so it currently reports 0 fires).
+
 Measured (EWT dev/test gates, Moby prose eval at bar 0.84):
 
 | setup | EWT dev | EWT test | Moby prose |

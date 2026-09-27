@@ -10,9 +10,11 @@
 //! not belong there); this crate annotates them with probabilities that
 //! degrade gracefully instead of failing the tree.
 
+mod correction;
 mod tag;
 mod wire;
 
+pub use correction::{RULES, Rule, apply_rules};
 pub use tag::Tag;
 pub use wire::{
     TagCache, clause_pieces, sentence_pieces, split_contraction, tag_clause, tag_document,
