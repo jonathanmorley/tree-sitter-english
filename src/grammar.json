@@ -581,7 +581,7 @@
     },
     "number": {
       "type": "PATTERN",
-      "value": "\\d+(\\.\\d+)?"
+      "value": "\\d+(\\.\\d+)?(:\\d\\d(:\\d\\d)?)?"
     },
     "currency": {
       "type": "PATTERN",

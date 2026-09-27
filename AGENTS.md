@@ -78,6 +78,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   between the header and `---` are joined verbatim, so N blank lines
   there feed N-1 newlines (single newlines are extras; doubles are
   `paragraph_break`).
+- Never enshrine a misparse: a test that pins a known-wrong reading
+  (`30 sharp` as an elaborating clause for the time `10:30`) is a
+  placeholder, not a pass. When a misreading is identified, write the
+  test asserting the correct tree, watch it fail, and fix the grammar
+  or scanner — however small the fix (`number` absorbing `10:30`).
+  Residuals are things that still ERROR after a fix attempt, or that
+  a recorded cost/benefit call defers with triggers — never readings
+  known to be wrong. The `verify` no-predicate/margin lists are the
+  standing source of candidate misreadings.
 - After every `grammar.js` edit, check for duplicate rule keys
   (`grep -n '^    [a-z_]*: \$' grammar.js` must show each once): JS
   silently keeps the last, so a duplicated rule shadows the real one
@@ -132,13 +141,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   navigation coordinates (`62o 17′ 20″`), epitaphs, speaker labels,
   illustration captions (bucketed as transcription with `[]^{}`),
   and front/back matter.
-  Residuals deliberately left: leading-dash dialogue, `10:30`
-  times, complete-parenthetical interiors without joins (`(unasked too!)` needs paren-architecture rethink), `R&D`-style mid-clause
+  Residuals deliberately left: leading-dash dialogue,
+  complete-parenthetical interiors without joins (`(unasked too!)` needs paren-architecture rethink), `R&D`-style mid-clause
   `&`, em-dash joins in subordinate interiors (attach ambiguity).
-  Revisit triggers (2026-09-27): times get a real token only if they
-  start *erroring* (today they misread cleanly as elaboration, and
-  pieces already align with UD `10`/`:`/`30`), or if a scheduling
-  domain or NER consumer needs time entities — never for aesthetics.
+  Revisit triggers (2026-09-27): never for aesthetics — only if
+  constructs start *erroring*, or a scheduling domain or NER consumer
+  needs entities. Times were closed under this bar the other way:
+  `10:30` misread cleanly as elaboration, so per the no-misparse rule
+  it got a real token (number absorbs `:MM(:SS)`; EWT keeps times
+  whole, 284× NUM, so UD alignment holds with no wiring change).
   NOTE (resolved 2026-09-27): built the real 0.27.0 CLI from source
   (`cargo install tree-sitter-cli --version 0.27.0 --root /tmp/tscli`)
   and regenerated — zero `src/` delta, so the 0.26.11 output was

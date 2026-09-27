@@ -224,8 +224,12 @@ export default grammar({
     // The scanner refuses letter-dot-letter sequences so this token wins.
     dotted: $ => /[A-Za-z]+(\.[A-Za-z]+)+\.?/,
 
-    // Integers and decimals: the internal dot of 3.14 stays inside the token.
-    number: $ => /\d+(\.\d+)?/,
+    // Integers, decimals, and times: the internal dot of 3.14 stays
+    // inside the token, as does the colon of 10:30 (a single time
+    // expression, not an elaboration — see the corpus test). A colon
+    // without two following digits is untouched (elaboration and
+    // handoff paths behave as before).
+    number: $ => /\d+(\.\d+)?(:\d\d(:\d\d)?)?/,
 
     // Currency signs stay visible and flat: `$20,000,000` parses as
     // currency, number, number, number (commas are hidden).
