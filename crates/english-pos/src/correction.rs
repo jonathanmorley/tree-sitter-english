@@ -62,6 +62,16 @@ pub struct Rule {
 /// Moby fires — plural `-ies` nouns and `-us` words share the shape.
 /// See the rejection note at the top of this module.
 ///
+/// REJECTED (2026-09-27): an `imperative-0` rule (sentence-initial
+/// NOUN→VERB for morphology-plausible base verbs with complement
+/// next) measured 0% precision — EWT dev fires (`Lifts`, `Dentist`,
+/// `someplace`) all gold NOUN/ADV, test net ±0 only because its one
+/// fire was already wrong, and threshold ∞ flips ordinary nouns
+/// (`Thanks`, `Hundreds`, `Things`) en masse. Morphology without a
+/// lexicon cannot beat NOUN base rates at pos-0; the EWT-majority
+/// per-form variant is a tagdict and stays rejected. Removed, like
+/// `s-verb` above; the engine + gate stay for rules that pass.
+
 /// All shipped rules, in application order. Empty until a rule passes
 /// admission.
 pub const RULES: &[Rule] = &[];

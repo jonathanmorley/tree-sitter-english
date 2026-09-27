@@ -356,8 +356,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   measured and REJECTED: net-negative on EWT at every threshold
   (τ=2: dev ±0 / test −2 on ties; τ=8: dev −4 / test −2) with zero
   Moby fires — plural `-ies`/`-us` share the shape; gates are now
-  double-bounded `0 < margin < threshold`. Rule (2) (imperatives)
-  still needs its base-form predicate. Source
+  double-bounded `0 < margin < threshold` (ties carry no signal).
+  Rule (2) (`imperative-0`: pos-0 NOUN→VERB on morphology + complement
+  next) measured and REJECTED 2026-09-27: 0% precision (EWT dev fires
+  `Lifts`/`Dentist`/`someplace`, all gold NOUN/ADV; ∞-threshold flips
+  ordinary nouns en masse). Morphology without a lexicon cannot beat
+  NOUN base rates at pos-0; the per-form EWT-majority variant is a
+  tagdict and stays rejected. Source
   `nltk/tag/brill.py:137-166` templates, `brill_trainer.py:93`
   Two rules target the recorded misses: (1) NOUN→VBZ where word
   matches `[a-z]+s$` (not `ss`/`-ness`), prev ∈ {PRON,NOUN,PROPN},
@@ -400,3 +405,27 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   item): `mwe.py` longest-match trie post-pass over
   `Sentence::tokens` for `in spite of`-class multiwords — same
   never-grammar reason as Tier 3.
+
+- Neural runtimes evicted, transformers as oracles only (DECIDED
+  2026-09-27): Brill is not SOTA (transformers reach ~97-98% UPOS
+  on EWT vs our 92.05) but is the best-fit correction layer under
+  the budgets — bytes not MB, no weight invalidation, net-error
+  admission. Measured budget gaps (Moby-Dick 10,542 sent / 225k
+  pieces, CPU single-thread estimates): BERT-base fp32 ~3-10 min
+  full-doc (~1000×), ~440MB weights (220×), ~1GB peak (15×),
+  torch/ONNX ~100MB+ deps; DistilBERT ONNX int8 ~10-30s (~100×),
+  ~60MB (30×), ~300MB (5×); TinyBERT int8 ~5-15s (~50×), ~14MB
+  (7×), ~150MB (2.5×) — vs 176ms / 1.98MB JSON / 58MB / zero deps.
+  Keystroke single-sentence is the least-bad line (a distilled
+  forward at ~1-5ms could fit 47ms) but full parse/bench/verify/
+  audit, cold start, cross-platform prebuilts (C/Swift/Go/Node/
+  Python bindings), and float nondeterminism (vs md5-identical
+  retrains) all fail. Even Tok2Vec-CNN (~10-20MB, ~20-50k tok/s)
+  is ~10× slower/larger for ~1 point. Standing protocol: transformers
+  generate labels offline, distilled into the 2MB greedy model via
+  oracle-data joint training — never the keystroke path. Only
+  architecturally-compatible spike if ever revisited: `tract`
+  (pure-Rust ONNX, no C++) — transformer ops poorly covered and
+  slower, so spike, not plan. ONNX itself: open protobuf op-graph
+  format + runtime (train in torch, ship without it; int8 quant,
+  graph fusion; `ort` Rust crate over C++ ~15MB).

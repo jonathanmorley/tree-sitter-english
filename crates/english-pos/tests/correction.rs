@@ -6,6 +6,30 @@
 
 use english_pos::{Rule, Tag, apply_rules};
 
+/// Local stand-in for the rejected `imperative-0` shape (pos-0 NOUN
+/// + complement next → VERB): exercises engine paths without shipping
+/// the rule. See `correction.rs` for why it stays out of `RULES`.
+const POS0: Rule = Rule {
+    name: "pos0-toy",
+    threshold: 2.0,
+    test: |pieces, tags, i| {
+        let alpha = pieces[i]
+            .to_lowercase()
+            .chars()
+            .all(|c| c.is_ascii_lowercase());
+        if i == 0 && tags[i] == Tag::Noun && alpha {
+            match tags.get(1).copied() {
+                Some(Tag::Det) | Some(Tag::Adj) | Some(Tag::Adp) | Some(Tag::Pron) => {
+                    Some(Tag::Verb)
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    },
+};
+
 /// Toy rule: the exact word `glitters` tagged NOUN becomes VERB.
 const TOY: Rule = Rule {
     name: "toy",
@@ -96,4 +120,32 @@ fn first_matching_rule_wins() {
     );
     apply_rules(&pieces, &mut tagged, &[other, TOY]);
     assert_eq!(tagged[1].0, Tag::Adj);
+}
+
+#[test]
+fn imperative_fires_on_base_verb_with_complement() {
+    // `Look at ...` decoded as NOUN with a weak margin flips.
+    let (pieces, mut tagged) = case(
+        &["Look", "at", "the", "crowds"],
+        &[
+            (Tag::Noun, 1.0),
+            (Tag::Adp, 0.0),
+            (Tag::Det, 0.0),
+            (Tag::Noun, 0.0),
+        ],
+    );
+    apply_rules(&pieces, &mut tagged, &[POS0]);
+    assert_eq!(tagged[0].0, Tag::Verb);
+}
+
+#[test]
+fn imperative_skips_non_verbs_and_verb_next() {
+    // Gerund shapes never qualify ...
+    let (pieces, mut tagged) = case(&["Morning", "came"], &[(Tag::Noun, 1.0), (Tag::Verb, 0.0)]);
+    apply_rules(&pieces, &mut tagged, &[POS0]);
+    assert_eq!(tagged[0].0, Tag::Noun);
+    // ... and neither does a following verb (`Glass breaks`).
+    let (pieces, mut tagged) = case(&["Glass", "breaks"], &[(Tag::Noun, 1.0), (Tag::Verb, 0.0)]);
+    apply_rules(&pieces, &mut tagged, &[POS0]);
+    assert_eq!(tagged[0].0, Tag::Noun);
 }
