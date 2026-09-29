@@ -1,0 +1,11 @@
+[package]
+name = "english-chunk"
+version = "0.1.0"
+edition = "2024"
+authors = ["Jonathan Morley <morley.jonathan@gmail.com>"]
+license = "MIT"
+description = "Greedy NP/VP chunking over tagged English prose (CoNLL-2000 pattern)"
+
+[dependencies]
+english = { version = "0.1.0", path = "../english" }
+english-pos = { version = "0.1.0", path = "../english-pos" }

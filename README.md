@@ -3,6 +3,9 @@
 This repository holds a proof-of-concept tree-sitter grammar for English
 prose. It marks the block structure of text. It is not a syntactic parser.
 
+Architecture overview (layers, budgets, rules of the road):
+`ARCHITECTURE.md`. Working notes and backlog: `AGENTS.md`.
+
 ## What the grammar does
 
 The grammar marks three levels of structure.

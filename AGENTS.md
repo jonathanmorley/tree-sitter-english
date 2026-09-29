@@ -465,3 +465,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (falsified), morphology-without-lexicon rules (both Brill rules
   rejected with measurements). Each step: EWT dev/test + Moby,
   canonical-`flies` veto, eval-before-model-change, md5 hygiene.
+
+- Architecture assessment (AGREED 2026-09-27): layering is sound —
+  deterministic incremental segmentation → statistical labels →
+  phrase grouping, each failure mode contained, Tier-3 rule holding
+  across all backlog items; measurement discipline (budgets, bars
+  before work, EWT-majority veto, md5 hygiene, TDD corpus) is why
+  rejections read as progress. Three risks carried openly:
+  (1) compounding greed — three greedy stages, no joint inference,
+  no confidence (`tag_margins`) flowing into the chunker; error
+  cascade unquantified end-to-end;
+  (2) correction layer 0-for-2 — engine shipped, both morphology
+  rules rejected, so lexicons + beam-2 + distillation scale-up are
+  now the load-bearing unproven pieces;
+  (3) chunker has no accuracy number — bespoke UD tagset means
+  CoNLL scores aren't comparable; needs a hand-tagged chunk set
+  with a bar (`moby.rs`/`genre.rs` discipline) before claiming the
+  stack works. Biggest single probe: score chunks (not just tags)
+  end-to-end on the genre eval.

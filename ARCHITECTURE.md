@@ -1,0 +1,125 @@
+# Architecture
+
+This repo is a pipeline of narrow layers. Text flows one way —
+each layer sees only its input — from segmentation to labels to
+phrases:
+
+```
+text → (1) grammar+scanner → tree → (2) typed AST → words
+     → (3) POS tagger → (word, tag) → (4) chunker → phrases
+```
+
+## 1. Segmentation: `grammar.js` + `bindings/rust/scanner.rs`
+
+Owns block structure and nothing else: `source_file > paragraph >
+sentence > clause`. Paragraphs split at blank lines, sentences at
+`.?!`, clauses at coordinating conjunctions (`and/but/or…`),
+subordinators (`because/that/which/lest…`), and `;`/`:`/`—` joins.
+Clauses are flat runs of words — no subjects, verbs, or objects.
+
+The hard part is the period: `Mr.` and `H.M.S.` must not end a
+sentence. A Rust external scanner tracks the last word and applies
+three rules in order: single-letter initial (`J. Smith`) → inside;
+known abbreviation (17 curated items) → inside; lowercase/digit
+ahead (`p. 42`) → inside; otherwise the sentence ends. Initialism
+runs and decimals are absorbed wholesale by `dotted`/`number`
+tokens (including `10:30`-style times). The grammar is held at zero
+`generate` conflicts — a hard requirement, since ambiguity here
+means nondeterministic trees.
+
+Error contract: unknown characters produce ERROR nodes and parsing
+continues. Only the prose error histogram measures quality;
+markup, front/back matter, verse, and headings bucket separately
+as transcription (see README's scope section).
+
+## 2. Typed AST: `crates/english`
+
+A borrowed, typed wrapper (`Document/Paragraph/Sentence/Clause/
+Word`) over the raw tree so analysis code never matches on kind
+strings. Adds incremental reparse (`Document::update`: prefix/
+suffix `InputEdit` + `Tree::edit` before reparse — without it,
+reuse reads stale ranges) and lossless `tokens()` iterators that
+flatten parentheticals and keep subordinators and joiners.
+
+## 3. POS tagging: `crates/english-pos` (+ `-train`)
+
+Labels each word with one of 17 Universal POS tags. A greedy
+left-to-right perceptron: u64 FNV-1a hashed features, dense
+`[f32; 17]` rows, zero per-token allocation — ~450k tokens/sec,
+1.98 MB weights, trained on UD English-EWT plus in-domain oracle
+data (dev 91.84% / test 92.05%). Wiring (`wire.rs`) splits
+contractions UD-style (`don't` → `do` + `n't`), normalizes curly
+quotes, and excludes hidden punctuation. `Model::tag_margins`
+(best minus runner-up) flags uncertain tokens for review;
+`TagCache` (sentence-text key) makes a one-word edit cost one
+retag instead of a book. A `correction.rs` engine applies
+gated rewrite rules as a post-pass; both morphology-only rules
+tried so far measured net-negative and were rejected — the
+standing lesson is that morphology without a lexicon cannot beat
+NOUN base rates.
+
+## 4. Chunking: `crates/english-chunk` (in progress)
+
+Groups the tag stream into flat, non-overlapping phrases —
+`[the green fields] [sat] [in the sun]` — following the
+CoNLL-2000 shared task ("shallow parsing"): mark phrase spans
+without resolving what attaches to what. That unanswered question
+is the point: attachment is full parsing and out of scope, while
+flat chunks carry most of the practical value. Tag patterns are
+translated from Penn Treebank tags to UD tags.
+
+The algorithm is a priority-ordered greedy machine over
+`(piece, Tag)` pairs: at each position take the first matching
+shape (Punct, Subord, Conj, Particle, Interj, Noun, Verb, Prep,
+Adverb, Adj, Other) and consume its maximal run. Each token is
+consumed exactly once — O(n), no backtracking, no regex —
+returning index-span `Chunk`s with a single allocation.
+
+## The Tier-3 rule
+
+Word classes and phrase structure never go in the grammar. The
+first commit of this repo attempted subject/verb/object rules and
+dropped them the same day: a context-free grammar must commit to
+one reading, so non-SVO sentences (`The book that I read was
+good`) became ERRORs. Everything since — POS as post-pass,
+chunks as grouping — is that lesson applied. `AGENTS.md` records
+the full history and backlog.
+
+## Worked example
+
+`The cat sat on the mat.` → one paragraph, one sentence, one
+clause → words → tags `DET NOUN VERB ADP DET NOUN` → chunks
+`[The cat]/Noun [sat]/Verb [on the mat]/Prep`. Three phrases,
+six tokens, one left-to-right pass each stage.
+
+## Budgets (Moby-Dick scale)
+
+| Measure | Result |
+|---|---|
+| Full parse | ~131–252 ms depending on start point |
+| Tag pass | ~176 ms (~17 µs/sentence) |
+| One-word-edit keystroke path | ~47 ms (reparse + retag) |
+| Peak memory | 58 MB |
+| Tagger weights | 1.98 MB, zero-dependency pure Rust |
+
+Transformers (~97-98% UPOS vs our 92.05) were measured against
+these lines and evicted: 50–1000× slower, 7–220× larger, plus a
+foreign runtime in a dependency-free core. They contribute
+offline as oracle labelers, distilled into the small model —
+never on the keystroke path. Realistic ceiling for this
+architecture is ~95; that is the declared victory condition.
+
+## Measurement discipline
+
+Bars are set before work (Moby-Dick hand-tagged set, cross-genre
+set), EWT-majority is never contradicted without oracle support,
+weight files are md5-tracked, corpus tests are written
+test-first, and rejections with measurements count as results.
+
+## Open risks
+
+Compounding greed across three greedy stages (no confidence flows
+into the chunker yet), a correction layer still seeking its first
+shipped rule, and a chunker still awaiting its accuracy number —
+to be closed by scoring chunks end-to-end on the genre eval.
+`AGENTS.md` carries the itemized backlog.

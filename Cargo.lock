@@ -30,6 +30,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-chunk"
+version = "0.1.0"
+dependencies = [
+ "english",
+ "english-pos",
+]
+
+[[package]]
 name = "english-pos"
 version = "0.1.0"
 dependencies = [
