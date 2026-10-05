@@ -278,17 +278,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   no large auto-imported list — over-listing keeps real sentence
   breaks wrongly open and is worse than a miss.
 
-- Greedy NP-chunker post-pass (NOT STARTED): CoNLL-2000 chunking as
-  pattern, not code import. New crate (e.g. `crates/english-chunk`)
+- Greedy NP-chunker post-pass (DONE 2026-10-05): CoNLL-2000 chunking as
+  pattern, not code import. New crate `crates/english-chunk`
   over `tag_sentence` output (`english-pos/src/wire.rs`), never new
-  NP/VP rules in `grammar.js` (Tier 3 showed why). Linear greedy
-  only — must hold the keystroke budget (~47 ms on book-size input;
-  bench via `cargo run --release -p english-pos --example bench`).
-  Steps: (1) spec chunk tagset + `split_contraction` handling;
-  (2) implement + unit tests; (3) Moby spot-eval mirroring
-  `crates/english-pos/tests/moby.rs` (small hand-tagged set, bar
-  recorded before work). Acceptance: chunker runs inside bench
-  budget, eval recorded, grammar untouched.
+  NP/VP rules in `grammar.js` (Tier 3 showed why). Linear greedy —
+  bench on Moby-Dick (Gutenberg 2701, `/tmp`, from
+  `CHAPTER 1. Loomings.`): 10,523 sent / 225,048 pieces → 141,152
+  chunks in 6.1 ms release (0.6 µs/sent), ~13% of the 47 ms
+  keystroke budget's full-book parse+tag; negligible per keystroke.
+  Steps all done: (1) spec chunk tagset + `split_contraction`
+  handling (`README.md`; contraction pieces chunk by their own tags);
+  (2) implement + unit tests (`tests/basic.rs`: 7 tests incl.
+  lone-DET/NUM nouns and a no-zero-width-span tiling invariant —
+  the eval caught bare `NUM` (`voted 5 to 3`) emitting an empty Adj
+  chunk, fixed to lone-NUM nouns; plus a dead standalone-Adj arm
+  removed after the release build warned); (3) Moby spot-eval
+  (`tests/moby.rs`: 10 sentences, bar 1.0 pin) + genre end-to-end
+  (`tests/genre.rs`: 20 hand-chunked news/academic sentences, one
+  canonical table feeding a rule-exact test and a model-tag cascade
+  test). Measured: rule 20/20; end-to-end 9/20 sentences (0.450,
+  bar 0.43), token chunk-kind 151/173 (0.873 ≈ tagger 0.884 —
+  minimal cascade amplification); all 22 token misses trace to
+  tagger misses (`that`→NOUN, 3sg `-s`→NOUN, `after`→SCONJ); a
+  tag-exact-implies-chunk-exact assert pins zero
+  chunker-introduced sentence errors. Grammar untouched. Follow-up
+  stays open: `mwe.py` longest-match trie post-pass over
+  `Sentence::tokens` for `in spite of`-class multiwords.
 
 - Input-contract formalization (DONE 2026-09-27): README gained
   the Scope and error-recovery contract section (prose histogram is

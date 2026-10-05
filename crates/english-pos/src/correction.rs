@@ -71,7 +71,7 @@ pub struct Rule {
 /// lexicon cannot beat NOUN base rates at pos-0; the EWT-majority
 /// per-form variant is a tagdict and stays rejected. Removed, like
 /// `s-verb` above; the engine + gate stay for rules that pass.
-
+///
 /// All shipped rules, in application order. Empty until a rule passes
 /// admission.
 pub const RULES: &[Rule] = &[];

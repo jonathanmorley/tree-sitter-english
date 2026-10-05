@@ -18,7 +18,9 @@ fn median(mut xs: Vec<f64>) -> f64 {
 }
 
 fn main() {
-    let path = std::env::args().nth(1).expect("usage: chunk_bench <file> [iters]");
+    let path = std::env::args()
+        .nth(1)
+        .expect("usage: chunk_bench <file> [iters]");
     let iters: usize = std::env::args()
         .nth(2)
         .map(|s| s.parse().expect("iters must be a number"))
@@ -28,9 +30,8 @@ fn main() {
         Some(i) => &text[i..],
         None => &text,
     };
-    let model =
-        english_pos::Model::from_json(include_str!("../../english-pos/weights/upos.json"))
-            .expect("invalid weights JSON");
+    let model = english_pos::Model::from_json(include_str!("../../english-pos/weights/upos.json"))
+        .expect("invalid weights JSON");
 
     let mut chunk_ms = Vec::with_capacity(iters);
     let (mut n_sent, mut n_tok, mut n_chunks) = (0, 0, 0);
@@ -65,5 +66,8 @@ fn main() {
         "{}: {} sentences, {} pieces -> {} chunks",
         path, n_sent, n_tok, n_chunks
     );
-    println!("chunk: {chunk:.1} ms ({:.1} us/sentence)", chunk * 1000.0 / n_sent.max(1) as f64);
+    println!(
+        "chunk: {chunk:.1} ms ({:.1} us/sentence)",
+        chunk * 1000.0 / n_sent.max(1) as f64
+    );
 }

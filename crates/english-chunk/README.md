@@ -19,7 +19,7 @@ sees the tree — only the tag stream. Contraction pieces (`do` +
 |---|---|---|
 | Noun | `[DET]* [ADJ\|NUM]* nominal+, lone DET` | Attributive adjectives absorb (`green fields` is one chunk). A leading PRON continues only onto NOUN/NUM (`my substitute`, `we sailors` merge; `me Ishmael`, `you Starbuck` split as vocative/address — deliberate CoNLL deviation for dialogue prose). Lone DET covers pronominals (`all`) and stranding. |
 | Verb | `AUX* VERB+`, or lone `AUX+` | Copula alone (`is`) is a verb chunk; `AUX` + `VERB`/`ADJ` splits after the AUX (`are` + `concerned`) per EWT-side participles. |
-| Prep | `ADP` + nominal run (`DET/ADV/ADJ/NUM/NOUN/PROPN/PRON*`) | Bare particles (`looked up`) are lone preps; attachment is parse-level, out of scope. |
+| Prep | `ADP` + nominal run (`DET/ADJ/NUM/NOUN/PROPN/PRON*`, no `ADV`) | Bare particles (`looked up`) are lone preps; degree/direction adverbs (`thence`) chunk separately, CoNLL-faithful; attachment is parse-level, out of scope. |
 | Adverb | `ADV+` | |
 | Adj | `ADJ+` | Predicative only in practice (attributives absorb into Noun). |
 | Subord | `SCONJ` (single) | Flat like CoNLL SBAR heads: the clause body chunks normally after it. |

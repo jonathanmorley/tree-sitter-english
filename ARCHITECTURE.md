@@ -58,7 +58,7 @@ tried so far measured net-negative and were rejected — the
 standing lesson is that morphology without a lexicon cannot beat
 NOUN base rates.
 
-## 4. Chunking: `crates/english-chunk` (in progress)
+## 4. Chunking: `crates/english-chunk`
 
 Groups the tag stream into flat, non-overlapping phrases —
 `[the green fields] [sat] [in the sun]` — following the

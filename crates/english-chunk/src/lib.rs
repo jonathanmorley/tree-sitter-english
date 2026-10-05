@@ -152,10 +152,13 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
                         i = end;
                         ChunkKind::Noun
                     }
-                    // Lone DET (`all`, stranding) still nouns; bare
-                    // ADJ with no nominal ahead is predicative (a NUM
-                    // always satisfies noun_end, so only ADJ lands here).
-                    None if tag_at(input, i) == Some(Tag::Det) => {
+                    // Lone DET (`all`, stranding) and lone NUM (`5`, vote
+                    // counts) still nouns; a bare NUM must never fall
+                    // through to the Adj arm, whose `consume_while` would
+                    // emit a zero-width chunk. Bare ADJ with no nominal
+                    // ahead is predicative (a NUM always satisfies
+                    // noun_end, so only ADJ lands here).
+                    None if matches!(tag_at(input, i), Some(Tag::Det) | Some(Tag::Num)) => {
                         i += 1;
                         ChunkKind::Noun
                     }
@@ -188,12 +191,11 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
                 i = consume_while(input, i, |t| t == Tag::Adv);
                 ChunkKind::Adverb
             }
-            Some(Tag::Adj) => {
-                i = consume_while(input, i, |t| t == Tag::Adj);
-                ChunkKind::Adj
-            }
             _ => {
-                // X, SYM, and anything unlisted.
+                // X, SYM, and anything unlisted. (A standalone Adj arm
+                // here would be unreachable: the Noun arm above matches
+                // Adj first — attributive absorbs, predicative falls
+                // through to Adj inside that arm.)
                 i += 1;
                 ChunkKind::Other
             }

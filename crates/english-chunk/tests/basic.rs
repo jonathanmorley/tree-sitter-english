@@ -6,10 +6,7 @@ use english_chunk::{ChunkKind, chunk_tagged};
 use english_pos::Tag;
 
 fn pieces(pairs: &[(&str, Tag)]) -> Vec<(String, Tag)> {
-    pairs
-        .iter()
-        .map(|(w, t)| (w.to_string(), *t))
-        .collect()
+    pairs.iter().map(|(w, t)| (w.to_string(), *t)).collect()
 }
 
 fn kinds_of(input: &[(String, Tag)]) -> Vec<ChunkKind> {
@@ -93,11 +90,7 @@ fn subordinate_head_and_particles() {
 
 #[test]
 fn conjunctions_interjections_other() {
-    let input = pieces(&[
-        ("and", Tag::Cconj),
-        ("oh", Tag::Intj),
-        ("$20", Tag::Sym),
-    ]);
+    let input = pieces(&[("and", Tag::Cconj), ("oh", Tag::Intj), ("$20", Tag::Sym)]);
     assert_eq!(
         kinds_of(&input),
         vec![ChunkKind::Conj, ChunkKind::Interj, ChunkKind::Other]
@@ -105,15 +98,22 @@ fn conjunctions_interjections_other() {
 }
 
 #[test]
-fn lone_det_nouns() {
-    // Pronominal `all` stands alone as Noun.
-    let input = pieces(&[("all", Tag::Det)]);
-    assert_eq!(kinds_of(&input), vec![ChunkKind::Noun]);
+fn lone_det_and_num_nouns() {
+    // Pronominal `all` stands alone as Noun; so does a bare count
+    // (`voted 5 to 3`) — and the span is never empty.
+    for word in ["all", "5"] {
+        let tag = if word == "all" { Tag::Det } else { Tag::Num };
+        let input = pieces(&[(word, tag)]);
+        let chunks = chunk_tagged(&input);
+        assert_eq!(kinds_of(&input), vec![ChunkKind::Noun]);
+        assert_eq!(chunks[0].span(), 0..1);
+    }
 }
 
 #[test]
 fn full_coverage_spans() {
-    // Spans tile the input with no gaps or overlaps.
+    // Spans tile the input with no gaps or overlaps, and every
+    // chunk consumes at least one token (no zero-width chunks).
     let input = pieces(&[
         ("Time", Tag::Noun),
         ("flies", Tag::Verb),
@@ -126,6 +126,7 @@ fn full_coverage_spans() {
     let mut next = 0;
     for c in &chunks {
         assert_eq!(c.span().start, next);
+        assert!(!c.span().is_empty());
         next = c.span().end;
     }
     assert_eq!(next, input.len());

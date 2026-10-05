@@ -9,10 +9,7 @@ use english_chunk::{ChunkKind, ChunkKind as K, chunk_tagged};
 use english_pos::Tag;
 
 fn pieces(pairs: &[(&str, Tag)]) -> Vec<(String, Tag)> {
-    pairs
-        .iter()
-        .map(|(w, t)| (w.to_string(), *t))
-        .collect()
+    pairs.iter().map(|(w, t)| (w.to_string(), *t)).collect()
 }
 
 fn check(pairs: &[(&str, Tag)], want: &[ChunkKind]) {
@@ -26,7 +23,12 @@ fn check(pairs: &[(&str, Tag)], want: &[ChunkKind]) {
 fn moby_spot_chunks() {
     // Call me Ishmael.
     check(
-        &[("Call", Tag::Verb), ("me", Tag::Pron), ("Ishmael", Tag::Propn), (".", Tag::Punct)],
+        &[
+            ("Call", Tag::Verb),
+            ("me", Tag::Pron),
+            ("Ishmael", Tag::Propn),
+            (".", Tag::Punct),
+        ],
         &[K::Verb, K::Noun, K::Noun, K::Punct],
     );
     // I thought I would sail about a little and see the watery part of the world.
@@ -51,7 +53,16 @@ fn moby_spot_chunks() {
             (".", Tag::Punct),
         ],
         &[
-            K::Noun, K::Verb, K::Noun, K::Verb, K::Prep, K::Conj, K::Verb, K::Noun, K::Prep, K::Punct,
+            K::Noun,
+            K::Verb,
+            K::Noun,
+            K::Verb,
+            K::Prep,
+            K::Conj,
+            K::Verb,
+            K::Noun,
+            K::Prep,
+            K::Punct,
         ],
     );
     // It is a way I have of driving off the spleen and regulating the circulation.
@@ -76,7 +87,17 @@ fn moby_spot_chunks() {
             (".", Tag::Punct),
         ],
         &[
-            K::Noun, K::Verb, K::Noun, K::Noun, K::Verb, K::Prep, K::Verb, K::Prep, K::Conj, K::Verb, K::Noun,
+            K::Noun,
+            K::Verb,
+            K::Noun,
+            K::Noun,
+            K::Verb,
+            K::Prep,
+            K::Verb,
+            K::Prep,
+            K::Conj,
+            K::Verb,
+            K::Noun,
             K::Punct,
         ],
     );
@@ -95,7 +116,15 @@ fn moby_spot_chunks() {
             (".", Tag::Punct),
         ],
         &[
-            K::Adverb, K::Conj, K::Adverb, K::Punct, K::Noun, K::Verb, K::Noun, K::Adverb, K::Punct,
+            K::Adverb,
+            K::Conj,
+            K::Adverb,
+            K::Punct,
+            K::Noun,
+            K::Verb,
+            K::Noun,
+            K::Adverb,
+            K::Punct,
         ],
     );
     // Circumambulate the city of a dreamy Sabbath afternoon.
@@ -135,7 +164,17 @@ fn moby_spot_chunks() {
             (".", Tag::Punct),
         ],
         &[
-            K::Verb, K::Prep, K::Prep, K::Punct, K::Conj, K::Prep, K::Adverb, K::Punct, K::Prep, K::Punct, K::Adverb,
+            K::Verb,
+            K::Prep,
+            K::Prep,
+            K::Punct,
+            K::Conj,
+            K::Prep,
+            K::Adverb,
+            K::Punct,
+            K::Prep,
+            K::Punct,
+            K::Adverb,
             K::Punct,
         ],
     );
@@ -194,7 +233,17 @@ fn moby_spot_chunks() {
             (".", Tag::Punct),
         ],
         &[
-            K::Conj, K::Verb, K::Punct, K::Adverb, K::Verb, K::Noun, K::Punct, K::Verb, K::Adverb, K::Prep, K::Punct,
+            K::Conj,
+            K::Verb,
+            K::Punct,
+            K::Adverb,
+            K::Verb,
+            K::Noun,
+            K::Punct,
+            K::Verb,
+            K::Adverb,
+            K::Prep,
+            K::Punct,
         ],
     );
 }
