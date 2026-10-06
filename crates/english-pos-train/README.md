@@ -27,18 +27,23 @@ observation in EWT), so iters=20 / min-count=1 was adopted instead
 
 Oracle labels live in-repo under `data/` (Moby-Dick is public domain;
 unlike the NC-licensed UD treebanks it can ship here):
-`moby-oracle-01.conllu` (14 sentences, ch.4–6) and
-`moby-oracle-02.conllu` (10 sentences, ch.5–6), hand-tagged EWT-side
-per CANONICAL.md and disjoint from the ch.1–2 prose eval. Reproduce:
+`moby-oracle-01.conllu` (14 sentences, ch.4–6),
+`moby-oracle-02.conllu` (10 sentences, ch.5–6), and
+`moby-oracle-03/-04.conllu` (24/20 sentences, ch.7–26/ch.3+27–30;
+03 and 04 REJECTED as training data, KEPT as documented data),
+hand-tagged EWT-side per CANONICAL.md and disjoint from the ch.1–2
+prose eval. Reproduce:
 
 ```sh
 scripts/fetch-ud.sh --dir /tmp/ud ewt
-cat /tmp/ud/ewt/en_ewt-ud-train.conllu data/moby-oracle-*.conllu \
+cat /tmp/ud/ewt/en_ewt-ud-train.conllu data/moby-oracle-01.conllu data/moby-oracle-02.conllu \
   > /tmp/ud-oracle/en_ewt-ud-train.conllu
 cp /tmp/ud/ewt/en_ewt-ud-{dev,test}.conllu /tmp/ud-oracle/
 cargo run --release -p english-pos-train -- --corpus /tmp/ud-oracle \
   --iters 20 --min-count 1
 ```
+(Batches 03/04 are spelled out — never the `moby-oracle-*` glob:
+both were measured, rejected, and must stay out of training.)
 
 `--correct` reports accuracy with the correction rules applied
 (`tag_margins` + `apply_rules`), including fire counts and a
@@ -60,7 +65,24 @@ dips 24→27 misses in both variants — boundary churn on a 189-token
 eval (possessive-`have`, long-distance `does`, `the`-PRON wobbles),
 while EWT gains on 50k tokens; the eval is too small to resolve ±3
 tokens, so EWT rules. `--finetune` mode stays available for future
-bounded top-ups. Next oracle batches should target the stable miss
+bounded top-ups.
+
+Distillation 0-for-3 (all rejected, weights restored every time):
+batch 03 joint (751 tok) dev −225 / test −257 — targeted
+confusions fixed, shared priors dragged (VERB→AUX +114 from
+AUX-heavy be-forms, VERB→ADJ +107 from ADJ-participles);
+batch 03 finetune ×3: dev −60 / test −188 (bounded drift still
+drifts, test-heavy book-prior overfit); batch 04 joint (532 tok,
+boundary-balanced: passive be+AUX with VERB participles,
+reduced relatives, noun-noun compounds, fresh 3sg — zero new
+ADJ-participles, won boundaries untouched): dev −218 /
+test −257, the same collapse. Lesson: balance didn't save it —
+oracle mass past ~350 tokens shakes shared priors no matter the
+composition (EWT-majority discipline held throughout; even the
+suspect `For`-ADP calls check out 40:1). The joint protocol that
+worked at 354 tokens does not scale by adding more; next attempt,
+if any, must change the training mechanics (per-class weighting?
+frozen shared priors?), not the batch. Next oracle batches should target the stable miss
 classes (titlecase OOV, preposition chains, `-s`/imperative verbs)
 with more examples per class. Oracle discipline learned the hard
 way: never contradict EWT-majority on frequent words (checked
