@@ -449,3 +449,36 @@ fn to_part_fixes_infinitive_marker() {
         Tag::Adp
     );
 }
+
+#[test]
+fn that_vcomp_fixes_verb_complement_that() {
+    // `said that the answer`: PRON after VERB before DET → SCONJ.
+    assert_eq!(
+        run(
+            &["said", "that", "the", "answer"],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Pron, 1.0),
+                (Tag::Det, 9.0),
+                (Tag::Noun, 9.0)
+            ],
+            "that-vcomp",
+        )[1],
+        Tag::Sconj
+    );
+    // Reduced relative (`the way that the group ...`: NOUN prev)
+    // abstains.
+    assert_eq!(
+        run(
+            &["way", "that", "the", "group"],
+            &[
+                (Tag::Noun, 9.0),
+                (Tag::Pron, 1.0),
+                (Tag::Det, 9.0),
+                (Tag::Noun, 9.0)
+            ],
+            "that-vcomp",
+        )[1],
+        Tag::Pron
+    );
+}

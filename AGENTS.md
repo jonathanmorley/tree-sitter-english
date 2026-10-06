@@ -810,10 +810,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 11-for-23 — engine plus shipped rules
+  (2) correction layer 12-for-24 — engine plus shipped rules
   (`have-verb`, `to-prep`, `to-verb`, `that-det`, `that-rel`,
   `det-noun`, `that-sconj`, `that-ccomp`, `subconj-adp`,
-  `apos-part`, `to-part`) and the beam decoder; the
+  `apos-part`, `to-part`, `that-vcomp`) and the beam decoder; the
   load-bearing unproven piece left is distillation scale-up
   (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
   all rejected — 05 is the mirror case, evals up / EWT down, and
@@ -894,6 +894,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (cross-clausal `that wild Logan`, copula `'s` with
   nominal-misread neighbors — documented, EWT shows zero of
   either class). `flies` holds, suite green, probes deleted.
+
+- Leftover mining (Brill/CG remainders, DONE 2026-10-06,
+  12-for-24): `that`+DET-next splits by prev (VERB-prev SCONJ
+  129:1, NOUN-prev 36:21 mixed with reduced relatives) — admits
+  `that-vcomp` (EWT ±0, 2 hand-verified Moby complement
+  clauses). Rejected in the same pass: imperatives (standing
+  rejection stands — 74% verb still loses to pos-0 noun base
+  rates), Brill#15 lexicalized 3sg (pronouns precede possessed
+  nouns and verbs alike — the shape can't separate `it rains`
+  from `his arms`), `around`/`round` (thin).
 
 - `to-part` (ADMITTED 2026-10-06, 11-for-23): pred-ADP `to`
   before VERB → PART (EWT 2893:48, the mirror of `to-prep`).

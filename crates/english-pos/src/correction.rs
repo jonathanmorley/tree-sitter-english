@@ -42,7 +42,7 @@
 //! `that-rel` + `det-noun` (Brill/fnTBL/RDR/CG convergence),
 //! `that-sconj` (RDR tree-mining), `that-ccomp` + `subconj-adp` +
 //! `apos-part` (gate-zone autopsy), `to-part` (gate-zone autopsy) —
-//! 11-for-23 total.
+//! 12-for-24 total.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
@@ -172,6 +172,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: to_part,
     },
+    Rule {
+        name: "that-vcomp",
+        threshold: 2.0,
+        test: that_vcomp,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -286,6 +291,26 @@ fn to_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Verb)).then_some(Tag::Part)
+}
+
+/// Verb-complement `that` (`said that the answer`): pred-PRON
+/// `that` with VERB prev and DET next is SCONJ 129:1 in EWT —
+/// the complement-taking verb selects the reading, so unlike
+/// `that-ccomp` no finite-verb-ahead barrier is needed. NOUN-prev
+/// (`the way that the group`) stays out: reduced relatives live
+/// there (36:21 mixed).
+///
+/// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
+/// 2 Moby hand-verified fixes (`happened that those boats`,
+/// `saw that this ship`), zero known breaks, `flies` holds.
+fn that_vcomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+        return None;
+    }
+    if i == 0 || tags.get(i - 1) != Some(&Tag::Verb) {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Det)).then_some(Tag::Sconj)
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties
