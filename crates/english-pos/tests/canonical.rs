@@ -32,3 +32,17 @@ fn flies_stays_verb_corrected() {
         vec![Tag::Noun, Tag::Verb, Tag::Adp, Tag::Det, Tag::Noun]
     );
 }
+
+#[test]
+fn flies_stays_verb_beam() {
+    // The veto covers the beam decoder too: admission requires the
+    // joint re-decode to keep the canonical reading (its `-ies`
+    // memorization pressure is exactly what flipped the iters=15
+    // weights).
+    let model = Model::from_json(include_str!("../weights/upos.json")).unwrap();
+    let tags = model.tag_beam(&["Time", "flies", "like", "an", "arrow"]);
+    assert_eq!(
+        tags,
+        vec![Tag::Noun, Tag::Verb, Tag::Adp, Tag::Det, Tag::Noun]
+    );
+}

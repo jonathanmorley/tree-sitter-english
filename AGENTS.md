@@ -489,9 +489,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   gazetteer, `-ness`/`-ous` vetoes, consulted only below margin τ
   (EWT-safe by construction, same argument as `lest`/`supposing`);
   expect +0.5, mostly Moby-side;
-  (4) beam-2 re-decode of low-margin spans only (~2× on \<10% of
-  sentences, keystroke stays ~30ms); expect +0.2-0.5, mainly
-  `this`-cascades. Not to do: wider dense features without data
+  (4) beam-2 re-decode of low-margin spans only (DONE 2026-10-06:
+  width-2 joint search over greedy runs below margin 2.0 (+2 left
+  context, gaps ≤ 2 merged, cap 8; 20–22% of sents, ~6% of toks
+  rescored; keystroke 48.3 ms vs 47.3 budget): EWT dev +10/+13
+  with rules, test +22/+24, Moby +1 (`this`-cascade, as predicted),
+  genre/chunk ±0, `flies` holds on all three decode paths.
+  Under the +0.2–0.5 expectation in points (+0.05/+0.10) but
+  strictly non-negative everywhere — admitted. Integer-margin
+  discovery along the way: perceptron scores sum ±1 updates, so
+  margins are integers (T≤1.0 catches ties only and scores −6).
+  Not to do: wider dense features without data
   (`w+t-1` overfit repeats), tagdict behavior change, averaging
   (falsified), morphology-without-lexicon rules (both Brill rules
   rejected with measurements). Each step: EWT dev/test + Moby,
@@ -503,14 +511,14 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   across all backlog items; measurement discipline (budgets, bars
   before work, EWT-majority veto, md5 hygiene, TDD corpus) is why
   rejections read as progress. Three risks carried openly:
-  (1) compounding greed — three greedy stages, no joint inference,
-  no confidence (`tag_margins`) flowing into the chunker; error
-  cascade unquantified end-to-end;
-  (2) correction layer 0-for-2 — engine shipped, both morphology
-  rules rejected, so lexicons + beam-2 + distillation scale-up are
-  now the load-bearing unproven pieces;
-  (3) chunker has no accuracy number — bespoke UD tagset means
-  CoNLL scores aren't comparable; needs a hand-tagged chunk set
-  with a bar (`moby.rs`/`genre.rs` discipline) before claiming the
-  stack works. Biggest single probe: score chunks (not just tags)
-  end-to-end on the genre eval.
+  (1) compounding greed — two greedy stages plus a joint span
+  re-decode, but still no confidence (`tag_margins`) flowing into
+  the chunker; tag→chunk cascade quantified on genre (chunker adds
+  zero sentence errors; token 0.873 vs tag 0.884);
+  (2) correction layer 3-for-14 — engine plus first shipped rules
+  (`have-verb`, `to-prep`, `to-verb`) and the beam decoder; the
+  load-bearing unproven piece left is distillation scale-up
+  (0-for-2: joint and finetune both rejected);
+  (3) chunker has no accuracy number — CLOSED 2026-10-05 by the
+  genre end-to-end chunk eval (rule 20/20, cascade 9/20 sent /
+  0.873 token, bar 0.43).

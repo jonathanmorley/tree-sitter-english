@@ -162,6 +162,78 @@ fn accuracy_corrected(
     (correct, total, fires)
 }
 
+/// Report accuracy for one split under beam decoding, plus span
+/// statistics (sentences touching a span, rescored tokens), plus the
+/// corrected numbers when `--correct` is set.
+fn report_beam(
+    model: &Model,
+    data: &[(Vec<String>, Vec<String>, Vec<String>)],
+    which: &str,
+    correct: bool,
+    margin_t: f32,
+    max_span: usize,
+) {
+    let (mut ok, mut total) = (0, 0);
+    let (mut span_sents, mut rescored) = (0, 0);
+    for (words, _, gold) in data {
+        let (tagged, (spans, resc)) = model.tag_beam_margins_with(words, margin_t, max_span);
+        if spans > 0 {
+            span_sents += 1;
+        }
+        rescored += resc;
+        for ((guess, _), g) in tagged.iter().zip(gold) {
+            total += 1;
+            if guess.upos() == *g {
+                ok += 1;
+            }
+        }
+    }
+    println!(
+        "{which}: {ok}/{total} = {:.2}% (beam t={margin_t} max={max_span}: {span_sents}/{} sents spanned, {rescored} toks rescored)",
+        100.0 * ok as f64 / total.max(1) as f64,
+        data.len(),
+    );
+    if correct {
+        let (cok, _, fires) = accuracy_corrected_beam(model, data, margin_t, max_span);
+        println!(
+            "{which}+rules: {cok}/{total} = {:.2}% ({fires} fires)",
+            100.0 * cok as f64 / total.max(1) as f64
+        );
+    }
+}
+
+/// Accuracy with correction `RULES` applied over beam-decoded
+/// `(tag, margin)` pairs. Mirrors [`accuracy_corrected`]; the rules
+/// see beam tags and beam-local margins.
+fn accuracy_corrected_beam(
+    model: &Model,
+    data: &[(Vec<String>, Vec<String>, Vec<String>)],
+    margin_t: f32,
+    max_span: usize,
+) -> (usize, usize, usize) {
+    let mut correct = 0;
+    let mut total = 0;
+    let mut fires = 0;
+    for (words, _, gold) in data {
+        let (mut tagged, _) = model.tag_beam_margins_with(words, margin_t, max_span);
+        let before: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
+        let pieces: Vec<String> = words.to_vec();
+        apply_rules(&pieces, &mut tagged, RULES);
+        fires += tagged
+            .iter()
+            .zip(&before)
+            .filter(|((t, _), b)| t != *b)
+            .count();
+        for ((guess, _), g) in tagged.iter().zip(gold) {
+            total += 1;
+            if guess.upos() == *g {
+                correct += 1;
+            }
+        }
+    }
+    (correct, total, fires)
+}
+
 /// Report accuracy for one split, plus the corrected numbers when
 /// `--correct` is set (fires counts rule rewrites).
 fn report(
@@ -186,7 +258,7 @@ fn report(
 
 fn usage() -> ! {
     eprintln!(
-        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N]] [--correct]"
+        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N]] [--correct] [--beam T MAX]"
     );
     std::process::exit(2);
 }
@@ -199,6 +271,7 @@ fn main() {
     let mut finetune: Option<PathBuf> = None;
     let mut finetune_iters = 3usize;
     let mut correct = false;
+    let mut beam: Option<(f32, usize)> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -231,6 +304,19 @@ fn main() {
                     .unwrap_or_else(|_| usage())
             }
             "--correct" => correct = true,
+            "--beam" => {
+                let t: f32 = args
+                    .next()
+                    .unwrap_or_else(|| usage())
+                    .parse()
+                    .unwrap_or_else(|_| usage());
+                let m: usize = args
+                    .next()
+                    .unwrap_or_else(|| usage())
+                    .parse()
+                    .unwrap_or_else(|_| usage());
+                beam = Some((t, m));
+            }
             _ => usage(),
         }
     }
@@ -248,7 +334,10 @@ fn main() {
         let json = fs::read_to_string(&weights_path)
             .unwrap_or_else(|e| panic!("failed to read {}: {e}", weights_path.display()));
         let model = Model::from_json(&json).expect("invalid weights JSON");
-        report(&model, &data, &which, correct);
+        match beam {
+            Some((t, m)) => report_beam(&model, &data, &which, correct, t, m),
+            None => report(&model, &data, &which, correct),
+        }
         return;
     }
 

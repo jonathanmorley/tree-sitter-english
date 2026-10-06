@@ -34,6 +34,18 @@ pub const TAGS: [&str; 17] = [
     "PUNCT", "SCONJ", "SYM", "VERB", "X",
 ];
 
+/// Beam re-decode trigger: greedy spans with a margin strictly
+/// below this get a width-2 joint re-decode. Calibrated in the
+/// trainer (`--beam` sweep: T=2.0 wins — dev +10, test +22 over
+/// greedy at MAX 8; T≤1.0 catches only exact ties and scores −6);
+/// production uses this value.
+pub const BEAM_MARGIN_T: f32 = 2.0;
+
+/// Beam re-decode cap: longer spans (run plus two left-context
+/// tokens) keep greedy tags. Bounds worst-case cost; low-margin runs
+/// are usually 1–3 tokens.
+pub const BEAM_MAX_SPAN: usize = 8;
+
 /// FNV-1a 64-bit: stable across processes and versions (unlike
 /// `DefaultHasher`), so committed weight keys stay valid. Collisions
 /// merge two features benignly; at 64 bits the rate is negligible.
@@ -184,6 +196,51 @@ impl Model {
         tags.into_iter().zip(margins).collect()
     }
 
+    /// Beam re-decode with [`BEAM_MARGIN_T`]/[`BEAM_MAX_SPAN`].
+    /// See [`Model::tag_beam_with`] for the algorithm.
+    pub fn tag_beam<S: AsRef<str>>(&self, words: &[S]) -> Vec<Tag> {
+        self.tag_beam_margins(words)
+            .into_iter()
+            .map(|(t, _)| t)
+            .collect()
+    }
+
+    /// [`Model::tag_beam`] paired with per-token margins: greedy
+    /// margins off-span, local best-minus-runner-up gaps under the
+    /// winning history on-span. Feeds the correction gate the same
+    /// way [`Model::tag_margins`] does.
+    pub fn tag_beam_margins<S: AsRef<str>>(&self, words: &[S]) -> Vec<(Tag, f32)> {
+        let (tags, margins, _) = self.decode_beam(words, BEAM_MARGIN_T, BEAM_MAX_SPAN);
+        tags.into_iter().zip(margins).collect()
+    }
+
+    /// [`Model::tag_beam`] with explicit span threshold and cap, plus
+    /// span statistics for measurement: `(tags, count_of_spans,
+    /// count_of_rescored_tokens)`. The trainer `--beam` sweep tunes
+    /// through here; production uses the constants.
+    pub fn tag_beam_with<S: AsRef<str>>(
+        &self,
+        words: &[S],
+        margin_t: f32,
+        max_span: usize,
+    ) -> (Vec<Tag>, usize, usize) {
+        let (tags, _, stats) = self.decode_beam(words, margin_t, max_span);
+        (tags, stats.0, stats.1)
+    }
+
+    /// [`Model::tag_beam_margins`] with explicit threshold and cap,
+    /// plus span statistics. Powers the trainer `--beam` path
+    /// (including `--correct` composition with the rules).
+    pub fn tag_beam_margins_with<S: AsRef<str>>(
+        &self,
+        words: &[S],
+        margin_t: f32,
+        max_span: usize,
+    ) -> (Vec<(Tag, f32)>, (usize, usize)) {
+        let (tags, margins, stats) = self.decode_beam(words, margin_t, max_span);
+        (tags.into_iter().zip(margins).collect(), stats)
+    }
+
     fn decode<S: AsRef<str>>(&self, words: &[S]) -> (Vec<Tag>, Vec<f32>) {
         let lower: Vec<String> = words.iter().map(|w| w.as_ref().to_lowercase()).collect();
         let raw: Vec<String> = words.iter().map(|w| w.as_ref().to_string()).collect();
@@ -193,15 +250,7 @@ impl Model {
         let mut tags = Vec::with_capacity(words.len());
         let mut margins = Vec::with_capacity(words.len());
         for i in 0..words.len() {
-            features(&raw, &lower, i, &prev1, &prev2, &mut feats);
-            let mut acc = [0.0f32; 17];
-            for f in &feats {
-                if let Some(arr) = self.weights.get(f) {
-                    for (a, w) in acc.iter_mut().zip(arr.iter()) {
-                        *a += *w;
-                    }
-                }
-            }
+            let acc = self.score_tag(&raw, &lower, i, &prev1, &prev2, &mut feats);
             // Single pass tracks best and runner-up; strict `>` keeps
             // the fixed TAGS order as tie-break.
             let mut best = 0;
@@ -219,6 +268,177 @@ impl Model {
             prev2 = std::mem::replace(&mut prev1, TAGS[best].to_string());
         }
         (tags, margins)
+    }
+
+    /// Score all 17 tags at position `i` under tag history
+    /// (`prev1`, `prev2`). Single scoring path shared by greedy and
+    /// beam decoding (refactored out of `decode`, bit-identical).
+    fn score_tag(
+        &self,
+        raw: &[String],
+        lower: &[String],
+        i: usize,
+        prev1: &str,
+        prev2: &str,
+        feats: &mut Vec<u64>,
+    ) -> [f32; 17] {
+        features(raw, lower, i, prev1, prev2, feats);
+        let mut acc = [0.0f32; 17];
+        for f in feats.iter() {
+            if let Some(arr) = self.weights.get(f) {
+                for (a, w) in acc.iter_mut().zip(arr.iter()) {
+                    *a += *w;
+                }
+            }
+        }
+        acc
+    }
+
+    /// Greedy decode, then a width-2 beam re-decode over low-margin
+    /// spans. Returns `(tags, margins, (span_count, rescored_count))`.
+    ///
+    /// Algorithm: maximal runs of greedy margin `< margin_t` expand
+    /// two tokens left (so the span can revise the history its first
+    /// tokens were decoded under), merge across gaps ≤ 2, and drop
+    /// past `max_span`. Each span runs a 2-best beam over tag
+    /// histories — scoring is the model's own features, so the beam
+    /// can only disagree with greedy where joint history beats local
+    /// greed (the `this`-cascade shape: one wrong tag poisoning the
+    /// rest through `t-1` features). Span margins are local
+    /// best-minus-runner-up gaps recomputed under the winning
+    /// history. Tokens right of a span keep greedy tags (their
+    /// history changed silently — same class as the correction
+    /// layer's snapshot semantics, documented there).
+    fn decode_beam<S: AsRef<str>>(
+        &self,
+        words: &[S],
+        margin_t: f32,
+        max_span: usize,
+    ) -> (Vec<Tag>, Vec<f32>, (usize, usize)) {
+        let lower: Vec<String> = words.iter().map(|w| w.as_ref().to_lowercase()).collect();
+        let raw: Vec<String> = words.iter().map(|w| w.as_ref().to_string()).collect();
+        let (mut tags, mut margins) = self.decode(words);
+        if words.is_empty() {
+            return (tags, margins, (0, 0));
+        }
+        // Index-space copy of greedy tags for history reads.
+        let mut idx: Vec<usize> = tags
+            .iter()
+            .map(|t| tag_index(t.upos()).expect("tags come from TAGS"))
+            .collect();
+        // Maximal low-margin runs, each expanded two tokens left
+        // (so the span can revise the history its first tokens were
+        // decoded under), merged across gaps of ≤ 2, dropped past
+        // `max_span` (those keep greedy tags).
+        let mut spans: Vec<(usize, usize)> = Vec::new();
+        let mut i = 0;
+        while i < margins.len() {
+            if margins[i] < margin_t {
+                let lo = i.saturating_sub(2);
+                let mut hi = i;
+                while hi + 1 < margins.len() && margins[hi + 1] < margin_t {
+                    hi += 1;
+                }
+                match spans.last_mut() {
+                    // Expanded `lo` reaches the previous span (gap ≤
+                    // 2 between runs): extend it instead — and drop
+                    // the merged span past the cap (greedy stands).
+                    Some(last) if lo <= last.1 + 1 => {
+                        last.1 = hi;
+                        if last.1 + 1 - last.0 > max_span {
+                            spans.pop();
+                        }
+                    }
+                    _ => {
+                        if hi + 1 - lo <= max_span {
+                            spans.push((lo, hi));
+                        }
+                    }
+                }
+                i = hi + 1;
+            } else {
+                i += 1;
+            }
+        }
+        let mut feats = Vec::with_capacity(20);
+        let mut rescored = 0;
+        for (lo, hi) in &spans {
+            let (b1, b2) = (
+                if *lo > 0 {
+                    TAGS[idx[*lo - 1]].to_string()
+                } else {
+                    START1.to_string()
+                },
+                if *lo > 1 {
+                    TAGS[idx[*lo - 2]].to_string()
+                } else if *lo == 1 {
+                    START1.to_string()
+                } else {
+                    START2.to_string()
+                },
+            );
+            // Beam: (cumulative score, tag-index history).
+            let mut hyps: Vec<(f32, Vec<usize>)> = vec![(0.0, Vec::with_capacity(hi + 1 - lo))];
+            for (k, pos) in (*lo..=*hi).enumerate() {
+                let mut cands: Vec<(f32, Vec<usize>)> = Vec::with_capacity(hyps.len() * 17);
+                for (score, hist) in &hyps {
+                    let p1 = if k >= 1 {
+                        TAGS[hist[k - 1]]
+                    } else {
+                        b1.as_str()
+                    };
+                    let p2 = if k >= 2 {
+                        TAGS[hist[k - 2]]
+                    } else if k == 1 {
+                        b1.as_str()
+                    } else {
+                        b2.as_str()
+                    };
+                    let acc = self.score_tag(&raw, &lower, pos, p1, p2, &mut feats);
+                    for t in 0..17 {
+                        let mut h = hist.clone();
+                        h.push(t);
+                        cands.push((score + acc[t], h));
+                    }
+                }
+                cands.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+                cands.truncate(2);
+                hyps = cands;
+            }
+            let winner = &hyps[0].1;
+            // Commit winner tags; recompute local margins under the
+            // winning history for the correction gate.
+            for (k, pos) in (*lo..=*hi).enumerate() {
+                let p1 = if k >= 1 {
+                    TAGS[winner[k - 1]]
+                } else {
+                    b1.as_str()
+                };
+                let p2 = if k >= 2 {
+                    TAGS[winner[k - 2]]
+                } else if k == 1 {
+                    b1.as_str()
+                } else {
+                    b2.as_str()
+                };
+                let acc = self.score_tag(&raw, &lower, pos, p1, p2, &mut feats);
+                let mut best = 0;
+                let mut second = f32::NEG_INFINITY;
+                for t in 1..17 {
+                    if acc[t] > acc[best] {
+                        second = acc[best];
+                        best = t;
+                    } else if acc[t] > second {
+                        second = acc[t];
+                    }
+                }
+                idx[pos] = best;
+                tags[pos] = Tag::from_upos(TAGS[best]).expect("fixed tag list is valid");
+                margins[pos] = acc[best] - second;
+                rescored += 1;
+            }
+        }
+        (tags, margins, (spans.len(), rescored))
     }
 
     /// Per-tag weights for one feature id, or `None` when the feature

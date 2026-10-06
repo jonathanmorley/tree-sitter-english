@@ -160,11 +160,15 @@ fn collect_pieces(tokens: &[english::Token]) -> Vec<String> {
 /// Contraction pieces expand (see [`split_contraction`]), so the output
 /// may hold more items than the clause has tokens.
 ///
-/// Gated correction rules (`correction::RULES`) apply before return;
-/// with no admitted rules the guard below keeps this at one branch.
+/// Decodes with the beam re-decoder ([`Model::tag_beam_margins`] at
+/// [`BEAM_MARGIN_T`]/[`BEAM_MAX_SPAN`]), then gated correction rules
+/// (`correction::RULES`); with no admitted rules the guard below
+/// keeps correction at one branch. `Model::tag` stays greedy —
+/// evals pin the model, the beam delta is measured at admission
+/// (EWT dev +13 / test +24, Moby +1, genre/chunk ±0, `flies` holds).
 pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)> {
     let pieces = clause_pieces(clause);
-    let mut tagged = model.tag_margins(&pieces);
+    let mut tagged = model.tag_beam_margins(&pieces);
     if !RULES.is_empty() {
         apply_rules(&pieces, &mut tagged, RULES);
     }
@@ -181,7 +185,7 @@ pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)>
 /// boundary), matching training on UD sentences.
 pub fn tag_sentence(model: &Model, sentence: &english::Sentence) -> Vec<(String, Tag)> {
     let pieces = sentence_pieces(sentence);
-    let mut tagged = model.tag_margins(&pieces);
+    let mut tagged = model.tag_beam_margins(&pieces);
     if !RULES.is_empty() {
         apply_rules(&pieces, &mut tagged, RULES);
     }

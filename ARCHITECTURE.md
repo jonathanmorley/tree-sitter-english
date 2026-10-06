@@ -44,10 +44,13 @@ flatten parentheticals and keep subordinators and joiners.
 ## 3. POS tagging: `crates/english-pos` (+ `-train`)
 
 Labels each word with one of 17 Universal POS tags. A greedy
-left-to-right perceptron: u64 FNV-1a hashed features, dense
+left-to-right perceptron (u64 FNV-1a hashed features, dense
 `[f32; 17]` rows, zero per-token allocation — ~450k tokens/sec,
 1.98 MB weights, trained on UD English-EWT plus in-domain oracle
-data (dev 91.84% / test 92.05%). Wiring (`wire.rs`) splits
+data (dev 91.84% / test 92.05% greedy; beam 91.89% / 92.15%)),
+followed by a width-2 joint re-decode of low-margin spans
+(`BEAM_MARGIN_T` 2.0, cap 8: 20–22% of sentences, ~6% of tokens
+rescored) and three gated correction rules. Wiring (`wire.rs`) splits
 contractions UD-style (`don't` → `do` + `n't`), normalizes curly
 quotes, and excludes hidden punctuation. `Model::tag_margins`
 (best minus runner-up) flags uncertain tokens for review;
