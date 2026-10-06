@@ -874,4 +874,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   `tag` output byte-identical on Moby-Dick; new parity test pins
   `for_each` == `Vec` APIs; suite green. Small by design (pieces
   stage is String-alloc-dominated — node `Vec`s were the smaller
-  share). `TagCache` clone→borrow stays open.
+  share). Cache borrow item DONE below; beam select REJECTED (see
+  next entry).
+
+- Speed micro-opts, split verdict 2026-10-06:
+  (a) `TagCache::tag_sentence_ref` SHIPPED — borrowed `&[(String,
+  Tag)]` hit path (single zipped `Vec` stored; key borrowed for
+  lookup so hits skip key alloc + pair clone). Micro-bench
+  (deleted after): 9,980 cached hits 16.7→5.2 ms (3.2×,
+  −1.15 µs/hit). `tag_sentence` delegates (same clones as
+  before), `tag_document` unchanged; suite green, Moby tags
+  byte-identical.
+  (b) beam `sort_by`→top-2 `select_nth_unstable` REJECTED —
+  ties DO fire: 28/9,976 Moby sentences flipped (two sampled
+  flips read better, direction of the rest unknown — tie-lottery,
+  same bar as the rejected iters-15 peak). Reverted; identity
+  re-verified. Standing lesson: never touch the decoder's
+  tie-break without a principled reason and gate deltas.

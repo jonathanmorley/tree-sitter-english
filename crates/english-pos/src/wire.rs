@@ -263,15 +263,15 @@ pub struct TagCache {
     misses: usize,
 }
 
-/// One cached sentence: UD pieces plus their tags.
+/// One cached sentence: its tagged `(surface piece, tag)` pairs.
 ///
-/// Pieces are stored (not re-extracted) so a cache hit skips the tree
-/// walk, contraction splitting, and key allocation — only a clone of
-/// already-owned strings remains.
+/// Stored zipped (not as parallel `pieces`/`tags`) so a borrowed hit
+/// hands out one slice with no re-zipping; pieces are stored (not
+/// re-extracted) so a hit also skips the tree walk and contraction
+/// splitting.
 #[derive(Debug, Clone)]
 struct CachedSentence {
-    pieces: Vec<String>,
-    tags: Vec<Tag>,
+    tagged: Vec<(String, Tag)>,
 }
 
 impl TagCache {
@@ -302,32 +302,35 @@ impl TagCache {
     /// Returns `(surface piece, tag)` pairs like [`tag_sentence`]. The
     /// key is the sentence text (not pieces): pieces derive from it
     /// deterministically, so equal text means equal tags. Hits skip
-    /// piece extraction entirely (stored pieces are cloned).
+    /// piece extraction entirely (stored pairs are cloned).
     pub fn tag_sentence(
         &mut self,
         model: &Model,
         sentence: &english::Sentence,
     ) -> Vec<(String, Tag)> {
-        let key = sentence.text().to_string();
-        if let Some(hit) = self.map.get(&key) {
+        self.tag_sentence_ref(model, sentence).to_vec()
+    }
+
+    /// Borrow a sentence's tags, reusing a cached result when its text
+    /// was seen. Same pairs as [`TagCache::tag_sentence`] with no
+    /// per-hit clone — the keystroke reader's path (one changed
+    /// sentence, read in place). The lookup borrows the sentence text
+    /// directly, so hits also skip the key allocation; only misses
+    /// allocate (key + first tag).
+    pub fn tag_sentence_ref(
+        &mut self,
+        model: &Model,
+        sentence: &english::Sentence,
+    ) -> &[(String, Tag)] {
+        let key = sentence.text();
+        if self.map.contains_key(key) {
             self.hits += 1;
-            return hit
-                .pieces
-                .iter()
-                .cloned()
-                .zip(hit.tags.iter().copied())
-                .collect();
+        } else {
+            self.misses += 1;
+            let tagged = tag_sentence(model, sentence);
+            self.map.insert(key.to_string(), CachedSentence { tagged });
         }
-        self.misses += 1;
-        let tagged = tag_sentence(model, sentence);
-        self.map.insert(
-            key,
-            CachedSentence {
-                pieces: tagged.iter().map(|(w, _)| w.clone()).collect(),
-                tags: tagged.iter().map(|(_, t)| *t).collect(),
-            },
-        );
-        tagged
+        &self.map.get(key).expect("inserted above").tagged
     }
 
     /// Tag a whole document with cache reuse, one entry per sentence.
