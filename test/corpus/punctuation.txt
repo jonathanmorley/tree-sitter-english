@@ -792,3 +792,96 @@ Interrupted exclamation ends the sentence
         (word)
         (word)
         (word)))))
+
+==================
+Redacted trail closed by a quote ends the sentence
+==================
+
+He said “of course——” and left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (quote)
+        (word)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Redacted trail plus semicolon ends the sentence
+==================
+
+Both the churchwardens are——; there, I will not say.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Redacted name plus comma continues the clause
+==================
+
+The Countess G——, and her conviction grew.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (em_dash))
+      (conjunction)
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Doubled trail before a conjunction joins
+==================
+
+Knife in hand——And Shahrazad perceived the dawn.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (em_dash))
+      (conjunction)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))

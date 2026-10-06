@@ -64,6 +64,9 @@ enum TokenType {
     EllipsisEnd = 5,
     Interruption = 6,
     ColonHandoff = 7,
+    // Appended, never reordered: must match `externals` in grammar.js.
+    TrailEnd = 8,
+    TrailMid = 9,
 }
 
 const MAX_WORD: usize = 31;
@@ -326,14 +329,6 @@ fn is_dash(c: i32) -> bool {
     matches!(c, 0x2012..=0x2015)
 }
 
-fn is_closer(c: i32) -> bool {
-    matches!(
-        c,
-        0x29 | 0x5D | 0x7D | // ) ] }
-        0x22 | 0x27 | 0x60 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
-    )
-}
-
 // Outcome of probing for a boundary-handoff token: the scanner
 // arbitrates where the grammar cannot — a mark with only a boundary
 // after it ends the sentence, while text after it continues the
@@ -363,18 +358,27 @@ enum Handoff {
 // wholesale) only on boundary-ahead: a blank line or EOF after
 // optional closing quotes/parens, which the token absorbs (`Faith,
 // sir, I've——` + blank, `said—"` + blank, trailing run at EOF).
-// Anywhere else (clause text ahead, single newline) refuse, so the
-// internal em_dash join reading applies. A lone hyphen is neither:
-// it returns `Refused` (rewind → today's ERROR path), never falling
+// Anywhere else (clause text ahead, single newline) the redaction
+// trail below is tried first (same run, no boundary needed), and
+// only if that misses does this refuse, so the internal em_dash
+// join reading applies. A lone hyphen is neither: it returns
+// `Refused` (rewind → today's ERROR path), never falling
 // through, so `-` keeps erroring exactly as before.
-unsafe fn scan_interruption(lexer: *mut TSLexer) -> Handoff {
+unsafe fn scan_interruption(lexer: *mut TSLexer, valid_symbols: *const bool) -> Handoff {
     unsafe {
         while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
             advance(lexer, true);
         }
+        // Number of unicode dashes in the run above (ASCII `--`
+        // runs take the join path untouched): doubled trails plus a
+        // conjunction word (`hand——And ...`) join where singles
+        // already do, so only 2+ runs take the closed-word arm
+        // below.
+        let mut udashes = 0;
         if is_dash(lookahead(lexer)) {
             while is_dash(lookahead(lexer)) {
                 advance(lexer, false);
+                udashes += 1;
             }
         } else if lookahead(lexer) == 0x2D {
             let mut count = 0;
@@ -389,10 +393,102 @@ unsafe fn scan_interruption(lexer: *mut TSLexer) -> Handoff {
             return Handoff::Absent;
         }
         mark_end(lexer);
-        while is_closer(lookahead(lexer)) {
-            advance(lexer, false);
+        // Redacted trails (`of course——”`, `are——;`, `Countess
+        // G——,`): the same run followed by closing quotes, `;`, or
+        // `,` — no boundary needed. Closing-only quotes (openers
+        // stay clause-internal for the next turn): ASCII `"`/`'`
+        // count only when NOT followed by a word char, so
+        // `ship—"cargo" sailed` keeps its join reading (the `"`
+        // opens) while `cough——" and` trails (it closes). The
+        // token is one em_dash (aliased); its grammar slot decides
+        // the role (sentence end vs clause filler). Trail shapes
+        // emit before the boundary check below; spans matching
+        // both give identical trees either way, so ordering is
+        // unobservable.
+        let mut closers = 0;
+        // True once an ASCII opening quote is consumed (see below):
+        // the closed-word arm stays off, preserving join readings.
+        let mut opened = false;
+        loop {
+            let c = lookahead(lexer);
+            if c == 0x201D || c == 0x2019 {
+                advance(lexer, false);
+                closers += 1;
+            } else if c == 0x22 || c == 0x27 {
+                advance(lexer, false);
+                if is_word_char(lookahead(lexer)) || matches!(lookahead(lexer), 0x30..=0x39) {
+                    // Opening quote (`ship—"cargo"`): consumed like
+                    // the legacy probe (which absorbs all closers),
+                    // but never counted — the join reading below
+                    // survives, and a later boundary still hands
+                    // off exactly as before.
+                    opened = true;
+                    break;
+                }
+                closers += 1;
+            } else {
+                break;
+            }
         }
         mark_end(lexer);
+        // A comma after the run (with or without closers) trails
+        // inside the clause (`G——, and ...`).
+        let mut comma = false;
+        if lookahead(lexer) == 0x2C {
+            advance(lexer, false);
+            mark_end(lexer);
+            comma = true;
+        }
+        // A semicolon after the run (with or without closers) ends
+        // the sentence (`are——; there ...`), like `?";`.
+        let mut semi = false;
+        if !comma && lookahead(lexer) == 0x3B {
+            advance(lexer, false);
+            mark_end(lexer);
+            semi = true;
+        }
+        if comma || semi || closers > 0 {
+            // The follower decides the role (comma = clause filler,
+            // else sentence end); validity gates each slot, so the
+            // post-mark trailing never collides.
+            if comma {
+                if valid(valid_symbols, TokenType::TrailMid) {
+                    (*lexer).result_symbol = TokenType::TrailMid as TSSymbol;
+                    return Handoff::Emitted;
+                }
+            } else if valid(valid_symbols, TokenType::TrailEnd) {
+                (*lexer).result_symbol = TokenType::TrailEnd as TSSymbol;
+                return Handoff::Emitted;
+            }
+            return Handoff::Refused;
+        }
+        // Doubled unicode trail plus a conjunction word
+        // (`hand——And ...`, `queer—— But ...`): joins where single
+        // dashes already do — the follower re-lexes from the mark
+        // above (advance-then-break: over-consumed tail chars are
+        // re-lexed, not lost). Singles are untouched (their join
+        // readings hold today); openers ahead (`ship—"cargo"`)
+        // keep theirs too.
+        if udashes >= 2 && !opened {
+            let mut wbuf = [0u8; 8];
+            let mut wlen = 0usize;
+            while is_alpha(lookahead(lexer)) {
+                if wlen < 8 {
+                    wbuf[wlen] = to_lower(lookahead(lexer));
+                    wlen += 1;
+                }
+                advance(lexer, false);
+            }
+            if wlen > 0 && wlen <= 3 && in_list(&wbuf[..wlen], CONJUNCTIONS) {
+                if valid(valid_symbols, TokenType::TrailMid) {
+                    (*lexer).result_symbol = TokenType::TrailMid as TSSymbol;
+                    return Handoff::Emitted;
+                }
+                return Handoff::Refused;
+            }
+            // Else no conjunction word: fall through to the
+            // boundary check below (blank/EOF still hands off).
+        }
         // Boundary-ahead: blank line, or EOF (after at most one
         // single line break plus spaces — a trailing newline at EOF
         // still hands off to nothing). A single break with text after
@@ -611,7 +707,7 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                 || lookahead(lexer) == 0x20
                 || lookahead(lexer) == 0x09)
         {
-            match scan_interruption(lexer) {
+            match scan_interruption(lexer, valid_symbols) {
                 Handoff::Emitted => return true,
                 Handoff::Refused => return false,
                 Handoff::Absent => {}

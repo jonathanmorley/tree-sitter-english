@@ -66,6 +66,19 @@ export default grammar({
     // use site. Times (`10:30`) are untouched: digits after the colon
     // refuse, and mid-clause colons were errors before too.
     $._colon_handoff,
+    // Redacted trails (`of course——”`, `are——;` end the sentence;
+    // `Countess G——,` fills the clause): a dash run with closing
+    // quotes, `;`, or `,` and text after it — the interruption's
+    // mid-sentence siblings, arbitrated in the same probe
+    // (boundary still hands off first, with identical trees). Two
+    // tokens because the follower decides the role (comma =
+    // clause, else sentence end) and one token would fork the
+    // parse; validity gates each slot, so the post-mark trailing
+    // never collides. Aliased to `em_dash` like the rest.
+    // Appended last: the Rust TokenType order must match this list
+    // exactly.
+    $._trail_end,
+    $._trail_mid,
   ],
 
   rules: {
@@ -109,12 +122,15 @@ export default grammar({
         // 80×). The dash-led end needs no scanner arbitration (a
         // mark and a clause word are disjoint in one lookahead, so
         // the join reading never collides), unlike the boundary
-        // cases above. Times (`10:30`) refuse in the scanner
-        // (digits ahead) and behave as before.
+        // cases above. Redacted trails (`of course——”`, `are——;` —
+        // ~30×) live in `_sentence_end` for the same disjointness
+        // reason (mark-led vs dash-led arms). Times (`10:30`)
+        // refuse in the scanner (digits ahead) and behave as before.
         choice(
           $._sentence_end,
           seq(repeat1($.em_dash), $._sentence_end),
           alias($._interruption, $.em_dash),
+          alias($._trail_end, $.em_dash),
           seq($.colon, alias($._interruption, $.em_dash)),
           alias($._colon_handoff, $.colon)
         )
@@ -142,18 +158,23 @@ export default grammar({
     // and terminal `...` in one slot is ambiguous, so the scanner picks
     // by what follows (boundary ahead or not).
     _sentence_end: $ => seq(
-      choice($._end_dot, /[?!]+/, alias($.ellipsis_end, $.ellipsis)),
-      repeat(choice(/["'`\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash)),
-      // A semicolon after a quote-closed end (`...as this?"; and ...`,
-      // Burton 51x) cannot join (the sentence already ended) and cannot
-      // start a sentence: absorb it so the next sentence starts clean
-      // instead of erroring. `and` there lexes as a plain word, as it
-      // does at any sentence start.
-      optional(';')
+        choice($._end_dot, /[?!]+/, alias($.ellipsis_end, $.ellipsis)),
+        repeat(choice(/["'`\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash)),
+        // A semicolon after a quote-closed end (`...as this?"; and ...`,
+        // Burton 51x) cannot join (the sentence already ended) and cannot
+        // start a sentence: absorb it so the next sentence starts clean
+        // instead of erroring. `and` there lexes as a plain word, as it
+        // does at any sentence start.
+        optional(';')
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.complete_parenthetical, $.ellipsis, $.currency)
+      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.complete_parenthetical, $.ellipsis, $.currency,
+        // Redacted trail with comma (`Countess G——, and ...`,
+        // external `_trail_mid` aliased here): the trail stays
+        // inside the clause; end-roles live on `_trail_end`, so
+        // no fork is possible.
+        alias($._trail_mid, $.em_dash))
     )),
     // Three dots (or U+2026 …), mid-sentence only. Terminal `...`
     // lexes as the external ellipsis_end instead (emitted on
@@ -220,7 +241,8 @@ export default grammar({
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
         $.subordinate_clause, $.parenthetical, $.complete_parenthetical,
-        $.quote, $.ellipsis, $.currency
+        $.quote, $.ellipsis, $.currency,
+        alias($._trail_mid, $.em_dash)
       )))
     ),
 

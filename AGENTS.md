@@ -130,6 +130,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Standing rule holds: transcription count never drives design.
 
 - Em-dash residuals: leading-dash dialogue, doubled `——` (redaction).
+  Redaction trails DONE 2026-10-06 (−95 prose, zero rises):
+  `of course——”` / `are——;` end the sentence, `Countess G——,`
+  fills the clause, doubled `——And/But` joins — via TWO new
+  externals (`_trail_end`, `_trail_mid`) arbitrated inside the
+  interruption probe (boundary still hands off first; identical
+  spans give identical trees). Grammar attempts failed
+  instructively first: dash-led arms collide with the
+  trailing-dash handoff (shared quote-closers; precedence cannot
+  settle dash-shift duality), and a clause filler collides with
+  joins — the scanner decides by follower, zero LR involvement.
+  ASCII `"`/`'` count as closers only facing non-words (so
+  `ship—"cargo"` keeps its join); `;`/`,` ride along (the
+  `?";` philosophy); opener `—“` deliberately refused.
+  Leftovers dispositioned: verse fragments, `—“`, leading-dash
+  dialogue, `——-` hyphen mix (all out-of-scope/by-design).
+  4 TDD corpus tests; keystroke 41.7 ms held; Moby 4; full
+  gates green.
 
 - Harvest residuals (queued 2026-10-06 from the 100-book final
   ranking; `/` excluded — all 27 hits are front-matter URLs):

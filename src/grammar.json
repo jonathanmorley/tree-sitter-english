@@ -240,6 +240,15 @@
                   "value": "em_dash"
                 },
                 {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_trail_end"
+                  },
+                  "named": true,
+                  "value": "em_dash"
+                },
+                {
                   "type": "SEQ",
                   "members": [
                     {
@@ -378,6 +387,15 @@
             {
               "type": "SYMBOL",
               "name": "currency"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_trail_mid"
+              },
+              "named": true,
+              "value": "em_dash"
             }
           ]
         }
@@ -592,6 +610,15 @@
                 {
                   "type": "SYMBOL",
                   "name": "currency"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_trail_mid"
+                  },
+                  "named": true,
+                  "value": "em_dash"
                 }
               ]
             }
@@ -706,6 +733,14 @@
     {
       "type": "SYMBOL",
       "name": "_colon_handoff"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_trail_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_trail_mid"
     }
   ],
   "inline": [],
