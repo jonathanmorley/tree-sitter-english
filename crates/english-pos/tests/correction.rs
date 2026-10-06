@@ -350,3 +350,80 @@ fn that_sconj_fixes_complementizer_that() {
         Tag::Pron
     );
 }
+
+#[test]
+fn that_ccomp_fixes_verb_complement_that() {
+    // `said that men rejoice`: PRON after VERB, nominal next, finite
+    // verb ahead → SCONJ.
+    assert_eq!(
+        run(
+            &["said", "that", "men", "rejoice"],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Pron, 1.0),
+                (Tag::Noun, 9.0),
+                (Tag::Verb, 9.0)
+            ],
+            "that-ccomp",
+        )[1],
+        Tag::Sconj
+    );
+    // Determiner (`saw that man`, no verb ahead) abstains.
+    assert_eq!(
+        run(
+            &["saw", "that", "man"],
+            &[(Tag::Verb, 9.0), (Tag::Pron, 1.0), (Tag::Noun, 9.0),],
+            "that-ccomp",
+        )[1],
+        Tag::Pron
+    );
+}
+
+#[test]
+fn subconj_adp_fixes_plain_preposition() {
+    // `after the war`: SCONJ with nominal next, no verb ahead → ADP.
+    assert_eq!(
+        run(
+            &["after", "the", "war"],
+            &[(Tag::Sconj, 1.0), (Tag::Det, 9.0), (Tag::Noun, 9.0)],
+            "subconj-adp",
+        )[0],
+        Tag::Adp
+    );
+    // Clausal (`after the war ended`: verb ahead) abstains.
+    assert_eq!(
+        run(
+            &["after", "the", "war", "ended"],
+            &[
+                (Tag::Sconj, 1.0),
+                (Tag::Det, 9.0),
+                (Tag::Noun, 9.0),
+                (Tag::Verb, 9.0)
+            ],
+            "subconj-adp",
+        )[0],
+        Tag::Sconj
+    );
+}
+
+#[test]
+fn apos_part_fixes_possessive_s() {
+    // `Daggoo's hat`: AUX after PROPN → PART.
+    assert_eq!(
+        run(
+            &["Daggoo", "'s", "hat"],
+            &[(Tag::Propn, 9.0), (Tag::Aux, 1.0), (Tag::Noun, 9.0)],
+            "apos-part",
+        )[1],
+        Tag::Part
+    );
+    // Copula (`it's late`: PRON prev) abstains.
+    assert_eq!(
+        run(
+            &["it", "'s", "late"],
+            &[(Tag::Pron, 9.0), (Tag::Aux, 1.0), (Tag::Adj, 9.0)],
+            "apos-part",
+        )[1],
+        Tag::Aux
+    );
+}

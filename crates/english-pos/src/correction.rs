@@ -150,7 +150,116 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: that_sconj,
     },
+    Rule {
+        name: "that-ccomp",
+        threshold: 2.0,
+        test: that_ccomp,
+    },
+    Rule {
+        name: "subconj-adp",
+        threshold: 2.0,
+        test: subconj_adp,
+    },
+    Rule {
+        name: "apos-part",
+        threshold: 2.0,
+        test: apos_part,
+    },
 ];
+
+/// True when a VERB/AUX tag appears strictly ahead of `i`
+/// (positions i+2..=i+6) before any clause boundary
+/// (PUNCT/CCONJ/SCONJ/sentence end): the Constraint Grammar
+/// barrier scan, bounded. Boundary stops keep it from firing
+/// cross-clausally; the i+1 position is deliberately skipped
+/// (the rules using this already condition on it).
+fn fin_ahead(tags: &[Tag], i: usize) -> bool {
+    for j in (i + 2)..((i + 7).min(tags.len())) {
+        match tags[j] {
+            Tag::Punct | Tag::Cconj | Tag::Sconj => return false,
+            Tag::Verb | Tag::Aux => return true,
+            _ => {}
+        }
+    }
+    false
+}
+
+/// Complementizer `that` after a verb (`said that men rejoice`):
+/// pred-PRON `that` with VERB prev, nominal next, and a finite
+/// verb ahead before the boundary is SCONJ 395:16 in EWT — the
+/// finite-verb-ahead test separates it from determiner `that`
+/// (`saw that man`, no verb ahead: 59:36 mixed, correctly out of
+/// reach). The CG/RDR barrier shape for the direction `that-det`
+/// cannot cover. Candidate from the 2026-10-06 gate-zone autopsy;
+/// admit only with EWT dev/test ≥ 0 measured.
+fn that_ccomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+        return None;
+    }
+    if i == 0 || tags.get(i - 1) != Some(&Tag::Verb) {
+        return None;
+    }
+    if !matches!(
+        tags.get(i + 1),
+        Some(Tag::Det | Tag::Adj | Tag::Noun | Tag::Propn | Tag::Pron | Tag::Num)
+    ) {
+        return None;
+    }
+    fin_ahead(tags, i).then_some(Tag::Sconj)
+}
+
+/// Subordinating word read as complementizer (`after the war`):
+/// pred-SCONJ closed-class prep words (`as/after/before/since/
+/// without/upon/with/like/by/on/of`) with nominal next and NO
+/// finite verb ahead are ADP 5356:165 in EWT (97%) — a plain
+/// prepositional phrase, not a clause. The mirror of `that-ccomp`
+/// through the same barrier test. Candidate from the 2026-10-06
+/// gate-zone autopsy (10 instances, largest single mass); admit
+/// only with EWT dev/test ≥ 0 measured.
+fn subconj_adp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Sconj {
+        return None;
+    }
+    const WORDS: &[&str] = &[
+        "as", "after", "before", "since", "without", "upon", "with", "like", "by", "on", "of",
+    ];
+    if !WORDS.contains(&pieces[i].to_lowercase().as_str()) {
+        return None;
+    }
+    if !matches!(
+        tags.get(i + 1),
+        Some(Tag::Det | Tag::Adj | Tag::Noun | Tag::Propn | Tag::Pron | Tag::Num)
+    ) {
+        return None;
+    }
+    (!fin_ahead(tags, i)).then_some(Tag::Adp)
+}
+
+/// Possessive `'s` read as auxiliary (`Daggoo's hat`):
+/// pred-AUX/ADP `'s` after NOUN/PROPN and before a nominal head is
+/// PART 571:8 in EWT (copula contractions need PRON prev — `it's`
+/// — which stays out, and predicative `Ahab's above` / `man's a`
+/// human` stay out via the nominal-next guard). Candidate from
+/// the 2026-10-06 gate-zone autopsy; admit only with EWT dev/test
+/// ≥ 0 measured.
+fn apos_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if !matches!(tags[i], Tag::Aux | Tag::Adp) {
+        return None;
+    }
+    if pieces[i].to_lowercase() != "'s" {
+        return None;
+    }
+    if i == 0 || !matches!(tags.get(i - 1), Some(Tag::Noun) | Some(Tag::Propn)) {
+        return None;
+    }
+    if !matches!(
+        tags.get(i + 1),
+        Some(Tag::Noun | Tag::Propn | Tag::Adj | Tag::Num | Tag::Pron)
+    ) {
+        return None;
+    }
+    Some(Tag::Part)
+}
 
 /// Prepositional `to` read as infinitive marker (`to Coenties
 /// Slip`). Infinitive `to` is followed by VERB/AUX/ADV/PART — never
