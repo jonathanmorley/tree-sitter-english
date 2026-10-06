@@ -772,7 +772,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   classes mislead web-domain test words. Dense ≠ safe. Map
   discarded (deterministically regenerable); script kept as
   infrastructure (`scripts/cluster-books.py`). Roadmap accuracy
-  work now stands: distillation 0-for-4, char 0-for-2 variants,
+  work now stands: distillation 0-for-5, char 0-for-2 variants,
   clusters 0-for-1 — the linear model's ceiling is holding firm
   and every direction has a measurement.
   (3) lexicon backoffs (bytes) — verb-base-form list, name
@@ -808,9 +808,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (2) correction layer 3-for-14 — engine plus first shipped rules
   (`have-verb`, `to-prep`, `to-verb`) and the beam decoder; the
   load-bearing unproven piece left is distillation scale-up
-  (0-for-4: joint 03, finetune 03, joint 04, joint 05 all rejected —
-  05 is the mirror case, evals up / EWT down, and still rejected
-  per EWT-gates discipline);
+  (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
+  all rejected — 05 is the mirror case, evals up / EWT down, and
+  still rejected per EWT-gates discipline; 06 proves composition
+  dominates mass, killing the drift-floor hypothesis);
   (3) chunker has no accuracy number — CLOSED 2026-10-05 by the
   genre end-to-end chunk eval (rule 20/20, cascade 9/20 sent /
   0.873 token, bar 0.43).

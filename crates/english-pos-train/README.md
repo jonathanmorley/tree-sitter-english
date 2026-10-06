@@ -157,6 +157,18 @@ batches. One live hypothesis for a cheap probe: a sub-100-token
 micro-batch of the densest verb material only (S1+S4+S5 ≈ 96
 tok), testing whether drift has a floor the 226 exceeded.
 
+Micro-batch 06 (REJECTED 2026-10-06): exactly that probe — S1,
+S4, S5 of batch 05 only (96 tok, no new labels). Joint retrain:
+dev 91.84→91.14 (−202), test 92.05→91.28 (−193). SMALLER was
+WORSE: composition dominates mass entirely (the five-3sg S1
+poisons NOUN↔VERB both ways: NOUN→VERB 85→130; ADP→ADV
+90→171 from infinitival as/to/for contexts; NOUN→ADJ 52→108;
+targets still won: VERB→NOUN 133→106, SCONJ→PRON 57→43).
+Weights restored (`712e0fc7`). Distillation now 0-for-5, and
+the floor hypothesis is dead with it — no batch shape is safe
+under joint training; only new mechanics (per-class weighting,
+frozen priors) remain on the roadmap.
+
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by
