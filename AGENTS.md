@@ -388,6 +388,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   bar 0.86, no model change in this commit. Cross-genre gold table
   (GUM test splits) lives in train README alongside.
 
+- Hard-prose eval set (DONE 2026-10-06): 10 Moby-Dick sentences
+  (~1,550 tokens, avg 155!) picked by the new `candidates`
+  example (per-sentence low-margin count, beam-vs-greedy diffs,
+  correction fires, s-noun/that/title-mid/coord/prep-chain/subord
+  flags; never auto-labels), disjoint from `moby.rs`/`genre.rs`
+  and all oracle batches. `tests/hard.rs` (tagger, bar 0.84 at
+  measured 0.8644) + `english-chunk/tests/hard.rs` (rule-exact
+  pin + end-to-end token bar 0.87 at 0.892; sentence-exact
+  saturates at 0 on hard text). Tagging discipline as usual
+  (EWT counts in-file: `each other` DET+ADJ 15:0, `one`+NOUN NUM
+  133:3, `because of` ADP+ADP 39:3, `going to` VERB 182,
+  `preceding` ADJ 6:0, `hidden` ADJ 6:2, `for`-initial ADP 40:1,
+  `as-X-as` first ADV unanimous). Chunk gold proposed by an
+  independent spec port, verified boundary-by-boundary, Rust suite
+  re-checks all. Authoring hygiene (learned the hard way):
+  hand-aligned parallel arrays drift past ~200 tokens (caught
+  3 dropped tags in review) — write WORD+TAG lines and generate
+  the arrays, never hand-align.
+
 - NLTK Punkt trainer port, harvest-only offline (DONE 2026-10-06
   by direct use, not a port): NLTK 3.10.3 was installed in this
   env, so `scripts/punkt-harvest.py` calls its reference trainer
