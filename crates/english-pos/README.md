@@ -7,10 +7,13 @@ classes in `grammar.js` were tried upstream and dropped; see Tier 3).
 A greedy perceptron: `Model::tag` decodes surface tokens left to right
 (lowercased internally; shape features read the raw forms). Features
 are 64-bit FNV-1a hashes extracted with zero per-token allocation
-(scratch buffer reused; weights ride dense `[f32; 17]` arrays), so
-tagging runs ~450k tokens/sec. Weights live in `weights/upos.json`,
+(scratch buffer reused; weights ride dense `[f32; 17]` arrays in a
+trivial `u64`-keyed map — no SipHash re-hashing of pre-hashed ids), so
+tagging runs ~2.1M tokens/sec on the tag pass (~550k end-to-end with
+parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT plus
-in-domain oracle data: dev 91.84%, test 92.05%, 1.98 MB.
+in-domain oracle data: dev 91.84%, test 92.05%, 1.76 MB
+(whole-number weights serialize as integers).
 
 ```rust
 let model = english_pos::Model::from_json(include_str!("weights/upos.json"))?;
@@ -30,17 +33,17 @@ Demo: `cargo run -p english-pos --example tag -- <file>` prints
 ## Performance
 
 From `cargo run --release -p english-pos --example bench -- <file>` on Moby-Dick (Gutenberg 2701, from `CHAPTER 1. Loomings.`
-onward: 1.23 MB, 10,542 sentences, 225,138 pieces; medians of 5):
+onward: 1.21 MB, 9,973 sentences, 220,436 pieces; medians of 6):
 
 | Stage | Time |
 |---|---|
-| parse (tree-sitter) | 252 ms |
-| pieces (wiring) | 93 ms |
-| tag (perceptron) | 176 ms (~17 µs/sentence, ~450k tok/s) |
+| parse (tree-sitter) | 213 ms |
+| pieces (wiring) | 87 ms |
+| tag (perceptron) | 104 ms (~10 µs/sentence, ~2.1M tok/s; ~550k end-to-end) |
 
 Interactive edits avoid the full pass: `Document::update` re-parses
-incrementally (~18 ms) and `TagCache` retags only changed sentences
-(one-word edit: 29 ms, 10,541 hits / 1 miss). Keystroke path ≈ 47 ms
+incrementally (~14 ms) and `TagCache` retags only changed sentences
+(one-word edit: 26 ms, 9,972 hits / 1 miss). Keystroke path ≈ 40 ms
 on book-size input.
 
 ## Verification

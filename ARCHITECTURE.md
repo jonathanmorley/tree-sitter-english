@@ -45,9 +45,10 @@ flatten parentheticals and keep subordinators and joiners.
 
 Labels each word with one of 17 Universal POS tags. A greedy
 left-to-right perceptron (u64 FNV-1a hashed features, dense
-`[f32; 17]` rows, zero per-token allocation — ~450k tokens/sec,
-1.98 MB weights, trained on UD English-EWT plus in-domain oracle
-data (dev 91.84% / test 92.05% greedy; beam 91.89% / 92.15%)),
+`[f32; 17]` rows in a trivially-hashed map, zero per-token alloc
+beyond one lowercase pass — ~2.1M tok/s on the tag pass, 1.76 MB
+integer-encoded weights, trained on UD English-EWT plus in-domain
+oracle data (dev 91.84% / test 92.05% greedy; beam 91.89% / 92.15%)),
 followed by a width-2 joint re-decode of low-margin spans
 (`BEAM_MARGIN_T` 2.0, cap 8: 20–22% of sentences, ~6% of tokens
 rescored) and three gated correction rules. Wiring (`wire.rs`) splits
@@ -100,10 +101,10 @@ six tokens, one left-to-right pass each stage.
 | Measure | Result |
 |---|---|
 | Full parse | ~131–252 ms depending on start point |
-| Tag pass | ~176 ms (~17 µs/sentence) |
-| One-word-edit keystroke path | ~47 ms (reparse + retag) |
+| Tag pass | ~104 ms (~10 µs/sentence) |
+| One-word-edit keystroke path | ~40 ms (reparse + retag) |
 | Peak memory | 58 MB |
-| Tagger weights | 1.98 MB, zero-dependency pure Rust |
+| Tagger weights | 1.76 MB, zero-dependency pure Rust |
 
 Transformers (~97-98% UPOS vs our 92.05) were measured against
 these lines and evicted: 50–1000× slower, 7–220× larger, plus a

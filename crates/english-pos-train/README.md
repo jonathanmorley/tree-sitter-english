@@ -14,8 +14,9 @@ cargo run --release -p english-pos-train -- \
 
 Trains on the preset's `en_ewt-ud-train.conllu`, reports dev/test
 accuracy, and writes `../english-pos/weights/upos.json` (committed:
-dev 91.84%, test 92.05%, 2.01 MB — EWT plus in-domain oracle data
-below, at iters=20/min-count=1). Re-evaluate committed weights any
+dev 91.84%, test 92.05%, 1.76 MB — EWT plus in-domain oracle data
+below, at iters=20/min-count=1; md5 `56082361`, integer-encoded
+since 2026-10-06). Re-evaluate committed weights any
 time with `--eval-only test` (or `dev`). Base hyperparams are
 dev-selected: a sweep over iters {5,10,15,20,30} × min-count {1,2}
 peaked at iters=15 / min-count=1 (dev 92.09%) but flipped canonical

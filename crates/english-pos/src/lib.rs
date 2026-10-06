@@ -5,6 +5,9 @@
 //! training, the [`Model`] with greedy decoding, and JSON weight
 //! (de)serialization. Training lives in `crates/english-pos-train`.
 //!
+//! Weights are keyed by pre-hashed `u64` feature ids in a map with a
+//! trivial hasher (no SipHash re-hashing): lookups run ~3M per book
+//! and are the tag pass's hottest operation after feature hashing.
 //! Deliberately a post-parse pass, never grammar: the grammar segments
 //! flat clauses of unclassified words (Tier 3 showed word classes do
 //! not belong there); this crate annotates them with probabilities that
@@ -23,6 +26,44 @@ pub use wire::{
 };
 
 use std::collections::HashMap;
+use std::hash::{BuildHasherDefault, Hasher};
+
+/// Trivial hasher for pre-hashed `u64` feature ids.
+///
+/// Feature ids are already 64-bit FNV-1a avalanches, so re-hashing
+/// them with SipHash (the `std` default) burns ~3M hashes per book
+/// for nothing. `write_u64` stores the key verbatim; `finish`
+/// applies a splitmix64 finalizer to spread the low bits that pick
+/// SwissTable buckets. Zero dependencies, no accuracy impact —
+/// lookup results are identical, only faster.
+#[derive(Default)]
+struct U64Hasher(u64);
+
+impl Hasher for U64Hasher {
+    fn write(&mut self, bytes: &[u8]) {
+        // Fallback (never taken for `u64` keys): FNV-1a over bytes.
+        let mut h = FNV_OFFSET_BASIS;
+        for b in bytes {
+            h ^= *b as u64;
+            h = h.wrapping_mul(FNV_PRIME);
+        }
+        self.0 = h;
+    }
+
+    fn write_u64(&mut self, v: u64) {
+        self.0 = v;
+    }
+
+    fn finish(&self) -> u64 {
+        let mut z = self.0.wrapping_add(0x9e3779b97f4a7c15);
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
+        z ^ (z >> 31)
+    }
+}
+
+/// `HashMap` keyed by pre-hashed `u64` ids (weights, feature counts).
+type U64Map<V> = HashMap<u64, V, BuildHasherDefault<U64Hasher>>;
 
 /// Pseudo-tags opening every sentence for tag-history features.
 pub const START1: &str = "<START>";
@@ -115,29 +156,55 @@ fn last_n(s: &str, n: usize) -> Option<&str> {
 /// set as the original string-keyed model, so accuracy is unchanged.
 /// Shared verbatim by training and inference: any change here
 /// invalidates committed weights.
-pub fn features(
-    raw: &[String],
-    lower: &[String],
+///
+/// Generic over the word containers so inference can score borrowed
+/// `&str` slices without cloning them into `String`s first.
+pub fn features<R: AsRef<str>, L: AsRef<str>>(
+    raw: &[R],
+    lower: &[L],
     i: usize,
     prev1: &str,
     prev2: &str,
     feats: &mut Vec<u64>,
 ) {
     feats.clear();
-    let w = lower[i].as_str();
+    let w = lower[i].as_ref();
     feats.push(F_BIAS);
     feats.push(hash_feature(0x10, &[w]));
     feats.push(hash_feature(
         0x11,
-        &[if i > 0 { &lower[i - 1] } else { START1 }],
+        &[if i > 0 { lower[i - 1].as_ref() } else { START1 }],
     ));
     feats.push(hash_feature(
         0x12,
-        &[lower.get(i + 1).map(String::as_str).unwrap_or(START1)],
+        &[if i + 1 < lower.len() {
+            lower[i + 1].as_ref()
+        } else {
+            START1
+        }],
     ));
     feats.push(hash_feature(0x13, &[prev1]));
     feats.push(hash_feature(0x14, &[prev2]));
     feats.push(hash_feature(0x15, &[prev1, prev2]));
+    push_affixes(w, feats);
+    push_shape(raw[i].as_ref(), feats);
+}
+
+/// Prefix/suffix 1–3 features for `w` (hash discriminants
+/// `0x21`–`0x23` / `0x25`–`0x27`). ASCII words (the common case)
+/// slice bytes directly; other words fall back to the char-boundary
+/// walk. Same ids in the same order either way.
+fn push_affixes(w: &str, feats: &mut Vec<u64>) {
+    if w.is_ascii() {
+        let b = w.as_bytes();
+        for n in 1..=3 {
+            if b.len() >= n {
+                feats.push(hash_feature(0x20 + n as u8, &[&w[..n]]));
+                feats.push(hash_feature(0x24 + n as u8, &[&w[b.len() - n..]]));
+            }
+        }
+        return;
+    }
     for n in 1..=3 {
         if let Some(p) = first_n(w, n) {
             feats.push(hash_feature(0x20 + n as u8, &[p]));
@@ -146,16 +213,35 @@ pub fn features(
             feats.push(hash_feature(0x24 + n as u8, &[s]));
         }
     }
-    let raw_word = raw[i].as_str();
-    if raw_word.chars().next().is_some_and(|c| c.is_uppercase())
-        && raw_word.chars().skip(1).all(|c| !c.is_uppercase())
-    {
+}
+
+/// Shape flags for the raw word: titlecase / all-caps / digit /
+/// hyphen. One char pass with the same truth table as the old four
+/// scans (empty word sets nothing).
+fn push_shape(raw_word: &str, feats: &mut Vec<u64>) {
+    let mut first_upper = false;
+    let mut rest_upper = false;
+    let mut has_upper = false;
+    let mut has_lower = false;
+    let mut has_digit = false;
+    for (k, c) in raw_word.chars().enumerate() {
+        let up = c.is_uppercase();
+        has_upper |= up;
+        has_lower |= c.is_lowercase();
+        if k == 0 {
+            first_upper = up;
+        } else {
+            rest_upper |= up;
+        }
+        has_digit |= c.is_numeric();
+    }
+    if first_upper && !rest_upper {
         feats.push(F_TITLE);
     }
-    if raw_word.chars().any(|c| c.is_uppercase()) && raw_word.chars().all(|c| !c.is_lowercase()) {
+    if has_upper && !has_lower {
         feats.push(F_UPPER);
     }
-    if raw_word.chars().any(|c| c.is_numeric()) {
+    if has_digit {
         feats.push(F_DIGIT);
     }
     if raw_word.contains('-') {
@@ -167,11 +253,15 @@ pub fn features(
 ///
 /// Tags ride in a dense `[f32; 17]` in [`TAGS`] order, so decoding adds
 /// one array per active feature instead of one hash lookup per
-/// (feature, tag) pair. Serialized shape is unchanged
-/// (`{"weights": {feature: {TAG: weight}}}`) with integer feature keys.
+/// (feature, tag) pair. The map itself uses a trivial `u64` hasher
+/// ([`U64Hasher`]): feature ids arrive pre-hashed (FNV-1a), so the
+/// `std` SipHash default would re-hash ~3M lookups per book for no
+/// benefit. Serialized shape is unchanged
+/// (`{"weights": {feature: {TAG: weight}}}`) with integer feature keys;
+/// whole-number weights serialize as integers (see [`Model::to_json`]).
 #[derive(Debug, Default, Clone)]
 pub struct Model {
-    weights: HashMap<u64, [f32; 17]>,
+    weights: U64Map<[f32; 17]>,
 }
 
 /// Position of a tag code in [`TAGS`].
@@ -242,15 +332,26 @@ impl Model {
     }
 
     fn decode<S: AsRef<str>>(&self, words: &[S]) -> (Vec<Tag>, Vec<f32>) {
+        let (tags, margins, _) = self.decode_lower(words);
+        (tags, margins)
+    }
+
+    /// Greedy decode, also returning the lowercased forms. The beam
+    /// pass reuses them instead of lowercasing the sentence a second
+    /// time (the old `decode_beam` rebuilt both `lower` and `raw`).
+    ///
+    /// Allocation per sentence: one `lower` Vec (unavoidable — the
+    /// model reads lowercased text). Tag history rides `&str`
+    /// borrows of the `TAGS`/`START` statics, never owned `String`s.
+    fn decode_lower<S: AsRef<str>>(&self, words: &[S]) -> (Vec<Tag>, Vec<f32>, Vec<String>) {
         let lower: Vec<String> = words.iter().map(|w| w.as_ref().to_lowercase()).collect();
-        let raw: Vec<String> = words.iter().map(|w| w.as_ref().to_string()).collect();
-        let mut prev1 = START1.to_string();
-        let mut prev2 = START2.to_string();
+        let mut prev1 = START1;
+        let mut prev2 = START2;
         let mut feats = Vec::with_capacity(20);
         let mut tags = Vec::with_capacity(words.len());
         let mut margins = Vec::with_capacity(words.len());
         for i in 0..words.len() {
-            let acc = self.score_tag(&raw, &lower, i, &prev1, &prev2, &mut feats);
+            let acc = self.score_tag(words, &lower, i, prev1, prev2, &mut feats);
             // Single pass tracks best and runner-up; strict `>` keeps
             // the fixed TAGS order as tie-break.
             let mut best = 0;
@@ -265,24 +366,27 @@ impl Model {
             }
             tags.push(Tag::from_upos(TAGS[best]).expect("fixed tag list is valid"));
             margins.push(acc[best] - second);
-            prev2 = std::mem::replace(&mut prev1, TAGS[best].to_string());
+            prev2 = prev1;
+            prev1 = TAGS[best];
         }
-        (tags, margins)
+        (tags, margins, lower)
     }
 
     /// Score all 17 tags at position `i` under tag history
     /// (`prev1`, `prev2`). Single scoring path shared by greedy and
     /// beam decoding (refactored out of `decode`, bit-identical).
-    fn score_tag(
+    /// Shape flags read the original-cased `words`; identity/affix
+    /// features read `lower` — so no separate `raw` Vec is needed.
+    fn score_tag<S: AsRef<str>>(
         &self,
-        raw: &[String],
+        words: &[S],
         lower: &[String],
         i: usize,
         prev1: &str,
         prev2: &str,
         feats: &mut Vec<u64>,
     ) -> [f32; 17] {
-        features(raw, lower, i, prev1, prev2, feats);
+        features(words, lower, i, prev1, prev2, feats);
         let mut acc = [0.0f32; 17];
         for f in feats.iter() {
             if let Some(arr) = self.weights.get(f) {
@@ -315,9 +419,7 @@ impl Model {
         margin_t: f32,
         max_span: usize,
     ) -> (Vec<Tag>, Vec<f32>, (usize, usize)) {
-        let lower: Vec<String> = words.iter().map(|w| w.as_ref().to_lowercase()).collect();
-        let raw: Vec<String> = words.iter().map(|w| w.as_ref().to_string()).collect();
-        let (mut tags, mut margins) = self.decode(words);
+        let (mut tags, mut margins, lower) = self.decode_lower(words);
         if words.is_empty() {
             return (tags, margins, (0, 0));
         }
@@ -363,18 +465,16 @@ impl Model {
         let mut feats = Vec::with_capacity(20);
         let mut rescored = 0;
         for (lo, hi) in &spans {
+            // History just left of the span, borrowed from the tag
+            // statics — no allocation (the old code built `String`s).
             let (b1, b2) = (
-                if *lo > 0 {
-                    TAGS[idx[*lo - 1]].to_string()
-                } else {
-                    START1.to_string()
-                },
+                if *lo > 0 { TAGS[idx[*lo - 1]] } else { START1 },
                 if *lo > 1 {
-                    TAGS[idx[*lo - 2]].to_string()
+                    TAGS[idx[*lo - 2]]
                 } else if *lo == 1 {
-                    START1.to_string()
+                    START1
                 } else {
-                    START2.to_string()
+                    START2
                 },
             );
             // Beam: (cumulative score, tag-index history).
@@ -382,19 +482,15 @@ impl Model {
             for (k, pos) in (*lo..=*hi).enumerate() {
                 let mut cands: Vec<(f32, Vec<usize>)> = Vec::with_capacity(hyps.len() * 17);
                 for (score, hist) in &hyps {
-                    let p1 = if k >= 1 {
-                        TAGS[hist[k - 1]]
-                    } else {
-                        b1.as_str()
-                    };
+                    let p1 = if k >= 1 { TAGS[hist[k - 1]] } else { b1 };
                     let p2 = if k >= 2 {
                         TAGS[hist[k - 2]]
                     } else if k == 1 {
-                        b1.as_str()
+                        b1
                     } else {
-                        b2.as_str()
+                        b2
                     };
-                    let acc = self.score_tag(&raw, &lower, pos, p1, p2, &mut feats);
+                    let acc = self.score_tag(words, &lower, pos, p1, p2, &mut feats);
                     for t in 0..17 {
                         let mut h = hist.clone();
                         h.push(t);
@@ -409,19 +505,15 @@ impl Model {
             // Commit winner tags; recompute local margins under the
             // winning history for the correction gate.
             for (k, pos) in (*lo..=*hi).enumerate() {
-                let p1 = if k >= 1 {
-                    TAGS[winner[k - 1]]
-                } else {
-                    b1.as_str()
-                };
+                let p1 = if k >= 1 { TAGS[winner[k - 1]] } else { b1 };
                 let p2 = if k >= 2 {
                     TAGS[winner[k - 2]]
                 } else if k == 1 {
-                    b1.as_str()
+                    b1
                 } else {
-                    b2.as_str()
+                    b2
                 };
-                let acc = self.score_tag(&raw, &lower, pos, p1, p2, &mut feats);
+                let acc = self.score_tag(words, &lower, pos, p1, p2, &mut feats);
                 let mut best = 0;
                 let mut second = f32::NEG_INFINITY;
                 for t in 1..17 {
@@ -454,7 +546,8 @@ impl Model {
         let raw: std::collections::BTreeMap<u64, HashMap<String, f32>> =
             serde_json::from_str::<serde_json::Value>(json)
                 .and_then(|v| serde_json::from_value(v["weights"].clone()))?;
-        let mut weights = HashMap::with_capacity(raw.len());
+        let mut weights: U64Map<[f32; 17]> =
+            HashMap::with_capacity_and_hasher(raw.len(), BuildHasherDefault::default());
         for (f, per_tag) in raw {
             let mut arr = [0.0f32; 17];
             for (code, w) in &per_tag {
@@ -477,8 +570,16 @@ impl Model {
     /// well under the 10 MB budget; `treefmt` excludes the weights
     /// directory (generated file, like `src/*`). Exact-zero weights
     /// (canceled +1/-1 pairs) are omitted, as in training.
+    ///
+    /// Whole-number weights (every weight the perceptron produces —
+    /// sums of ±1 updates) serialize as integers (`3`, not `3.0`),
+    /// saving ~11% of the file. `from_json` reads both forms, so the
+    /// encoding is backward compatible.
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        let sorted: std::collections::BTreeMap<u64, std::collections::BTreeMap<String, f32>> = self
+        let sorted: std::collections::BTreeMap<
+            u64,
+            std::collections::BTreeMap<String, serde_json::Value>,
+        > = self
             .weights
             .iter()
             .map(|(f, arr)| {
@@ -487,7 +588,19 @@ impl Model {
                     TAGS.iter()
                         .enumerate()
                         .filter(|(t, _)| arr[*t] != 0.0)
-                        .map(|(t, code)| (code.to_string(), arr[t]))
+                        .map(|(t, code)| {
+                            let w = arr[t];
+                            let v =
+                                if w.fract() == 0.0 && w >= i32::MIN as f32 && w <= i32::MAX as f32
+                                {
+                                    serde_json::Value::from(w as i32)
+                                } else {
+                                    serde_json::Number::from_f64(w as f64)
+                                        .map(serde_json::Value::Number)
+                                        .unwrap_or(serde_json::Value::Null)
+                                };
+                            (code.to_string(), v)
+                        })
                         .collect(),
                 )
             })
@@ -504,7 +617,7 @@ impl Model {
     /// are computed on `data` with threshold 1: every in-domain
     /// observation counts.
     pub fn finetune(&mut self, data: &[(Vec<String>, Vec<String>)], iters: usize) {
-        let mut counts: HashMap<u64, usize> = HashMap::new();
+        let mut counts: U64Map<usize> = U64Map::default();
         let mut feats = Vec::with_capacity(20);
         for (raw, gold) in data {
             let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
@@ -566,7 +679,7 @@ impl Model {
     /// dominate decoding (measured: 33% vs 88% dev on a 300-sentence
     /// pilot). Plain final-iteration weights win here.
     pub fn train(data: &[(Vec<String>, Vec<String>)], iters: usize, min_count: usize) -> Self {
-        let mut counts: HashMap<u64, usize> = HashMap::new();
+        let mut counts: U64Map<usize> = U64Map::default();
         let mut feats = Vec::with_capacity(20);
         for (raw, gold) in data {
             let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
@@ -580,7 +693,7 @@ impl Model {
                 prev2 = std::mem::replace(&mut prev1, g.clone());
             }
         }
-        let mut weights: HashMap<u64, [f32; 17]> = HashMap::new();
+        let mut weights: U64Map<[f32; 17]> = U64Map::default();
 
         for _ in 0..iters {
             for (raw, gold) in data {

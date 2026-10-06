@@ -32,8 +32,21 @@ use crate::{Model, RULES, Tag, apply_rules};
 /// whole; a trailing one (`dogs'`) yields a lone `"'"` piece. Words
 /// without apostrophes return unchanged.
 pub fn split_contraction(word: &str) -> Vec<String> {
+    let mut pieces = Vec::new();
+    push_contraction_pieces(&mut pieces, word);
+    if pieces.is_empty() {
+        vec![word.to_string()]
+    } else {
+        pieces
+    }
+}
+
+/// Push UD pieces for `word` onto `out` (pushes nothing when the word
+/// needs no split). Split logic shared with [`split_contraction`]:
+/// the public function wraps this with the whole-word fallback.
+fn push_contraction_pieces(out: &mut Vec<String>, word: &str) {
     if !word.contains('\'') && !word.contains('’') {
-        return vec![word.to_string()];
+        return;
     }
     // `n't` keeps its `n`: don't → do + n't (not don + 't).
     let lower = word.to_lowercase();
@@ -43,17 +56,18 @@ pub fn split_contraction(word: &str) -> Vec<String> {
         if chars.len() > 3 {
             let stem: String = chars[..chars.len() - 3].iter().collect();
             if !stem.is_empty() {
-                return vec![stem, "n't".to_string()];
+                out.push(stem);
+                out.push("n't".to_string());
+                return;
             }
         }
-        return vec![word.to_string()];
+        return;
     }
-    let mut pieces = Vec::new();
     let mut current = String::new();
     for ch in word.chars() {
         if ch == '\'' || ch == '’' {
             if !current.is_empty() {
-                pieces.push(std::mem::take(&mut current));
+                out.push(std::mem::take(&mut current));
             }
             current.push('\'');
         } else {
@@ -63,14 +77,9 @@ pub fn split_contraction(word: &str) -> Vec<String> {
     if !current.is_empty() {
         // A lone leading apostrophe means the whole word was `'em`-style:
         // if nothing was pushed yet, the single piece is the word itself.
-        pieces.push(current);
+        out.push(current);
     } else if word.ends_with('\'') || word.ends_with('’') {
-        pieces.push("'".to_string());
-    }
-    if pieces.is_empty() {
-        vec![word.to_string()]
-    } else {
-        pieces
+        out.push("'".to_string());
     }
 }
 
@@ -80,14 +89,26 @@ pub fn split_contraction(word: &str) -> Vec<String> {
 /// else (`dotted`, `number`, conjunctions, subordinators, punctuation)
 /// passes through whole.
 pub fn token_pieces(token: &english::Token) -> Vec<String> {
+    let mut out = Vec::new();
+    push_token_pieces(&mut out, token);
+    out
+}
+
+/// Push UD pieces for one grammar token onto `out` without the
+/// interim per-token `Vec` ([`token_pieces`] wraps this).
+fn push_token_pieces(out: &mut Vec<String>, token: &english::Token) {
     if token.kind() == english::TokenKind::Word {
         if let Some(fused) = split_fused(token.text()) {
-            return fused;
+            out.extend(fused);
+            return;
         }
-        split_contraction(token.text())
-    } else {
-        vec![token.text().to_string()]
+        let before = out.len();
+        push_contraction_pieces(out, token.text());
+        if out.len() > before {
+            return;
+        }
     }
+    out.push(token.text().to_string());
 }
 
 /// Split fused informal contractions without apostrophes (MacIntyre):
@@ -149,7 +170,7 @@ fn collect_pieces(tokens: &[english::Token]) -> Vec<String> {
             tok.kind(),
             english::TokenKind::Word | english::TokenKind::Dotted
         );
-        out.extend(token_pieces(tok));
+        push_token_pieces(&mut out, tok);
         prev = Some((span.end, wordish));
     }
     out
