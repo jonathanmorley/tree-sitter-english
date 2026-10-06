@@ -872,6 +872,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   in English), blanket titlecase (already falsified by the
   Titlecase×position measurement).
 
+- External benchmark shootout (DONE 2026-10-06, same hardware,
+  same data): NLTK averaged perceptron (WSJ-trained) and
+  RDRPOSTagger (UPOS-EWT model, same tagset+domain as ours) run
+  locally against EWT test gold words (25,094) and Moby speed.
+  Accuracy exact-UPOS: RDR 92.30% (23,163) vs ours 92.05% greedy
+  / 92.15% production — a 39-token gap; dev shows no leak
+  (RDR 91.75 vs ours 91.84). Coarse universal-12: ours 94.24%
+  vs NLTK 87.03% (NLTK out-of-domain — gap conflates domain and
+  model). Speed tagger-only on Moby: ours 2.1M tok/s vs RDR
+  51k (41×) vs NLTK 24k (90×). Size: RDR 0.38 MB (5× smaller —
+  exception trees share structure; our dense rows are redundant)
+  vs NLTK 1.5 MB vs ours 1.76 MB. Verdict: RDR is the most
+  accurate lightweight system and the most parameter-efficient,
+  but Python-only at 1/41 the speed — same eviction logic as
+  transformers, milder; budgets (zero-dep Rust, keystroke path,
+  cross-platform bindings) keep it offline-only. Probes deleted;
+  nothing to incorporate that survives the budgets (a sparser
+  weight map was already measured worse at min-count=2).
+
 - Inference optimization pass (DONE 2026-10-06, speed + size, zero
   accuracy delta): tag 185→104 ms (−44%), end-to-end 454k→546k
   tok/s (+21%), weights 1.98→1.76 MB (−11%), keystroke ≈47→40 ms.
