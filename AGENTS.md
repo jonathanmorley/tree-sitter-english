@@ -810,7 +810,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 11-for-22 — engine plus shipped rules
+  (2) correction layer 11-for-23 — engine plus shipped rules
   (`have-verb`, `to-prep`, `to-verb`, `that-det`, `that-rel`,
   `det-noun`, `that-sconj`, `that-ccomp`, `subconj-adp`,
   `apos-part`, `to-part`) and the beam decoder; the
@@ -895,15 +895,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   nominal-misread neighbors — documented, EWT shows zero of
   either class). `flies` holds, suite green, probes deleted.
 
-- `to-part` (ADMITTED 2026-10-06, 11-for-22): pred-ADP `to`
+- `to-part` (ADMITTED 2026-10-06, 11-for-23): pred-ADP `to`
   before VERB → PART (EWT 2893:48, the mirror of `to-prep`).
   EWT dev +5 / test +1 net; 20 Moby fires (~18 infinitive
   markers, 2 gerund-complement residuals documented —
   `preliminary to scalping`: ADJ-prev `to` + participle reads
   prepositional but UPOS has no VBG/VB split, so no cheap guard;
   accepted trigger). Remaining gate-zone mass after this is
-  singletons plus the ADJ-lexicon attributive shape (still thin)
-  — mine-the-gap stands at 4 admitted of 7 measured shapes.
+  singletons plus the ADJ-lexicon attributive shape — worked
+  next and REJECTED: majority-ADJ wordlist (758 forms via
+  scripts/adj-forms.sh, kept as infrastructure) + DET-prev +
+  nominal-next is ADJ 98.4% in EWT, but the rule goes dev ±0
+  with a known break (`a blue box` noun-adjuncts) against test
+  +3 — the s-verb-lex precedent (dev ±0 + known break =
+  reject) decides it, and per-word exclusions would be
+  post-hoc fitting to dev fires. Trigger for revisit: a
+  principled noun-adjunct separator (color/material closed
+  classes?) with its own EWT numbers. Mine-the-gap closes at
+  4 admitted of 8 measured shapes.
 
 - External benchmark shootout (DONE 2026-10-06, same hardware,
   same data): NLTK averaged perceptron (WSJ-trained) and

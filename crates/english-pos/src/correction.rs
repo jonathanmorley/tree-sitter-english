@@ -42,7 +42,7 @@
 //! `that-rel` + `det-noun` (Brill/fnTBL/RDR/CG convergence),
 //! `that-sconj` (RDR tree-mining), `that-ccomp` + `subconj-adp` +
 //! `apos-part` (gate-zone autopsy), `to-part` (gate-zone autopsy) —
-//! 11-for-22 total.
+//! 11-for-23 total.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
