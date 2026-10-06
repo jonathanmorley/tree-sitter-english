@@ -130,6 +130,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Standing rule holds: transcription count never drives design.
 
 - Em-dash residuals: leading-dash dialogue, doubled `——` (redaction).
+  Leading-dash PRICED OUT 2026-10-06 (stays residual): 70-book
+  census finds exactly ONE body-prose line-initial dash (pulp
+  ` - Brice disappearing...`, 40284) plus epigraph attributions
+  (`—CHAUCER`, out of scope) and map/front-matter bullets. No
+  French-style turn-taking exists in the corpus (Dumas uses
+  quotes). Fixing the one hit needs paragraph-rule surgery for a
+  single idiosyncratic line — uneconomical; the trigger bar
+  (constructs erroring as a class) is not met. Revisit only on
+  new multi-book evidence.
   Redaction trails DONE 2026-10-06 (−95 prose, zero rises):
   `of course——”` / `are——;` end the sentence, `Countess G——,`
   fills the clause, doubled `——And/But` joins — via TWO new
