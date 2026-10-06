@@ -209,6 +209,38 @@ must apply EWT counter-pressure on the same shared rows, not
 avoid them. Code kept (`finetune_frozen`, `--freeze-at`) as
 measured infrastructure; weights restored (`56082361`).
 
+Counterweighted joint (MECHANICS REJECTED 2026-10-06, second
+and last untried mechanics): data-only, zero code changes —
+12 contested words where oracle-05 contradicts the EWT majority
+(`that` SCONJ→PRON, `to` PART→ADP, `as`, `more`, `before`,
+`what`, `do`, `judge`, `living`, `sinking`, `thought`, plus `'`
+PUNCT→PART), and the 33% of EWT-train sentences containing one
+under its majority tag duplicated k× in the joint corpus, so
+shared rows feel EWT counter-pressure proportional to the
+oracle pull:
+
+| k | dev | test | moby | genre | hard |
+|---|---|---|---|---|---|
+| committed | 23096 | 23100 | 27 | 20 | 0.8644 |
+| 2 | 23137 | 23049 | 15 | 16 | 0.8838 |
+| 3 | 23049 | 22984 | — | — | — |
+
+k=2 is the mechanism's high-water mark — moby 27→15 beats even
+plain joint (23), hard +0.02 — but test −51 fails the gates by
+25× precedent, and k=3 collapses both splits. The dev/test
+split (dev +41 yet test −51 at k=2) is the tell: the duplicated
+function-word priors fit dev-adjacent contexts while hurting
+web-text broadly — exactly what the EWT gates exist to catch.
+Across all operating points (frozen K≤500, counterweight k=2/3,
+plain joint) book gains scale with web-test damage and no point
+passes both splits: the trade is structural at this capacity,
+not a mechanics artifact. Accuracy roadmap now stands:
+distillation 0-for-5, mechanics 0-for-2, char 0-for-2, clusters
+0-for-1 — the linear ceiling is holding on every axis with a
+measurement behind each. Remaining accuracy work is the
+no-weight-change column only (lexicon backoffs beyond the 3
+shipped, beam refinements). Weights restored (`56082361`).
+
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by

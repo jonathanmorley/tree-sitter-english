@@ -773,8 +773,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   discarded (deterministically regenerable); script kept as
   infrastructure (`scripts/cluster-books.py`). Roadmap accuracy
   work now stands: distillation 0-for-5 plus frozen-prior
-  mechanics 0-for-1 (5 K-points, zero drift but zero gain —
-  gains/damage dynamically entangled, see train README),
+  and counterweight mechanics 0-for-2 (frozen: 5 K-points, zero
+  drift but zero gain; counterweight k=2/3: moby-15 high-water
+  mark but test −51 — gains scale with web damage everywhere,
+  trade is structural; see train README),
   char 0-for-2 variants,
   clusters 0-for-1 — the linear model's ceiling is holding firm
   and every direction has a measurement.
@@ -818,7 +820,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   finetune (new mechanics, `--freeze-at` K=2/5/20/100/500 on
   batch 05) holds EWT bit-identical at K≤20 but moves zero book
   evals anywhere — flip-forensics shows gains need co-moving
-  shared rows, so masking cannot separate them);
+  shared rows, so masking cannot separate them; counterweighted
+  joint (12 contested words, battleground EWT sentences at k=2/3)
+  reaches moby-15 but test −51 — trade structural, both
+  mechanics rejected);
   (3) chunker has no accuracy number — CLOSED 2026-10-05 by the
   genre end-to-end chunk eval (rule 20/20, cascade 9/20 sent /
   0.873 token, bar 0.43).
