@@ -924,6 +924,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   classes?) with its own EWT numbers. Mine-the-gap closes at
   4 admitted of 8 measured shapes.
 
+- Cross-book sweep eval (DONE 2026-10-06, rule-generalization
+  gate): 60 hand-tagged sentences, 20 each from Austen P&P,
+  Doyle Adventures, Stevenson TI (3×20, stride + uncertainty,
+  disjoint from all other evals/oracle; model-prefilled WORD+TAG,
+  every token hand-verified, EWT counts behind contested calls,
+  arrays generated never hand-aligned). `tests/sweep.rs` decodes
+  per-sentence on both paths: greedy 1827/2079 (0.8754, bar
+  0.86), production 1843/2079 (0.8865, bar 0.87) with beam 41
+  fixes + rule fixes 4 (to-part ×2, to-prep ×2) and ZERO rule
+  breaks — the standing bar held on unseen books. Process note:
+  the first run showed 2 phantom breaks, both traced to two
+  hand-fix batches reviewed but never applied to the gold file
+  (S13/S14); the harness caught my own bookkeeping error, which
+  is exactly what the generated-arrays discipline is for.
+
 - External benchmark shootout (DONE 2026-10-06, same hardware,
   same data): NLTK averaged perceptron (WSJ-trained) and
   RDRPOSTagger (UPOS-EWT model, same tagset+domain as ours) run
