@@ -41,5 +41,25 @@ linear (measured in `bench`; must hold the ~47 ms book budget
 established for parse+tag).
 
 Deliberately NOT here: nesting or attachment (PP-attach, relative
-clauses stay flat), `of`-PP merge rules, multiword tries (see the
-MWE follow-up in AGENTS.md), PTB patterns verbatim.
+clauses stay flat), `of`-PP merge rules, PTB patterns verbatim.
+
+## Multiword phrases (`mwe.rs`)
+
+A longest-match trie over lowercased pieces merges `in spite
+of`-class fixed phrases into single chunks, ahead of the priority
+cascade (unlisted text chunks byte-identically without it):
+
+| Phrase | Chunk | Moby hits |
+|---|---|---|
+| `as if`, `so that`, `such as` | Subord | 133, 127, 8 |
+| `in spite of`, `in front of` | Prep | 1, 2 |
+| `as well as` | Conj | 19 (comparative `as well as I do` chunks Conj too — documented imperfection) |
+| `a lot of` | Noun | 3 |
+| `at all`, `no longer`, `in fact`, `as usual` | Adverb | 87, 10, 13, 2 |
+
+List discipline: every entry attested in book-domain text (all four
+sweep books carry most of them). Excluded: `in order to`
+(infinitive semantics), `because of` / `out of` / `up to`
+(particle ambiguity), `of course` (discourse semantics unclear).
+Matching is strictly consecutive pieces, so a comma between words
+breaks the run; case-insensitive ASCII.

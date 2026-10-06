@@ -515,10 +515,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   -`<DT><NN>`-string (`regexp.py:211-219` ReDoS timeouts prove the
   cost; O(rules×n) with backtracking breaks keystroke budget).
   `split_contraction` pieces already carry tags — consume directly.
-  Do not import PTB patterns verbatim. Later candidate (not this
-  item): `mwe.py` longest-match trie post-pass over
-  `Sentence::tokens` for `in spite of`-class multiwords — same
-  never-grammar reason as Tier 3.
+  Do not import PTB patterns verbatim. MWE follow-up DONE
+  2026-10-06 (`crates/english-chunk/src/mwe.rs`): longest-match
+  trie over lowercased pieces (not words — the chunker's input
+  currency; strictly consecutive, so commas break the run),
+  MWE-first ahead of the priority cascade, 11 entries with
+  per-entry kinds (`as if`/`so that`/`such as`→Subord,
+  `in spite of`/`in front of`→Prep, `as well as`→Conj,
+  `a lot of`→Noun, `at all`/`no longer`/`in fact`/`as usual`→
+  Adverb) — every entry attested cross-book (Moby `as if` 133
+  down to `in spite of` 1); excluded `in order to` (infinitive),
+  `because/out/up-to` (particle ambiguity), `of course`
+  (discourse). TDD caught a 4-deep chain bug on `a lot of`
+  before it shipped. Bench 8.5 ms full-book (~200 merges);
+  all prior evals byte-identical.
 
 - Neural runtimes evicted, transformers as oracles only (DECIDED
   2026-09-27): Brill is not SOTA (transformers reach ~97-98% UPOS

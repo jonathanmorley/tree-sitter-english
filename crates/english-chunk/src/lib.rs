@@ -9,6 +9,8 @@ use std::ops::Range;
 
 use english_pos::Tag;
 
+mod mwe;
+
 /// Phrase kinds (UD-adapted CoNLL-2000; see `README.md`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkKind {
@@ -114,7 +116,8 @@ fn verb_end(input: &[(String, Tag)], mut i: usize) -> usize {
     i
 }
 
-/// Chunk tagged pieces greedily. Priority at each position: Punct,
+/// Chunk tagged pieces greedily. Priority at each position: fixed
+/// phrases (`mwe` longest match), Punct,
 /// Subord, Conj, Particle, Interj, Noun, Verb, Prep, Adverb, Adj,
 /// Other. Noun-before-Adverb/Adj gives attributive-vs-predicative
 /// disambiguation for free (`green fields` → Noun via nominal
@@ -124,6 +127,16 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
     let mut i = 0;
     while i < input.len() {
         let start = i;
+        // Fixed phrases first (longest match): unlisted text chunks
+        // exactly as without the trie.
+        if let Some((len, kind)) = mwe::match_len(input, i) {
+            i += len;
+            out.push(Chunk {
+                kind,
+                span: start..i,
+            });
+            continue;
+        }
         let kind = match tag_at(input, i) {
             Some(Tag::Punct) => {
                 i = consume_while(input, i, |t| t == Tag::Punct);
