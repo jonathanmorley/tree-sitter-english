@@ -113,8 +113,7 @@ const SUBORDINATORS: &[&str] = &[
 ];
 
 const ABBREVIATIONS: &[&str] = &[
-    "mr", "mrs", "ms", "dr", "st", "jr", "sr", "vs", "inc", "ltd", "co", "no", "fig", "vol",
-    "approx",
+    "mr", "mrs", "ms", "dr", "st", "jr", "sr", "vs", "inc", "ltd", "co", "fig", "vol", "approx",
     // Abbreviation harvest 2026-09-27 (Moby evidence + EWT check):
     // `rev` (Rev. Henry, 2x, EWT-absent), `mt` (Mt. Hecla, 1x, title
     // pattern like mr/dr/st; EWT has mt as NOUN/PROPN words, which
@@ -122,6 +121,11 @@ const ABBREVIATIONS: &[&str] = &[
     // (genuinely ambiguous mid-list vs sentence-final — needs
     // statistical treatment, not list membership), `Ex` (single odd
     // instance in `U.S. Ex. Ex.`), `albeit` n/a.
+    // REMOVED 2026-10-06: `no` — the number use (`No. 22`) is covered
+    // by the digit-ahead rule, while the list entry wrongly swallowed
+    // interjection `No.` before capitals (Moby 3x: `No. They`, `No.
+    // The`, `No. Only`; EWT train has zero mid-sentence `No.`+digit).
+    // Differential-oracle find (Punkt split where the grammar joined).
     "rev", "mt",
 ];
 

@@ -214,3 +214,42 @@ For home he left.
         (word)
         (word)
         (word)))))
+
+==================
+Interjection No ends the sentence (not the number abbreviation)
+==================
+
+No. They must get water.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Number No keeps its dot mid-sentence
+==================
+
+See problem No. 22 today.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (period)
+        (number)
+        (word)))))

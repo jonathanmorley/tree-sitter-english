@@ -234,21 +234,38 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   push still pending: push-only SSH remote configured, blocked on
   approving `knot.xenolandscapes.com` host keys into known_hosts.
 
-- External-oracle sentence diff (NOT STARTED): use Punkt / spaCy
-  `ssplit` offline as differential oracles, never as runtime deps
-  (Python, heavy, non-incremental; would break the 37 ms reparse /
-  58 MB budget in `README.md` and the dependency-free runtime).
-  Goal: find sentence-boundary disagreements against this grammar.
-  Steps: (1) small throwaway script under `scripts/` (not a crate
-  dep) runs Punkt + spaCy over `examples/*.txt` and Moby-Dick from
-  `CHAPTER 1. Loomings.` onward; (2) diff against
-  `cargo run -p english --example audit`; (3) triage each delta as
-  grammar miss / oracle miss / transcription (`_`/`*`); (4) grammar
-  misses feed corpus TDD in `test/corpus/*.txt` per the input-model
-  note above. Acceptance: script documented, disagreements listed
-  with counts, at least the top prose class converted to corpus
-  tests or a constrained scanner fix with zero `generate` conflicts.
-  License: dev-time use only, nothing copied into the repo.
+- External-oracle sentence diff (DONE 2026-10-06): NLTK Punkt
+  (WSJ-trained `punkt_tab` params) + spaCy `en_core_web_sm` run offline as
+  differential oracles over `examples/*.txt` + Moby-Dick from
+  `CHAPTER 1. Loomings.` — harness: `scripts/sent-diff.py` (dev-time
+  only, venv + data under /tmp, nothing copied into the repo) vs
+  boundary TSV from `crates/english/examples/sent_bounds.rs`
+  (throwaway dump helper, kept alongside for future books).
+  Measured: grammar 10,523 bounds; Punkt Δ 1,213, spaCy Δ 2,147
+  (2,557 in body prose past the front matter). Triage:
+  front-matter/transcription (Extracts, headings, notes, verse,
+  epitaphs) ~800 — out of scope as bucketed; quote-attach ties
+  (`.` vs `."`) ~200 — harmless, same split; spaCy under-splits
+  at `.—`/`?—`/`!—`, fragments, short dialogue turns ~1,300 —
+  oracle misses validating the em-dash/interruption slice; Punkt
+  over-splits quoted `?` mid-sentence (`"The Sword-Fish?"—this…`)
+  ~290 — oracle misses validating interruption handling; Punkt
+  misses units/titles (`lbs.`, `Mt.`, `Mrs.`) ~60 — oracle misses
+  validating the abbreviation harvest + initialisms; lowercase
+  continuation after `!` (~few) — grammar by design. REAL FIND:
+  interjection `No.` (3 Moby hits: `No. They/The/Only`, plus
+  `—no."` and `no. So`) swallowed by the `no` abbreviation entry —
+  fixed by DELETING it (the number use `No. 22` stays inside via
+  the digit-ahead rule; EWT train has zero mid-sentence `No.`+digit
+  and only 5 sentence-final `No.`). TDD corpus pair + scanner-only
+  change (zero `generate` conflicts by construction): bounds
+  10,523→10,528, errors unchanged (7 prose), one blank-line
+  paragraph anomaly repaired as a side effect. Standing rule from
+  the harvest holds and tightens: no large auto-imported list —
+  and now, no dual-use entry without a digit guard.
+  Kept as harness: `scripts/sent-diff.py` + `sent_bounds` example
+  (dev-time use only — oracle parameters never enter the repo;
+  only human-curated corpus tests or constrained fixes land).
 
 - PDTB subordinator audit (DONE 2026-09-27): candidate PDTB
   subordinators checked against Moby evidence + EWT tags. ADDED
@@ -274,6 +291,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   ambiguous mid-list vs sentence-final — statistical, not list),
   `Ex` (single odd `U.S. Ex. Ex.`), `albeit` (0x). List delta:
   15 → 17. Suite green; EWT-safe (both absent from EWT).
+  REMOVED 2026-10-06: `no` → 16 (differential-oracle find, see the
+  sentence-diff item: interjection `No.` before capitals swallowed;
+  number use stays inside via digit-ahead rule).
   Full Punkt-port harvest remains future work. Standing rule:
   no large auto-imported list — over-listing keeps real sentence
   breaks wrongly open and is worse than a miss.
