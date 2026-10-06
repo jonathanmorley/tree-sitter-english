@@ -896,6 +896,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   cross-platform bindings) keep it offline-only. Probes deleted;
   nothing to incorporate that survives the budgets (a sparser
   weight map was already measured worse at min-count=2).
+  Gap dissection (same day, per-token both-systems comparison on
+  EWT test): the 39-token net gap is the remainder of ~1,150
+  RDR-only wins vs ~1,120 ours-only wins — nearly balanced error
+  sets, not one-sided dominance. RDR wins net on VERB→NOUN (+36),
+  ADJ→NOUN (+41), ADP→SCONJ (+50), ADP→ADV (+40),
+  SCONJ→PRON (+30): verb readings, attributive adjectives,
+  complementizer/particle distinctions — right-context +
+  exception memorization, overlapping the correction-rule
+  frontier (158 of their wins sit in our margin gate zone: the
+  measurable ceiling for more rules). We win net on
+  PROPN↔NOUN titlecase (±134) and NOUN→VERB (+47): shape flags
+  + perceptron beat their unigram-noun-biased tree there.
 
 - Inference optimization pass (DONE 2026-10-06, speed + size, zero
   accuracy delta): tag 185→104 ms (−44%), end-to-end 454k→546k
