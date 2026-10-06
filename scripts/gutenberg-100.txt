@@ -1,0 +1,78 @@
+# Pinned harvest corpus: ~80 Gutenberg IDs + 14 already covered.
+# English prose only (novels, stories, memoirs, essays, histories).
+# Public domain; fetched to /tmp (never vendored).
+# Source: gutenberg.org top-100 snapshot 2026-10-06, filtered.
+# OUT: non-English, plays, verse, reference, omnibus/dups,
+# pre-1700 orthography, uncertain entries (see AGENTS.md).
+# Covered elsewhere, not refetched: 2701, 1342, 1661, 120, 1260,
+# 768, 84, 345, 219, 35, 11, 174, 1400, 76.
+244 Doyle Study in Scarlet
+2852 Doyle Hound of the Baskervilles
+108 Doyle Return of Sherlock Holmes
+834 Doyle Memoirs of Sherlock Holmes
+2097 Doyle Sign of the Four
+65238 Christie Secret of Chimneys
+69087 Christie Roger Ackroyd
+863 Christie Mysterious Affair at Styles
+204 Chesterton Innocence of Father Brown
+223 Chesterton Wisdom of Father Brown
+1695 Chesterton Man Who Was Thursday
+1063 Poe Cask of Amontillado
+68283 Lovecraft Call of Cthulhu
+8492 Chambers King in Yellow
+2868 Hume Green Mummy
+21839 Austen Sense and Sensibility
+1212 Austen Love and Freindship
+145 Eliot Middlemarch
+224 Hardy Pair of Blue Eyes
+37106 Alcott Little Women
+393 Stacpoole Blue Lagoon
+589 Stevenson Catriona
+17460 Blackmore Lorna Doone
+42389 Scott Pirate
+103 Verne Around the World in Eighty Days
+1184 Dumas Monte Cristo
+1259 Dumas Twenty Years After
+245 Twain Life on the Mississippi
+20203 Franklin Autobiography
+23 Douglass Narrative
+24739 Bidwell Travels
+5197 Wagner My Life 1
+3296 Augustine Confessions
+2680 Aurelius Meditations
+27827 Kama Sutra
+209 James Turn of the Screw
+72 Burroughs Thuvia Maid of Mars
+22541 Harrison Misplaced Battleship
+75201 Hemingway Farewell to Arms
+19476 Griffith Honeymoon in Space
+7326 Gough Yeoman Adventurer
+34413 Wollstonecraft Love Letters
+59828 Prest String of Pearls
+601 Lewis Monk
+43 Stevenson Jekyll and Hyde
+51252 Burton Arabian Nights v1
+47530 Dickens Oliver Twist v2
+564 Dickens Edwin Drood
+4499 Meredith Complete Short Works
+31472 Tracy Cynthias Chauffeur
+3922 France Red Lily
+53416 Garvice Only a Girls Love
+57641 Ollivant One Woman
+46276 Aimard Treasure of Pearls
+53154 Gaspe Cameron of Lochiel
+49987 James Forest Days
+36223 Ruck Boy with Wings
+35548 Broughton Doctor Cupid
+40284 Knerr Sex Life of the Gods
+24793 Day Blow the Man Down
+38311 Hughes What Will People Say
+38177 MacKenzie Passionate Elopement
+76178 Bannon I Am a Woman
+76668 Wright Trial by Water
+921 Wilde De Profundis
+51428 That Which Hath Wings
+48296 Allen Linnet
+53874 Grant Under the Red Dragon
+55179 One of the Six Hundred
+67979 Montgomery Blue Castle

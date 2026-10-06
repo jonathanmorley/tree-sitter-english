@@ -60,6 +60,13 @@ fn describe(source: &str, node: Node) -> String {
 /// `[Illustration...]` captions of illustrated editions — matched on
 /// either bracket, since error recovery often splits them across the
 /// caption boundary — and `M^{r.}`-style superscript markup).
+/// Plus 100-book harvest evidence (2026-10-06, 70 books): PG documents
+/// `=equals=` as bold markup (874x/10b), `✿` section ornaments (530x),
+/// `™`/`•` bullets, `|`/`+`/`#` table rules, `~`/`‖`/`°` marginalia —
+/// typography, never sentence words. `&` stays OUT (the R&D mid-clause
+/// residual is erroring and must stay visible) as do `¡`/`¿`
+/// (non-English prose, honestly erroring) and `-` (digit ranges are a
+/// grammar fix, not markup).
 /// Bucketed separately so the error histogram measures the grammar,
 /// not the transcription.
 fn is_transcription(text: &str) -> bool {
@@ -70,6 +77,16 @@ fn is_transcription(text: &str) -> bool {
         || text.contains('^')
         || text.contains('{')
         || text.contains('}')
+        || text.contains('=')
+        || text.contains('✿')
+        || text.contains('™')
+        || text.contains('•')
+        || text.contains('|')
+        || text.contains('~')
+        || text.contains('‖')
+        || text.contains('°')
+        || text.contains('+')
+        || text.contains('#')
 }
 
 fn walk(source: &str, node: Node, stats: &mut Stats, in_error: bool) {

@@ -118,8 +118,11 @@ export default grammar({
       // A parenthetical carrying its own end mark is a complete
       // sentence: the mark cannot also terminate an outer sentence,
       // so no outer _sentence_end follows. This keeps `(ab by xy.)`
-      // followed by blank lines parsing.
-      $.complete_parenthetical,
+      // followed by blank lines parsing. Precedence keeps the legacy
+      // sentence-level reading where both apply (a clause-internal
+      // complete parenthetical also exists now): without it the two
+      // paths conflict on what follows the `)`.
+      prec(1, $.complete_parenthetical),
     ),
 
     // The hidden external `_end_dot` token is a period the scanner judged
@@ -136,11 +139,17 @@ export default grammar({
     // by what follows (boundary ahead or not).
     _sentence_end: $ => seq(
       choice($._end_dot, /[?!]+/, alias($.ellipsis_end, $.ellipsis)),
-      repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash))
+      repeat(choice(/["'`\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash)),
+      // A semicolon after a quote-closed end (`...as this?"; and ...`,
+      // Burton 51x) cannot join (the sentence already ended) and cannot
+      // start a sentence: absorb it so the next sentence starts clean
+      // instead of erroring. `and` there lexes as a plain word, as it
+      // does at any sentence start.
+      optional(';')
     ),
 
     clause: $ => prec.left(repeat1(
-      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.ellipsis, $.currency)
+      choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.complete_parenthetical, $.ellipsis, $.currency)
     )),
     // Three dots (or U+2026 …), mid-sentence only. Terminal `...`
     // lexes as the external ellipsis_end instead (emitted on
@@ -169,6 +178,10 @@ export default grammar({
       repeat(choice(
         seq($.semicolon, choice($.clause, $.subordinate_clause)),
         seq($.em_dash, choice($.clause, $.subordinate_clause)),
+        // Colon joins (`(not that this is one: far from it)`, Moby
+        // stage directions `(_Enter Ahab: Then, all_)`): delimited
+        // like `;`/dash, so safe by the same argument.
+        seq($.colon, optional($.em_dash), choice($.clause, $.subordinate_clause)),
       )),
       ')'
     ),
@@ -193,7 +206,7 @@ export default grammar({
       $.subordinator,
       prec.left(repeat1(choice(
         $._wordish, $.period, $._comma, $.conjunction,
-        $.subordinate_clause, $.parenthetical,
+        $.subordinate_clause, $.parenthetical, $.complete_parenthetical,
         $.quote, $.ellipsis, $.currency
       )))
     ),
@@ -213,8 +226,10 @@ export default grammar({
     em_dash: $ => choice(/[—–―‒]/, /--+/),
 
 
-    // Quote marks, visible inside clauses so they are queryable.
-    quote: $ => /["'\u2018\u2019\u201C\u201D]/,
+    // Quote marks, visible inside clauses so they are queryable. The
+    // ASCII backtick opens old-style quotations (`father'); EWT keeps
+    // all three backticks as PUNCT, so listing is EWT-safe.
+    quote: $ => /["'`\u2018\u2019\u201C\u201D]/,
 
     // Word-class tokens. `dotted` absorbs initialism runs so their dots
     // never reach the scanner; `number` does the same for decimals.
@@ -225,12 +240,14 @@ export default grammar({
     // The scanner refuses letter-dot-letter sequences so this token wins.
     dotted: $ => /[A-Za-z]+(\.[A-Za-z]+)+\.?/,
 
-    // Integers, decimals, and times: the internal dot of 3.14 stays
-    // inside the token, as does the colon of 10:30 (a single time
-    // expression, not an elaboration — see the corpus test). A colon
-    // without two following digits is untouched (elaboration and
-    // handoff paths behave as before).
-    number: $ => /\d+(\.\d+)?(:\d\d(:\d\d)?)?/,
+    // Integers, decimals, times, and digit ranges: the internal dot
+    // of 3.14 stays inside the token, as does the colon of 10:30 (a
+    // single time expression, not an elaboration — see the corpus
+    // test) and the hyphen of 1881-82 (one range expression, not a
+    // join — EWT keeps 646-8420 whole as NUM). A colon without two
+    // following digits is untouched (elaboration and handoff paths
+    // behave as before).
+    number: $ => /\d+(\.\d+)?(:\d\d(:\d\d)?)?(-\d+)?/,
 
     // Currency signs stay visible and flat: `$20,000,000` parses as
     // currency, number, number, number (commas are hidden).

@@ -249,7 +249,7 @@ unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
             0x3B | 0x3A | // ; :
             0x2014 | 0x2013 | // em/en-dash
             0x29 | 0x5D | 0x7D | // ) ] }
-            0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+            0x22 | 0x27 | 0x60 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
         ) || (*lexer).eof.expect("TSLexer::eof is null")(lexer)
     }
 }
@@ -312,7 +312,7 @@ unsafe fn ellipsis_end_ahead(lexer: *mut TSLexer) -> bool {
                 c,
                 0x3F | 0x21 | // ? !
                 0x29 | 0x5D | 0x7D | // ) ] }
-                0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+                0x22 | 0x27 | 0x60 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
             )
             || (*lexer).eof.expect("TSLexer::eof is null")(lexer)
     }
@@ -330,7 +330,7 @@ fn is_closer(c: i32) -> bool {
     matches!(
         c,
         0x29 | 0x5D | 0x7D | // ) ] }
-        0x22 | 0x27 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
+        0x22 | 0x27 | 0x60 | 0x2018 | 0x2019 | 0x201C | 0x201D // quotes
     )
 }
 

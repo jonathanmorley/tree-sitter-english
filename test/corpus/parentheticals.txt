@@ -167,3 +167,60 @@ They left (he rang the bell; she—half asleep—answered).
           (em_dash)
           (clause
             (word)))))))
+
+==================
+Complete parenthetical mid-clause
+==================
+
+Her husband only knew (like the elephant he was!) that they agreed.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (complete_parenthetical
+          (clause
+            (word)
+            (word)
+            (word)
+            (word)
+            (word))))
+      (subordinate_clause
+        (subordinator)
+        (word)
+        (word)))))
+
+==================
+Colon joins clauses inside a parenthetical
+==================
+
+He knew (not that this is one: far from it) the truth.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (parenthetical
+          (clause
+            (word)
+            (word)
+            (word)
+            (word)
+            (word))
+          (colon)
+          (clause
+            (word)
+            (word)
+            (word)))
+        (word)
+        (word)))))

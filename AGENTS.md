@@ -311,6 +311,35 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   attributed (letter heads, `17—` redaction fallout, chapter-head
   fallout, known paren-interior `!`s).
 
+- 100-book harvest (DONE 2026-10-06): scaled the pilot to 70 books
+  (`scripts/gutenberg-100.txt` pinned IDs + `fetch-books.sh` polite
+  fetcher with md5 MANIFEST; 9 Latin-1 files converted via iconv,
+  recorded in manifest; texts live in /tmp, never vendored).
+  Body-cut audit (START/END markers): prose 7,434 → 4,956 (−33%).
+  (a) Transcription bucket widened (tool-only): `=✿™•|~‖°+#`
+  with per-char evidence in-comment; `&` deliberately OUT (R&D
+  residual must stay visible), `¡`/`-` left honestly erroring.
+  (b) Backtick opener (`` `father' ``, Doyle): `quote` + all three
+  scanner quote lists gain 0x60 (EWT 3 PUNCT, safe). (c) Digit
+  ranges (`1881-82`, year/date spans): `number` gains `(-\d+)?`
+  (EWT keeps 646-8420 whole as NUM). (d) Paren-architecture
+  rethink TRIGGERED (lone `!` 102×/17b + `?` 29×/11b were all
+  `(like the elephant he was!)`-class mid-clause interiors):
+  `complete_parenthetical` now clause- and subordinate-internal;
+  the clause-vs-sentence `)`-follow conflict resolves by
+  `prec(1)` on the legacy sentence-level reading (zero conflicts,
+  all prior parses stable). (e) `?";` (Burton 51×): `_sentence_end`
+  absorbs one trailing `;` (the sentence already ended; `and`
+  lexes as word at the new start, as always). (f) Colon joins
+  inside parentheticals (`(not that...: far from it)`,
+  `(_Enter Ahab: Then, all_)` — delimited like `;`/dash, same
+  safety argument); Moby 6→5 prose (all leftovers known:
+  song/speaker labels, J—— redaction). All TDD (5 corpus tests),
+  pinned CLI, full workspace + fmt + clippy green. Standing
+  residuals re-confirmed: leading-dash dialogue (`—?”`),
+  `M-3`/`A-1` codes (letter-digit; digit-digit only this round),
+  suspended `cigar-,` compounds, `8vo`/`vols.` bibliography.
+
 - PDTB subordinator audit (DONE 2026-09-27): candidate PDTB
   subordinators checked against Moby evidence + EWT tags. ADDED
   `lest` (7x Moby, pure subordinator, EWT-absent) and `supposing`

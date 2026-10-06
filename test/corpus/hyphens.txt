@@ -71,3 +71,25 @@ Here comes another with a sou’-wester and a bombazine cloak.
         (word)
         (word)
         (word)))))
+
+==================
+Digit range stays one number
+==================
+
+During the winter of 1881-82, I saw a notice.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (number)
+        (word)
+        (word)
+        (word)
+        (word)))))

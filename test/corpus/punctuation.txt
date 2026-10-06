@@ -623,3 +623,48 @@ Really?! She asked.
       (clause
         (word)
         (word)))))
+
+==================
+Backtick opens a quotation
+==================
+
+He called him `father' daily.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (quote)
+        (word)
+        (quote)
+        (word)))))
+
+==================
+Semicolon after a quoted question ends the sentence
+==================
+
+She asked him, "Whereat laughest thou?"; and he answered.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (quote)
+        (word)
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)))))

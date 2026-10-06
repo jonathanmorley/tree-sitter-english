@@ -8,6 +8,10 @@
       "required": false,
       "types": [
         {
+          "type": "complete_parenthetical",
+          "named": true
+        },
+        {
           "type": "currency",
           "named": true
         },
@@ -94,6 +98,10 @@
           "named": true
         },
         {
+          "type": "colon",
+          "named": true
+        },
+        {
           "type": "em_dash",
           "named": true
         },
@@ -107,6 +115,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "semicolon",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "sentence",
@@ -180,6 +193,10 @@
       "required": true,
       "types": [
         {
+          "type": "complete_parenthetical",
+          "named": true
+        },
+        {
           "type": "conjunction",
           "named": true
         },
@@ -239,6 +256,10 @@
     "named": false
   },
   {
+    "type": ";",
+    "named": false
+  },
+  {
     "type": "colon",
     "named": true
   },
@@ -272,10 +293,6 @@
   },
   {
     "type": "quote",
-    "named": true
-  },
-  {
-    "type": "semicolon",
     "named": true
   },
   {

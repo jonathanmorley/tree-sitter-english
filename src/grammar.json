@@ -255,8 +255,12 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "complete_parenthetical"
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "complete_parenthetical"
+          }
         }
       ]
     },
@@ -292,7 +296,7 @@
             "members": [
               {
                 "type": "PATTERN",
-                "value": "[\"'\\u2018\\u2019\\u201D\\u201C]"
+                "value": "[\"'`\\u2018\\u2019\\u201D\\u201C]"
               },
               {
                 "type": "PATTERN",
@@ -304,6 +308,18 @@
               }
             ]
           }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ";"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -334,6 +350,10 @@
             {
               "type": "SYMBOL",
               "name": "parenthetical"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "complete_parenthetical"
             },
             {
               "type": "SYMBOL",
@@ -404,6 +424,40 @@
                   {
                     "type": "SYMBOL",
                     "name": "em_dash"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "clause"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "subordinate_clause"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "colon"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "em_dash"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   },
                   {
                     "type": "CHOICE",
@@ -509,6 +563,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "complete_parenthetical"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "quote"
                 },
                 {
@@ -556,7 +614,7 @@
     },
     "quote": {
       "type": "PATTERN",
-      "value": "[\"'\\u2018\\u2019\\u201C\\u201D]"
+      "value": "[\"'`\\u2018\\u2019\\u201C\\u201D]"
     },
     "_wordish": {
       "type": "CHOICE",
@@ -581,7 +639,7 @@
     },
     "number": {
       "type": "PATTERN",
-      "value": "\\d+(\\.\\d+)?(:\\d\\d(:\\d\\d)?)?"
+      "value": "\\d+(\\.\\d+)?(:\\d\\d(:\\d\\d)?)?(-\\d+)?"
     },
     "currency": {
       "type": "PATTERN",
