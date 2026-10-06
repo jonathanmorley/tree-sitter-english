@@ -810,9 +810,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 4-for-15 — engine plus shipped rules
-  (`have-verb`, `to-prep`, `to-verb`, `that-det`) and the beam
-  decoder; the
+  (2) correction layer 6-for-17 — engine plus shipped rules
+  (`have-verb`, `to-prep`, `to-verb`, `that-det`, `that-rel`,
+  `det-noun`) and the beam decoder; the
   load-bearing unproven piece left is distillation scale-up
   (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
   all rejected — 05 is the mirror case, evals up / EWT down, and
@@ -855,6 +855,22 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   left: noun-noun base rates need an adjective lexicon the
   support doesn't justify — same base-rate lesson as the
   rejected morphology rules.
+
+- External-rules survey (DONE 2026-10-06, Brill/fnTBL/RDR/CG in
+  parallel): all three traditions converge on right-context
+  barrier scans as the only signal a ±1 perceptron structurally
+  lacks — and all three agree on relativizer-`that` via
+  right-verb evidence. Measured in: `that-rel` (SCONJ→PRON on
+  VERB/AUX-next, EWT 534:4) and `det-noun` (VERB→NOUN on
+  determiner+barrier, EWT 1902:3) — 6-for-17. EWT ±0 (zero
+  fires both splits); 3 Moby hand-verified fixes (two reduced
+  relatives with participles, one `try-works`), zero known
+  breaks; `flies` holds; probes deleted. Leftovers dispositioned:
+  RDR two-wide DET extension (81% EWT, complement-clause risk —
+  below the 89:1 bar the shipped shapes hold), `out`-particle
+  shapes (narrow, unmeasured), demonstrative agreement (vestigial
+  in English), blanket titlecase (already falsified by the
+  Titlecase×position measurement).
 
 - Inference optimization pass (DONE 2026-10-06, speed + size, zero
   accuracy delta): tag 185→104 ms (−44%), end-to-end 454k→546k

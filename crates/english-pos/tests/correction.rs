@@ -273,3 +273,47 @@ fn that_det_fixes_determiner_that() {
         Tag::Pron
     );
 }
+
+#[test]
+fn that_rel_fixes_relativizer_that() {
+    // `the book that sells`: SCONJ before a verb → PRON.
+    assert_eq!(
+        run(
+            &["book", "that", "sells"],
+            &[(Tag::Noun, 9.0), (Tag::Sconj, 1.0), (Tag::Verb, 9.0)],
+            "that-rel",
+        )[1],
+        Tag::Pron
+    );
+    // Complementizer (`I know that men rejoice`: NOUN next) abstains.
+    assert_eq!(
+        run(
+            &["know", "that", "men"],
+            &[(Tag::Verb, 9.0), (Tag::Sconj, 1.0), (Tag::Noun, 9.0)],
+            "that-rel",
+        )[1],
+        Tag::Sconj
+    );
+}
+
+#[test]
+fn det_noun_fixes_plural_s_noun() {
+    // `the glitters`: VERB after DET+barrier → NOUN.
+    assert_eq!(
+        run(
+            &["the", "glitters"],
+            &[(Tag::Det, 9.0), (Tag::Verb, 1.0)],
+            "det-noun",
+        )[1],
+        Tag::Noun
+    );
+    // Genuine 3sg verb (`she glitters`: PRON prev, no DET) abstains.
+    assert_eq!(
+        run(
+            &["she", "glitters"],
+            &[(Tag::Pron, 9.0), (Tag::Verb, 1.0)],
+            "det-noun",
+        )[1],
+        Tag::Verb
+    );
+}

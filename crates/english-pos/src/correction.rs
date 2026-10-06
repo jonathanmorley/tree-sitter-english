@@ -133,6 +133,16 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: that_det,
     },
+    Rule {
+        name: "that-rel",
+        threshold: 2.0,
+        test: that_rel,
+    },
+    Rule {
+        name: "det-noun",
+        threshold: 2.0,
+        test: det_noun,
+    },
 ];
 
 /// Prepositional `to` read as infinitive marker (`to Coenties
@@ -200,6 +210,58 @@ fn that_det(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
     let prev_ok = i == 0 || tags.get(i - 1) == Some(&Tag::Adp);
     let next_ok = matches!(tags.get(i + 1), Some(Tag::Adj) | Some(Tag::Noun));
     (prev_ok && next_ok).then_some(Tag::Det)
+}
+
+/// Relativizer `that` read as complementizer (`the book that sells`):
+/// with a VERB/AUX immediately next, EWT gold is PRON 534:4 over
+/// all `that` uses — relatives take clauses, and the clause's verb
+/// is the tell a left-to-right decoder cannot see (all three rule
+/// traditions — Brill, fnTBL/RDR, Constraint Grammar barriers —
+/// converge on right-verb evidence for this reading).
+///
+/// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
+/// 2 Moby hand-verified fixes (`the lines that using all their
+/// dexterous...`, `that found in the secret...` — participles
+/// can't head SCONJ clauses, so both are relative PRON), zero
+/// known breaks, `flies` holds.
+fn that_rel(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Sconj || pieces[i].to_lowercase() != "that" {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Verb) | Some(Tag::Aux)).then_some(Tag::Pron)
+}
+
+/// Plural `-s` noun read as 3sg verb (`the glitters`, `the cells`):
+/// with a determiner 1–4 back and only ADJ/ADV between (the
+/// Constraint Grammar determiner+barrier shape), EWT gold is NOUN
+/// 1902:3. Syntax-gated, not suffix-gated — the barrier (not the
+/// `-s`) carries the precision, dodging the `-ies`/`-us` plural
+/// collision that killed the morphology-only `s-verb` rule.
+///
+/// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
+/// 1 Moby hand-verified fix (`the front of the try-works` —
+/// lexicalized equipment noun), zero known breaks, `flies` holds.
+fn det_noun(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Verb {
+        return None;
+    }
+    let w = pieces[i].to_lowercase();
+    if !w.ends_with('s') || w.ends_with("ss") {
+        return None;
+    }
+    let mut j = i;
+    for _ in 0..4 {
+        j = match j.checked_sub(1) {
+            Some(p) => p,
+            None => return None,
+        };
+        match tags.get(j) {
+            Some(Tag::Det) => return Some(Tag::Noun),
+            Some(Tag::Adj) | Some(Tag::Adv) => continue,
+            _ => return None,
+        }
+    }
+    None
 }
 
 /// Apply `rules` to decoded `(tag, margin)` pairs in place.
