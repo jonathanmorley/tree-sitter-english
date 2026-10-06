@@ -13,7 +13,7 @@
 
 use std::time::Instant;
 
-use english_pos::{Model, TagCache, sentence_pieces};
+use english_pos::{Model, TagCache, append_sentence_pieces};
 
 fn median(mut xs: Vec<f64>) -> f64 {
     xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -46,13 +46,18 @@ fn main() {
         let doc = english::Document::parse(text);
         parse_ms.push(t.elapsed().as_secs_f64() * 1000.0);
 
-        let sents: Vec<_> = doc
-            .paragraphs()
-            .iter()
-            .flat_map(|p| p.sentences())
-            .collect();
+        // Fast path under test: lazy sentence walk straight into
+        // piece buffers (no per-node `Vec`s, no `Token` staging `Vec`).
+        // Tag still decodes per sentence, as production.
         let t = Instant::now();
-        let pieced: Vec<Vec<String>> = sents.iter().map(sentence_pieces).collect();
+        let mut pieced: Vec<Vec<String>> = Vec::new();
+        doc.for_each_paragraph(|para| {
+            para.for_each_sentence(|sent| {
+                pieced.push(Vec::new());
+                let slot = pieced.last_mut().unwrap();
+                append_sentence_pieces(slot, &sent);
+            });
+        });
         pieces_ms.push(t.elapsed().as_secs_f64() * 1000.0);
 
         let t = Instant::now();
@@ -61,7 +66,7 @@ fn main() {
         }
         tag_ms.push(t.elapsed().as_secs_f64() * 1000.0);
 
-        n_sent = sents.len();
+        n_sent = pieced.len();
         n_tok = pieced.iter().map(Vec::len).sum();
     }
     let (parse, pieces, tag) = (median(parse_ms), median(pieces_ms), median(tag_ms));

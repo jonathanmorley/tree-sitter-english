@@ -38,13 +38,18 @@ onward: 1.21 MB, 9,973 sentences, 220,436 pieces; medians of 6):
 | Stage | Time |
 |---|---|
 | parse (tree-sitter) | 213 ms |
-| pieces (wiring) | 87 ms |
+| pieces (wiring) | 83 ms |
 | tag (perceptron) | 104 ms (~10 µs/sentence, ~2.1M tok/s; ~550k end-to-end) |
 
 Interactive edits avoid the full pass: `Document::update` re-parses
 incrementally (~14 ms) and `TagCache` retags only changed sentences
-(one-word edit: 26 ms, 9,972 hits / 1 miss). Keystroke path ≈ 40 ms
+(one-word edit: 24 ms, 9,972 hits / 1 miss). Keystroke path ≈ 39 ms
 on book-size input.
+
+Piece buffers reuse across sentences where ownership allows
+(`append_sentence_pieces`), and the tree walk itself stages no
+`Vec`s (`for_each_*` callbacks over the cursor, not collected
+children) — see `english/src/lib.rs`.
 
 ## Verification
 

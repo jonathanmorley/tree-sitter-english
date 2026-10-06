@@ -188,3 +188,62 @@ fn sentence_and_clause_report_errors() {
     let sent = doc.paragraphs()[0].sentences()[0];
     assert!(sent.has_error());
 }
+
+#[test]
+fn for_each_matches_vec_apis() {
+    // Exercises every lazy path: subordinator, abbreviation dot,
+    // semicolon join, parenthetical, complete parenthetical, quote.
+    let text = "Mr. Smith came; he saw (as I said) the ship.\n\nBecause \"she\" sails (she does!), we stay.\n";
+    let doc = Document::parse(text);
+    assert!(!doc.has_error());
+
+    let mut via_each = Vec::new();
+    doc.for_each_paragraph(|para| {
+        via_each.push(para.text().to_string());
+        para.for_each_sentence(|sent| {
+            via_each.push(sent.text().to_string());
+            sent.for_each_clause(|cl| via_each.push(cl.text().to_string()));
+            let mut toks = Vec::new();
+            sent.for_each_token(|t| toks.push(format!("{:?}:{}", t.kind(), t.text())));
+            via_each.push(toks.join("|"));
+        });
+    });
+
+    let mut via_vec = Vec::new();
+    for para in doc.paragraphs() {
+        via_vec.push(para.text().to_string());
+        for sent in para.sentences() {
+            via_vec.push(sent.text().to_string());
+            for cl in sent.clauses() {
+                via_vec.push(cl.text().to_string());
+                let mut words = Vec::new();
+                cl.for_each_word(|w| words.push(w.text().to_string()));
+                let direct: Vec<_> = cl.words().iter().map(|w| w.text()).collect();
+                assert_eq!(words, direct);
+                let mut toks = Vec::new();
+                cl.for_each_token(|t| toks.push(format!("{:?}:{}", t.kind(), t.text())));
+                let direct: Vec<_> = cl
+                    .tokens()
+                    .iter()
+                    .map(|t| format!("{:?}:{}", t.kind(), t.text()))
+                    .collect();
+                assert_eq!(toks, direct);
+            }
+            let toks: Vec<_> = sent
+                .tokens()
+                .iter()
+                .map(|t| format!("{:?}:{}", t.kind(), t.text()))
+                .collect();
+            via_vec.push(toks.join("|"));
+        }
+    }
+    assert_eq!(via_each, via_vec);
+    assert_eq!(doc.paragraphs().len(), 2);
+    assert_eq!(
+        doc.paragraphs()
+            .iter()
+            .map(|p| p.sentences().len())
+            .sum::<usize>(),
+        2
+    );
+}

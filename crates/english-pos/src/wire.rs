@@ -132,7 +132,16 @@ fn split_fused(word: &str) -> Option<Vec<String>> {
 
 /// UD-style pieces for a parsed clause, in order.
 pub fn clause_pieces(clause: &english::Clause) -> Vec<String> {
-    collect_pieces(&clause.tokens())
+    let mut out = Vec::new();
+    append_clause_pieces(&mut out, clause);
+    out
+}
+
+/// Append UD-style pieces for a parsed clause to `out`, reusing its
+/// buffer instead of allocating a fresh `Vec` per call.
+pub fn append_clause_pieces(out: &mut Vec<String>, clause: &english::Clause) {
+    let mut prev: Option<(usize, bool)> = None;
+    clause.for_each_token(|tok| push_piece_merged(&mut *out, &mut prev, tok));
 }
 
 /// UD-style pieces for a parsed sentence, in order.
@@ -147,33 +156,40 @@ pub fn clause_pieces(clause: &english::Clause) -> Vec<String> {
 /// grammar hides them, and UD splits those off as PUNCT (out of
 /// scope — pieces exclude all terminal punctuation by design).
 pub fn sentence_pieces(sentence: &english::Sentence) -> Vec<String> {
-    collect_pieces(&sentence.tokens())
+    let mut out = Vec::new();
+    append_sentence_pieces(&mut out, sentence);
+    out
 }
 
-/// Expand tokens to pieces, merging in-sentence `period` into a
-/// byte-adjacent preceding `Word`/`Dotted` token.
-fn collect_pieces(tokens: &[english::Token]) -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    // End byte + wordishness of the previous token, for dot merging.
+/// Append UD-style pieces for a parsed sentence to `out`, reusing its
+/// buffer. The book-scale bench path clears one buffer per sentence
+/// instead of allocating a fresh `Vec` (plus its `Token` staging
+/// `Vec`) every time.
+pub fn append_sentence_pieces(out: &mut Vec<String>, sentence: &english::Sentence) {
     let mut prev: Option<(usize, bool)> = None;
-    for tok in tokens {
-        let span = tok.span();
-        if tok.kind() == english::TokenKind::Period
-            && matches!(prev, Some((end, true)) if end == span.start)
-            && let Some(last) = out.last_mut()
-        {
-            last.push_str(tok.text());
-            prev = Some((span.end, false));
-            continue;
-        }
-        let wordish = matches!(
-            tok.kind(),
-            english::TokenKind::Word | english::TokenKind::Dotted
-        );
-        push_token_pieces(&mut out, tok);
-        prev = Some((span.end, wordish));
+    sentence.for_each_token(|tok| push_piece_merged(&mut *out, &mut prev, tok));
+}
+
+/// Expand one visited token into pieces, merging in-sentence `period`
+/// into a byte-adjacent preceding `Word`/`Dotted` token. Called per
+/// token by the `append_*` walkers above, which drive the token
+/// stream lazily instead of staging it in a `Vec`.
+fn push_piece_merged(out: &mut Vec<String>, prev: &mut Option<(usize, bool)>, tok: english::Token) {
+    let span = tok.span();
+    if tok.kind() == english::TokenKind::Period
+        && matches!(*prev, Some((end, true)) if end == span.start)
+        && let Some(last) = out.last_mut()
+    {
+        last.push_str(tok.text());
+        *prev = Some((span.end, false));
+        return;
     }
-    out
+    let wordish = matches!(
+        tok.kind(),
+        english::TokenKind::Word | english::TokenKind::Dotted
+    );
+    push_token_pieces(out, &tok);
+    *prev = Some((span.end, wordish));
 }
 
 /// Tag a parsed clause: `(surface piece, tag)` pairs in order.
@@ -221,11 +237,11 @@ pub fn tag_sentence(model: &Model, sentence: &english::Sentence) -> Vec<(String,
 ///
 /// Each sentence is decoded independently; see [`tag_sentence`].
 pub fn tag_document(model: &Model, doc: &english::Document) -> Vec<Vec<(String, Tag)>> {
-    doc.paragraphs()
-        .iter()
-        .flat_map(|para| para.sentences())
-        .map(|sent| tag_sentence(model, &sent))
-        .collect()
+    let mut out = Vec::new();
+    doc.for_each_paragraph(|para| {
+        para.for_each_sentence(|sent| out.push(tag_sentence(model, &sent)));
+    });
+    out
 }
 
 /// Cache of sentence tags across re-parses.
@@ -320,10 +336,10 @@ impl TagCache {
         model: &Model,
         doc: &english::Document,
     ) -> Vec<Vec<(String, Tag)>> {
-        doc.paragraphs()
-            .iter()
-            .flat_map(|para| para.sentences())
-            .map(|sent| self.tag_sentence(model, &sent))
-            .collect()
+        let mut out = Vec::new();
+        doc.for_each_paragraph(|para| {
+            para.for_each_sentence(|sent| out.push(self.tag_sentence(model, &sent)));
+        });
+        out
     }
 }

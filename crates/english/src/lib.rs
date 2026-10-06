@@ -94,13 +94,24 @@ impl Document {
 
     /// Top-level paragraphs in order.
     pub fn paragraphs(&self) -> Vec<Paragraph<'_>> {
-        children_of_kind(self.tree.root_node(), "paragraph")
-            .into_iter()
-            .map(|node| Paragraph {
-                node,
-                source: &self.source,
-            })
-            .collect()
+        let mut out = Vec::new();
+        self.for_each_paragraph(|p| out.push(p));
+        out
+    }
+
+    /// Call `f` for each top-level paragraph, in order, without
+    /// allocating the intermediate `Vec` ([`Document::paragraphs`]
+    /// collects this). The book-scale tagging path uses this so a
+    /// 10k-sentence document costs no per-node `Vec`s.
+    pub fn for_each_paragraph<'s>(&'s self, mut f: impl FnMut(Paragraph<'s>)) {
+        for_each_named_child(self.tree.root_node(), |node| {
+            if node.kind() == "paragraph" {
+                f(Paragraph {
+                    node,
+                    source: &self.source,
+                });
+            }
+        });
     }
 }
 
@@ -114,13 +125,19 @@ pub struct Paragraph<'a> {
 impl<'a> Paragraph<'a> {
     /// Sentences in order.
     pub fn sentences(&self) -> Vec<Sentence<'a>> {
-        children_of_kind(self.node, "sentence")
-            .into_iter()
-            .map(|node| Sentence {
-                node,
-                source: self.source,
-            })
-            .collect()
+        let mut out = Vec::new();
+        self.for_each_sentence(|s| out.push(s));
+        out
+    }
+
+    /// Call `f` for each sentence, in order, without allocating.
+    pub fn for_each_sentence(&self, mut f: impl FnMut(Sentence<'a>)) {
+        let source = self.source;
+        for_each_named_child(self.node, |node| {
+            if node.kind() == "sentence" {
+                f(Sentence { node, source });
+            }
+        });
     }
 
     span_and_text!();
@@ -137,16 +154,23 @@ pub struct Sentence<'a> {
 impl<'a> Sentence<'a> {
     /// Coordinate and subordinate clauses in order.
     pub fn clauses(&self) -> Vec<Clause<'a>> {
-        let mut clauses = Vec::new();
-        for child in named_children(self.node) {
+        let mut out = Vec::new();
+        self.for_each_clause(|c| out.push(c));
+        out
+    }
+
+    /// Call `f` for each coordinate/subordinate clause, in order,
+    /// without allocating.
+    pub fn for_each_clause(&self, mut f: impl FnMut(Clause<'a>)) {
+        let source = self.source;
+        for_each_named_child(self.node, |child| {
             if child.kind() == "clause" || child.kind() == "subordinate_clause" {
-                clauses.push(Clause {
+                f(Clause {
                     node: child,
-                    source: self.source,
+                    source,
                 });
             }
-        }
-        clauses
+        });
     }
 
     /// True when this sentence's subtree contains ERROR or MISSING nodes.
@@ -168,30 +192,36 @@ impl<'a> Sentence<'a> {
     /// and is not yielded; see `text()` for the raw span.
     pub fn tokens(&self) -> Vec<Token<'a>> {
         let mut out = Vec::new();
-        for child in named_children(self.node) {
-            match child.kind() {
-                "clause" | "subordinate_clause" => {
-                    push_clause_tokens(child, self.source, &mut out);
-                }
-                "complete_parenthetical" => {
-                    for inner in named_children(child) {
-                        if inner.kind() == "clause" || inner.kind() == "subordinate_clause" {
-                            push_clause_tokens(inner, self.source, &mut out);
-                        }
+        self.for_each_token(|t| out.push(t));
+        out
+    }
+
+    /// Call `f` for every visible terminal, in order, with no drops
+    /// and no intermediate `Vec` (see [`Sentence::tokens`] for what is
+    /// yielded). The tagging hot path uses this.
+    pub fn for_each_token(&self, mut f: impl FnMut(Token<'a>)) {
+        let (node, source) = (self.node, self.source);
+        for_each_named_child(node, |child| match child.kind() {
+            "clause" | "subordinate_clause" => {
+                for_each_clause_token(child, source, &mut f);
+            }
+            "complete_parenthetical" => {
+                for_each_named_child(child, |inner| {
+                    if inner.kind() == "clause" || inner.kind() == "subordinate_clause" {
+                        for_each_clause_token(inner, source, &mut f);
                     }
-                }
-                _ => {
-                    if let Some(kind) = TokenKind::from_node_kind(child.kind()) {
-                        out.push(Token {
-                            kind,
-                            node: child,
-                            source: self.source,
-                        });
-                    }
+                });
+            }
+            _ => {
+                if let Some(kind) = TokenKind::from_node_kind(child.kind()) {
+                    f(Token {
+                        kind,
+                        node: child,
+                        source,
+                    });
                 }
             }
-        }
-        out
+        });
     }
 
     span_and_text!();
@@ -218,10 +248,13 @@ impl<'a> Clause<'a> {
 
     /// The introducing subordinator (`because`, `who`, …), if any.
     pub fn subordinator(&self) -> Option<&'a str> {
-        named_children(self.node)
-            .into_iter()
-            .find(|child| child.kind() == "subordinator")
-            .map(|child| text_of(self.source, child))
+        let mut found = None;
+        for_each_named_child(self.node, |child| {
+            if found.is_none() && child.kind() == "subordinator" {
+                found = Some(text_of(self.source, child));
+            }
+        });
+        found
     }
 
     /// Word-like tokens: `word`, `dotted` (initialisms) and `number`.
@@ -231,16 +264,22 @@ impl<'a> Clause<'a> {
     /// lossless stream.
     pub fn words(&self) -> Vec<Word<'a>> {
         let mut words = Vec::new();
-        for child in named_children(self.node) {
+        self.for_each_word(|w| words.push(w));
+        words
+    }
+
+    /// Call `f` for each word-like token, in order, without allocating.
+    pub fn for_each_word(&self, mut f: impl FnMut(Word<'a>)) {
+        let source = self.source;
+        for_each_named_child(self.node, |child| {
             if let Some(kind) = WordKind::from_node_kind(child.kind()) {
-                words.push(Word {
+                f(Word {
                     kind,
                     node: child,
-                    source: self.source,
+                    source,
                 });
             }
-        }
-        words
+        });
     }
 
     /// Every visible terminal in this clause, in order, with no drops.
@@ -253,8 +292,14 @@ impl<'a> Clause<'a> {
     /// have no named node and are not yielded.
     pub fn tokens(&self) -> Vec<Token<'a>> {
         let mut out = Vec::new();
-        push_clause_tokens(self.node, self.source, &mut out);
+        self.for_each_token(|t| out.push(t));
         out
+    }
+
+    /// Call `f` for every visible terminal, in order, with no drops
+    /// and no intermediate `Vec` (see [`Clause::tokens`]).
+    pub fn for_each_token(&self, mut f: impl FnMut(Token<'a>)) {
+        for_each_clause_token(self.node, self.source, &mut f);
     }
 
     span_and_text!();
@@ -368,35 +413,41 @@ impl<'a> Token<'a> {
     span_and_text!();
 }
 
-fn push_clause_tokens<'a>(node: Node<'a>, source: &'a str, out: &mut Vec<Token<'a>>) {
-    for child in named_children(node) {
-        match child.kind() {
-            "parenthetical" => {
-                for inner in named_children(child) {
-                    if inner.kind() == "clause" || inner.kind() == "subordinate_clause" {
-                        push_clause_tokens(inner, source, out);
-                    }
+/// Call `f` for every visible terminal under a clause (or nested
+/// clause) node, in order, flattening `parenthetical` and
+/// `subordinate_clause` interiors in place. Lazy replacement for the
+/// old push-into-`Vec` walk: no per-node allocation.
+fn for_each_clause_token<'a>(node: Node<'a>, source: &'a str, f: &mut impl FnMut(Token<'a>)) {
+    for_each_named_child(node, |child| match child.kind() {
+        "parenthetical" => {
+            for_each_named_child(child, |inner| {
+                if inner.kind() == "clause" || inner.kind() == "subordinate_clause" {
+                    for_each_clause_token(inner, source, f);
                 }
-            }
-            "clause" | "subordinate_clause" => {
-                push_clause_tokens(child, source, out);
-            }
-            _ => {
-                if let Some(kind) = TokenKind::from_node_kind(child.kind()) {
-                    out.push(Token {
-                        kind,
-                        node: child,
-                        source,
-                    });
-                }
+            });
+        }
+        "clause" | "subordinate_clause" => {
+            for_each_clause_token(child, source, f);
+        }
+        _ => {
+            if let Some(kind) = TokenKind::from_node_kind(child.kind()) {
+                f(Token {
+                    kind,
+                    node: child,
+                    source,
+                });
             }
         }
-    }
+    });
 }
 
-fn named_children(node: Node<'_>) -> Vec<Node<'_>> {
+/// Call `f` for each named child of `node`, in order, driving the
+/// tree cursor directly instead of collecting children into a `Vec`.
+fn for_each_named_child<'x>(node: Node<'x>, mut f: impl FnMut(Node<'x>)) {
     let mut cursor = node.walk();
-    node.named_children(&mut cursor).collect()
+    for child in node.named_children(&mut cursor) {
+        f(child);
+    }
 }
 
 /// True when `node` or any descendant (named or anonymous) is ERROR or
@@ -408,13 +459,6 @@ fn subtree_has_error(node: Node<'_>) -> bool {
     }
     let mut cursor = node.walk();
     node.children(&mut cursor).any(subtree_has_error)
-}
-
-fn children_of_kind<'a>(node: Node<'a>, kind: &str) -> Vec<Node<'a>> {
-    named_children(node)
-        .into_iter()
-        .filter(|child| child.kind() == kind)
-        .collect()
 }
 
 fn text_of<'a>(source: &'a str, node: Node<'_>) -> &'a str {

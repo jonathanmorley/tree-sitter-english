@@ -842,3 +842,12 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   deliberately left: beam `sort_by`→top-2 select (spans tiny),
   `TagCache` hit-path clone→borrowed API, `english` crate Vec-per-
   node iterators (parse stage is tree-sitter-C-dominated anyway).
+  UPDATE 2026-10-06: the iterator item is DONE — additive `for_each_*`
+  callbacks (cursor-driven, no `Vec` staging; `Vec` APIs delegate
+  unchanged) + buffer-reuse `append_sentence_pieces` /
+  `append_clause_pieces` in `wire.rs`, bench on the fast path.
+  Measured: pieces 87→83 ms (−4%), end-to-end 546k→551k tok/s;
+  `tag` output byte-identical on Moby-Dick; new parity test pins
+  `for_each` == `Vec` APIs; suite green. Small by design (pieces
+  stage is String-alloc-dominated — node `Vec`s were the smaller
+  share). `TagCache` clone→borrow stays open.
