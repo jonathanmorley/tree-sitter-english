@@ -67,6 +67,30 @@ way: never contradict EWT-majority on frequent words (checked
 sentence-initial `So`→ADV 88:0 and `open`→ADJ 31:17 before keeping
 those labels).
 
+Batch 03 (REJECTED 2026-10-05): 24 sentences / 751 tokens
+(`data/moby-oracle-03.conllu`, ch.7–26, disjoint from eval and
+batches 01/02), per-class-targeted at the stable miss classes (3sg
+`-s` verbs, `that` in all three constructions, imperatives,
+titlecase PROPN, participial ADJ vs reduced-relative VERB) with an
+EWT-count check behind every contested call (ambiguous items like
+`All dressed`, `round/yonder`, `to`+gerund dropped, not guessed).
+Joint retrain (EWT + 01/02/03, iters=20/min-count=1): dev
+91.84→90.95 (−225), test 92.05→91.03 (−257). Weights restored
+(`712e0fc7`), data kept. Every targeted confusion improved
+(SCONJ→PRON 57→3, ADJ→NOUN 106→58, NOUN→PROPN 158→109,
+ADP→SCONJ 40→29) but the batch's auxiliary observations dragged
+shared priors the other way: VERB→AUX 52→166 (all 12 batch
+be-forms tagged AUX — the batch starves EWT's infinitival-passive
+be-VERB per J2), VERB→ADJ 48→155 (12 ADJ-participles vs EWT's 22
+VERB predicatives), NOUN→ADJ 52→121, PROPN→NOUN 263→308,
+PART→ADP 17→61. Same shared-prior-drift signature as the ch.36
+rejection, different classes: targeting works at the confusion
+level, but joint training lets the batch's majority classes pull
+untargeted boundaries. Next: counter-observe starved classes
+(be-VERB, VERB participles) for boundary balance, or try
+`--finetune` bounded top-ups; lexicon backoffs (no weight change)
+stay the fallback.
+
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by
