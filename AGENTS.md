@@ -148,10 +148,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   fallout — accepted, same class as before). Moby unchanged.
   2 TDD corpus tests (3-dot + 4-dot mid); scanner untouched;
   zero conflicts; full gates green.
-  (b) mid-clause `&` (19×/7b: `R&D`, `C & M`): the trigger the
-  residual named — it IS erroring. Candidate shapes: absorb
-  letter-`&`-letter into `word` (check EWT tokenization first)
-  vs conjunction-in-clause (architectural, Tier-3-adjacent).
+  (b) mid-clause `&` (DONE 2026-10-06, −32 prose, zero rises):
+  the 19 hits were three shapes, not one: `&c.` et-cetera
+  (bulk), firm names (`Washburn & Moen`), dialect `&`=and
+  (Twain), line-initial `&` (`C\n& M`). Rule: unspaced `&`+letter
+  absorbs into `word` (R&D, `&c`, AT&T — EWT keeps such runs
+  whole as NOUN/PROPN, incl. `etc.` 58×); spaced `&` stays a
+  conjunction. Scanner-only (no generate): word-entry `&`
+  acceptance + medial loop branch (hyphen-shaped) + probe
+  decline (Word-gated) + probe newline-skipping (blank aborts
+  to preserve paragraph_break). Side win: `&c.` escapes the
+  single-letter-initial rule by construction (len 2), so `&c.`
+  ends sentences via end_ahead. Residual: `; &` (Twain 3×) needs
+  conjunction-after-semicolon slots — deferred (would silently
+  re-tree thousands of `; and` joins with zero measurable gain).
+  3 TDD corpus tests; Moby unchanged; full gates green.
   (c) letter-digit hyphen (`M-3`, `A-1` codes; remainder of the
   121× `-` class after digit-ranges): extend the hyphen branch
   past digits or absorb into `word`; EWT check first.

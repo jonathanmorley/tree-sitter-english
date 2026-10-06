@@ -640,35 +640,88 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
 
         // `&` joins like `and` (Enderby & Sons) where conjunctions are
         // valid — the closed-class discipline (emit only where the
-        // grammar allows). Spaces skipped with advance(true) so a miss
-        // falls through to word lexing below with a clean token start;
-        // never `return false` here (words are external-only). Plain
-        // clause interiors disallow conjunctions, so mid-clause `&`
-        // (R&D) keeps erroring there; subordinate interiors accept it
-        // as a join, which reads fine.
+        // grammar allows). Spaces and single newlines are skipped
+        // with advance(true) so a miss falls through to word lexing
+        // below with a clean token start; never `return false` here
+        // (words are external-only) — EXCEPT across a blank line,
+        // which must survive for the paragraph_break token (refusal
+        // rewinds fully). Plain clause interiors disallow
+        // conjunctions, so mid-clause `&` (R&D) keeps erroring there
+        // as a conjunction; subordinate interiors accept it as a
+        // join, which reads fine. Unspaced `&word` (R&D, `&c.`,
+        // AT&T — EWT keeps such runs whole as NOUN/PROPN) is NOT a
+        // conjunction: decline to word lexing below, which absorbs
+        // it (Word-gated, so conjunction-only states are untouched).
+        // Word buffer, seeded with `&` on the `&`-lead path below.
+        let mut buf = [0u8; MAX_WORD + 1];
+        let mut len = 0usize;
+        // True when the `&` probe below already consumed an unspaced
+        // `&` + letter: entry checks are skipped, the loop starts
+        // with `buf = "&"`.
+        let mut amp_lead = false;
         if valid(valid_symbols, TokenType::Conjunction) {
-            while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
-                advance(lexer, true);
+            loop {
+                while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+                    advance(lexer, true);
+                }
+                if lookahead(lexer) == 0x0A {
+                    advance(lexer, true);
+                } else if lookahead(lexer) == 0x0D {
+                    advance(lexer, true);
+                    if lookahead(lexer) == 0x0A {
+                        advance(lexer, true);
+                    }
+                } else {
+                    break;
+                }
+                while lookahead(lexer) == 0x20 || lookahead(lexer) == 0x09 {
+                    advance(lexer, true);
+                }
+                // A second break is a blank line: abort (full rewind
+                // restores it for paragraph_break).
+                if lookahead(lexer) == 0x0A || lookahead(lexer) == 0x0D {
+                    return false;
+                }
             }
             if lookahead(lexer) == 0x26 {
                 advance(lexer, false);
-                mark_end(lexer);
-                (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
-                return true;
+                // Unspaced `&` + letter is a word (decline, Word-gated).
+                if valid(valid_symbols, TokenType::Word) && is_word_char(lookahead(lexer)) {
+                    amp_lead = true;
+                    buf[0] = b'&';
+                    len = 1;
+                } else {
+                    mark_end(lexer);
+                    (*lexer).result_symbol = TokenType::Conjunction as TSSymbol;
+                    return true;
+                }
             }
         }
 
         let mut paragraph_break_ahead = false;
-        skip_whitespace(lexer, &mut paragraph_break_ahead);
-        if paragraph_break_ahead {
-            return false;
-        }
-        if !is_word_char(lookahead(lexer)) {
-            return false;
+        if !amp_lead {
+            skip_whitespace(lexer, &mut paragraph_break_ahead);
+            if paragraph_break_ahead {
+                return false;
+            }
+            if lookahead(lexer) == 0x26 {
+                // `&`-leading word where the probe above declined or
+                // was invalid (Word-gated): absorb like the lead.
+                if !valid(valid_symbols, TokenType::Word) {
+                    return false;
+                }
+                advance(lexer, false);
+                if !is_word_char(lookahead(lexer)) {
+                    return false;
+                }
+                buf[0] = b'&';
+                len = 1;
+            } else if !is_word_char(lookahead(lexer)) {
+                return false;
+            }
         }
 
-        let mut buf = [0u8; MAX_WORD + 1];
-        let mut len = 0usize;
+        // (buf/len/amp_lead/dot_passed/dash_run_passed declared above.)
         // Set when the dot branch below consumes a `.` that turns out not
         // to start a dotted run: the lexer rewinds to the marked end, so
         // the dot is re-lexed on the next scan. It still counts as boundary
@@ -760,6 +813,23 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                 }
                 if lookahead(lexer) == 0x2D {
                     dash_run_passed = true;
+                }
+                break;
+            }
+            if lookahead(lexer) == 0x26 {
+                // Ampersand belongs to the word only between letters
+                // (`R&D`, `AT&T` — EWT keeps such runs whole as
+                // NOUN/PROPN). A leading `&` never reaches this loop
+                // (handled at entry/the probe); a trailing or spaced
+                // one stays outside the token for the conjunction
+                // probe or an error, as before.
+                advance(lexer, false);
+                if is_word_char(lookahead(lexer)) {
+                    if len < MAX_WORD {
+                        buf[len] = b'&';
+                        len += 1;
+                    }
+                    continue;
                 }
                 break;
             }

@@ -277,3 +277,25 @@ He came and.
         (word)
         (word)
         (word)))))
+
+==================
+Conjunction ampersand joins across a newline
+==================
+
+The C
+& M only produced six.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (conjunction)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))

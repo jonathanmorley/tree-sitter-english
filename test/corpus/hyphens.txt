@@ -93,3 +93,21 @@ During the winter of 1881-82, I saw a notice.
         (word)
         (word)
         (word)))))
+
+==================
+Ampersand inside a word
+==================
+
+The R&D division met today.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))

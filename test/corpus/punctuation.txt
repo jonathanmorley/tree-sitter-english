@@ -668,3 +668,24 @@ She asked him, "Whereat laughest thou?"; and he answered.
         (word)
         (word)
         (word)))))
+
+==================
+Et-cetera abbreviation ends the sentence
+==================
+
+Pies pleased them, &c. They left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)))))
