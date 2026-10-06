@@ -811,6 +811,24 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
                     }
                     continue;
                 }
+                // Letter-digit codes (`M-3`, `A-1`): absorb the hyphen
+                // and the digit run (EWT keeps CCA-15 whole as PROPN).
+                // Digits need no lowercasing; mark per char like above.
+                if matches!(lookahead(lexer), 0x30..=0x39) {
+                    if len < MAX_WORD {
+                        buf[len] = b'-';
+                        len += 1;
+                    }
+                    while matches!(lookahead(lexer), 0x30..=0x39) {
+                        if len < MAX_WORD {
+                            buf[len] = lookahead(lexer) as u8;
+                            len += 1;
+                        }
+                        advance(lexer, false);
+                        mark_end(lexer);
+                    }
+                    continue;
+                }
                 if lookahead(lexer) == 0x2D {
                     dash_run_passed = true;
                 }

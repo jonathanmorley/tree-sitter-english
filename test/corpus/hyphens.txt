@@ -111,3 +111,39 @@ The R&D division met today.
         (word)
         (word)
         (word)))))
+
+==================
+Letter-digit code stays one word
+==================
+
+The M-3 robot rumbled loudly.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Digit-led compound stays one number
+==================
+
+An 18-pounder gun fired twice.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (number)
+        (word)
+        (word)
+        (word)))))

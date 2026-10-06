@@ -228,11 +228,15 @@ export default grammar({
     // Colons and em-dashes introduce elaborating material. Dashes span
     // U+2012-U+2015 (em, en, figure dash, horizontal bar) plus ASCII
     // `--` runs; single `-` stays word-internal (compounds) or an error.
-    // The word scanner leaves `--` runs alone (hyphen branch takes only
-    // letter-flanked singles), so this token sees them whole.
+    // A spaced single hyphen (`ship - he was`, pulp house style, 27× in
+    // one book) joins like an em-dash: the trailing space keeps it out
+    // of compounds, line-break hyphenation (`Broom-\nBrigade`), and
+    // leading-dash dialogue — all of which stay as before. The word
+    // scanner leaves `--` runs alone (hyphen branch takes only
+    // letter/digit-flanked singles), so this token sees them whole.
     semicolon: $ => ';',
     colon: $ => ':',
-    em_dash: $ => choice(/[—–―‒]/, /--+/),
+    em_dash: $ => choice(/[—–―‒]/, /--+/, /-[ \t]/),
 
 
     // Quote marks, visible inside clauses so they are queryable. The
@@ -252,11 +256,14 @@ export default grammar({
     // Integers, decimals, times, and digit ranges: the internal dot
     // of 3.14 stays inside the token, as does the colon of 10:30 (a
     // single time expression, not an elaboration — see the corpus
-    // test) and the hyphen of 1881-82 (one range expression, not a
-    // join — EWT keeps 646-8420 whole as NUM). A colon without two
-    // following digits is untouched (elaboration and handoff paths
-    // behave as before).
-    number: $ => /\d+(\.\d+)?(:\d\d(:\d\d)?)?(-\d+)?/,
+    // test), the hyphen of 1881-82 (one range expression, not a
+    // join), and the hyphen of 16-pounders/17-inch (one adjectival
+    // unit — EWT keeps mid-1980s whole as NOUN). A colon without
+    // two following digits is untouched (elaboration and handoff
+    // paths behave as before); a hyphen not followed by a digit or
+    // letter is untouched (compounds, dashes, and handoffs behave
+    // as before).
+    number: $ => /\d+(\.\d+)?(:\d\d(:\d\d)?)?(-\d+)?(-[A-Za-z][A-Za-z0-9-]*)?/,
 
     // Currency signs stay visible and flat: `$20,000,000` parses as
     // currency, number, number, number (commas are hidden).

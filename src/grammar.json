@@ -609,6 +609,10 @@
         {
           "type": "PATTERN",
           "value": "--+"
+        },
+        {
+          "type": "PATTERN",
+          "value": "-[ \\t]"
         }
       ]
     },
@@ -639,7 +643,7 @@
     },
     "number": {
       "type": "PATTERN",
-      "value": "\\d+(\\.\\d+)?(:\\d\\d(:\\d\\d)?)?(-\\d+)?"
+      "value": "\\d+(\\.\\d+)?(:\\d\\d(:\\d\\d)?)?(-\\d+)?(-[A-Za-z][A-Za-z0-9-]*)?"
     },
     "currency": {
       "type": "PATTERN",

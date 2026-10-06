@@ -689,3 +689,25 @@ Pies pleased them, &c. They left.
       (clause
         (word)
         (word)))))
+
+==================
+Spaced hyphen joins like an em-dash
+==================
+
+The ship - he was a prisoner there.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (em_dash)
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)))))

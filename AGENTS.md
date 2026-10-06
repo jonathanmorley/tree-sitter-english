@@ -163,9 +163,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   conjunction-after-semicolon slots — deferred (would silently
   re-tree thousands of `; and` joins with zero measurable gain).
   3 TDD corpus tests; Moby unchanged; full gates green.
-  (c) letter-digit hyphen (`M-3`, `A-1` codes; remainder of the
-  121× `-` class after digit-ranges): extend the hyphen branch
-  past digits or absorb into `word`; EWT check first.
+  (c) letter-digit hyphen (DONE 2026-10-06, −77 prose, zero
+  rises): three sub-shapes. (i) Letter-digit codes (`M-3`, EWT
+  CCA-15 PROPN): hyphen branch absorbs `-` + digit run (the loop
+  can't consume digits, so the branch takes the run itself).
+  (ii) Digit-led compounds (`16-pounders`, `17-inch`, EWT
+  `4-ever` whole): `number` gains `(-[A-Za-z][A-Za-z0-9-]*)?`.
+  (iii) Spaced single hyphen as ASCII dash (`ship - he was`,
+  40284 house style, 33× + 4× map): `em_dash` gains `/-[ \t]/`
+  — trailing-space-only, so compounds, line-break hyphenation
+  (`Broom-\nBrigade`), and leading-dash dialogue stay as before;
+  all 31 book occurrences errored today, so zero clean-parse
+  regression risk. Skipped: suspended `cigar-,` (2× print
+  artifact). 3 TDD corpus tests; examples snapshots identical;
+  Moby unchanged; full gates green. Residual `-`: TOC dot-dash,
+  URLs, dialogue fragments (all bucketed classes).
   (d) dialogue handoff (`—”` 57×/8b, `?”␤␤“` 24×,
   Dumas-heavy): quote-boundary turn-taking across blank lines;
   investigation only — likely quote-architecture, price it
