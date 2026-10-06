@@ -42,8 +42,8 @@ cp /tmp/ud/ewt/en_ewt-ud-{dev,test}.conllu /tmp/ud-oracle/
 cargo run --release -p english-pos-train -- --corpus /tmp/ud-oracle \
   --iters 20 --min-count 1
 ```
-(Batches 03/04 are spelled out — never the `moby-oracle-*` glob:
-both were measured, rejected, and must stay out of training.)
+(Batches 03/04/05 are spelled out — never the `moby-oracle-*` glob:
+all three were measured, rejected, and must stay out of training.)
 
 `--correct` reports accuracy with the correction rules applied
 (`tag_margins` + `apply_rules`), including fire counts and a
@@ -124,6 +124,38 @@ size: boundary-balanced batches, or per-class targeting with the
 starved classes counter-observed in the same batch. Otherwise the
 roadmap's no-weight-change steps (lexicon backoffs, beam-2
 re-decode of low-margin spans) go first.
+
+Batch 05 (REJECTED 2026-10-06): 5 sentences / 226 tokens
+(`data/moby-oracle-05.conllu`, ch.32–37 — cetology narrative +
+Ahab's Quarter-Deck speeches, disjoint from evals and batches
+01–04), per-class-targeted at verb morphology only (five 3sg
+`-s` verbs in one sentence, four imperatives, bare/base
+contrasts, passive vs attributive participles), EWT-count checks
+in-file (`touching`→VERB 2:0 kept over the prepositional
+reading, `-able`→ADJ 308:8, `yonder`→DET by guideline,
+relative-`that`→PRON, generic `Emperors/Kings`→NOUN per M1,
+`Captain`→NOUN by in-repo lawyer-precedent; S3 dropped as
+lowest verb value to hold ~200 tokens). Joint retrain (EWT +
+01/02/05, iters=20/min-count=1): dev 91.84→91.42 (−106), test
+92.05→91.66 (−98). Weights restored (`712e0fc7`), data kept.
+The first distillation run where EVERY eval improved — Moby
+27→23, genre 20→13, hard 0.8644→0.8883, genre-chunk cascade
+9/20→13/20 sent (token 0.873→0.931), `flies` veto held — while
+EWT dropped 10×-noise on both splits: the exact mirror of batch
+01/02 (there EWT +tiny / Moby −3; here EWT −100 / evals +48).
+Same shared-prior-drift signature at smaller magnitude —
+targets won (dev VERB→NOUN 133→118, NOUN→PROPN 158→102,
+SCONJ→PRON 57→14, ADJ→NOUN 106→82) while priors dragged
+(PROPN→NOUN 263→313, NOUN→VERB 85→116). Composition finding:
+verb-heavy 226 drags NOUN/VERB/AUX priors both ways where the
+mixed 354 of 01/02 held — the drift floor depends on batch
+shape, not just mass. Per the 01/02 precedent (EWT rules on
+conflicts) and the dev/test gates, REJECTED. Distillation now
+0-for-4; the roadmap stands — accuracy work needs new training
+mechanics (per-class weighting, frozen priors), not new
+batches. One live hypothesis for a cheap probe: a sub-100-token
+micro-batch of the densest verb material only (S1+S4+S5 ≈ 96
+tok), testing whether drift has a floor the 226 exceeded.
 
 ## Cross-genre standing (GUM test, gold)
 
