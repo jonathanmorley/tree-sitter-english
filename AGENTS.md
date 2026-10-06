@@ -109,10 +109,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 ## Queued (not started)
 
-- Markup tolerance (later): whether Gutenberg `_`/`*` deserves grammar
-  treatment (`extras`, visible nodes, or a documented input pre-pass)
-  is deliberately undecided; the audit buckets it as transcription
-  until then. Do not let the transcription count drive grammar design.
+- Markup tolerance (DECIDED 2026-10-06: status quo, no grammar
+  treatment): the 100-book strip experiment settled it. Stripping
+  all `_` (23,103 hits / 70 books; intra-word only 60, all
+  footnote/redaction junk) moved transcription 30,381 → 7,635 but
+  prose 4,956 → 5,212: ZERO books improved (neg=0), 33 unchanged
+  (e.g. Middlemarch trans −474 / prose ±0 — mid-sentence italics
+  are lone-leaf ERRORs recovery always absorbs), 37 worsened, all
+  front-matter blame-shift (`_Contents_`-class lines: the
+  transcription node was shielding heading fallout; strip it and
+  the heading errors as prose). So `extras` would buy zero parse
+  quality while inflating the prose histogram by ~256 heading
+  errors; visible nodes are Tier-3 sprawl (markup can appear
+  anywhere words can); pre-pass adds offset damage on top. The
+  transcription bucket was already the right call, and the
+  experiment revealed its load-bearing side effect — narrowing
+  the bucket later must re-run this test. Consumers are immune
+  either way (ERROR leaves never become pieces, so POS/chunk
+  never see markup). `*` (163 hits) rides the same logic.
+  Standing rule holds: transcription count never drives design.
 
 - Em-dash residuals: leading-dash dialogue, doubled `——` (redaction).
 
