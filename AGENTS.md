@@ -580,6 +580,22 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   DEFERRED, not rejected — dense 256-class features don’t share
   the sparse-memorization mechanism, but need their own offline
   pipeline + licensing thought first),
+  then MEASURED AND REJECTED 2026-10-06: Brown-style pipeline
+  built anyway (gensim skip-gram seed-42 + numpy k-means k=256 on
+  the four public-domain bodies, 510k toks / 6,905-word vocab,
+  bit-identical reruns; purity 0.698 majority-share vs EWT tags,
+  median cluster 0.610 — over the 0.6 gate; spot-checks gorgeous:
+  Pequod crew, Austen names, whale/nautical nouns, negation all
+  cluster cleanly). Retrain with one dense cluster-id feature:
+  dev −146 / test −165 at 1.97 MB. Diagnosis: the shared prior
+  smooths away word-identity memorization (same shape as the
+  averaging failure — settled weights into noise), and book-domain
+  classes mislead web-domain test words. Dense ≠ safe. Map
+  discarded (deterministically regenerable); script kept as
+  infrastructure (`scripts/cluster-books.py`). Roadmap accuracy
+  work now stands: distillation 0-for-2, char 0-for-2 variants,
+  clusters 0-for-1 — the linear model's ceiling is holding firm
+  and every direction has a measurement.
   (3) lexicon backoffs (bytes) — verb-base-form list, name
   gazetteer, `-ness`/`-ous` vetoes, consulted only below margin τ
   (EWT-safe by construction, same argument as `lest`/`supposing`);
