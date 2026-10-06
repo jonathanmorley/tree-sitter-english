@@ -131,6 +131,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Em-dash residuals: leading-dash dialogue, doubled `——` (redaction).
 
+- Harvest residuals (queued 2026-10-06 from the 100-book final
+  ranking; `/` excluded — all 27 hits are front-matter URLs):
+  (a) spaced ellipsis (`. . .`, 85×/5b, body pauses incl. verse
+  quotes): widen `ellipsis`/`ellipsis_end` to spaced runs, same
+  shape as the pilot `…` fix; check EWT spacing first.
+  (b) mid-clause `&` (19×/7b: `R&D`, `C & M`): the trigger the
+  residual named — it IS erroring. Candidate shapes: absorb
+  letter-`&`-letter into `word` (check EWT tokenization first)
+  vs conjunction-in-clause (architectural, Tier-3-adjacent).
+  (c) letter-digit hyphen (`M-3`, `A-1` codes; remainder of the
+  121× `-` class after digit-ranges): extend the hyphen branch
+  past digits or absorb into `word`; EWT check first.
+  (d) dialogue handoff (`—”` 57×/8b, `?”␤␤“` 24×,
+  Dumas-heavy): quote-boundary turn-taking across blank lines;
+  investigation only — likely quote-architecture, price it
+  before building. Recommended build order: a, b, c, d
+  (hits × safety).
+
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus
   tests, same as the hyphen slice. DONE 2026-09-26/27, in slices:
