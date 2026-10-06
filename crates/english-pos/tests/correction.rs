@@ -317,3 +317,36 @@ fn det_noun_fixes_plural_s_noun() {
         Tag::Verb
     );
 }
+
+#[test]
+fn that_sconj_fixes_complementizer_that() {
+    // `I know that big dogs bark`: PRON before DET+ADJ → SCONJ.
+    assert_eq!(
+        run(
+            &["know", "that", "big", "dogs"],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Pron, 1.0),
+                (Tag::Det, 9.0),
+                (Tag::Adj, 9.0)
+            ],
+            "that-sconj",
+        )[1],
+        Tag::Sconj
+    );
+    // Bare nominal (`of that slouching snow`: ADJ+NOUN) abstains —
+    // that is `that-det` territory, not a clause.
+    assert_eq!(
+        run(
+            &["of", "that", "slouching", "snow"],
+            &[
+                (Tag::Adp, 9.0),
+                (Tag::Pron, 1.0),
+                (Tag::Adj, 9.0),
+                (Tag::Noun, 9.0)
+            ],
+            "that-sconj",
+        )[1],
+        Tag::Pron
+    );
+}

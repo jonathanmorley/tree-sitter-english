@@ -36,9 +36,11 @@
 //! (consult-always, locks early), these consult wordlists only below
 //! the margin gate, as post-pass predicates through this same
 //! engine. Eleven candidates measured and removed (see `RULES`);
-//! survivors: `to-prep`, `have-verb`, `to-verb`. A fourth,
-//! `that-det`, was admitted 2026-10-06 from the eval-margin probe
-//! (determiner-`that`, EWT 89:1 — see the rule).
+//! survivors: `to-prep`, `have-verb`, `to-verb`. Three more were
+//! admitted later the same day from margin probes and the
+//! external-rules survey: `that-det` (eval-margin probe),
+//! `that-rel` + `det-noun` (Brill/fnTBL/RDR/CG convergence),
+//! `that-sconj` (RDR tree-mining) — 7-for-18 total.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
@@ -143,6 +145,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: det_noun,
     },
+    Rule {
+        name: "that-sconj",
+        threshold: 2.0,
+        test: that_sconj,
+    },
 ];
 
 /// Prepositional `to` read as infinitive marker (`to Coenties
@@ -241,6 +248,27 @@ fn that_rel(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
 /// 1 Moby hand-verified fix (`the front of the try-works` —
 /// lexicalized equipment noun), zero known breaks, `flies` holds.
+///
+/// Complementizer `that` read as relative pronoun (`I know that
+/// big dogs bark`): with DET+ADJ two ahead, EWT gold is SCONJ
+/// 45:5 — a complement clause is coming, not a bare nominal
+/// (the RDR-mined two-wide extension of `that-det`, which covers
+/// only the PRON→DET direction).
+///
+/// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
+/// 3 Moby hand-verified fixes (`that the Greenland whale...`,
+/// `so that the whole rope will bear`, `so that the precious
+/// gold seems...` — all full clauses with NP subjects), zero
+/// known breaks, `flies` holds.
+fn that_sconj(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+        return None;
+    }
+    match (tags.get(i + 1), tags.get(i + 2)) {
+        (Some(Tag::Det), Some(Tag::Adj)) => Some(Tag::Sconj),
+        _ => None,
+    }
+}
 fn det_noun(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Verb {
         return None;

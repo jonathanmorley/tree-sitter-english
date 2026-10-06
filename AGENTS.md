@@ -810,9 +810,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 6-for-17 — engine plus shipped rules
+  (2) correction layer 7-for-18 — engine plus shipped rules
   (`have-verb`, `to-prep`, `to-verb`, `that-det`, `that-rel`,
-  `det-noun`) and the beam decoder; the
+  `det-noun`, `that-sconj`) and the beam decoder; the
   load-bearing unproven piece left is distillation scale-up
   (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
   all rejected — 05 is the mirror case, evals up / EWT down, and
@@ -870,7 +870,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   below the 89:1 bar the shipped shapes hold), `out`-particle
   shapes (narrow, unmeasured), demonstrative agreement (vestigial
   in English), blanket titlecase (already falsified by the
-  Titlecase×position measurement).
+  Titlecase×position measurement). Mined further the same day:
+  `that-sconj` (PRON→SCONJ on DET+ADJ two-wide, EWT 45:5) —
+  7-for-18, EWT ±0 with 3 hand-verified Moby complement clauses;
+  rejected in the same pass: `that`+ADV (PRON:SCONJ coin flip —
+  `that very day` kills it), DET+_+NOUN→ADJ without lexicon
+  (57% ADJ, compounds break it), PART+_+ADJ (VERB-majority —
+  model already right), `that`+PART/CCONJ (n=9, no majority).
 
 - External benchmark shootout (DONE 2026-10-06, same hardware,
   same data): NLTK averaged perceptron (WSJ-trained) and
