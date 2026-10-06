@@ -116,3 +116,41 @@ He left… She stayed.
       (clause
         (word)
         (word)))))
+
+==================
+Spaced ellipsis mid-sentence
+==================
+
+He paused . . . and left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (ellipsis))
+      (conjunction)
+      (clause
+        (word)))))
+
+==================
+Four-dot spaced ellipsis mid-sentence
+==================
+
+He paused . . . . and left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (ellipsis))
+      (conjunction)
+      (clause
+        (word)))))

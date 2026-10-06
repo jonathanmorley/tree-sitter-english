@@ -369,7 +369,7 @@
     },
     "ellipsis": {
       "type": "PATTERN",
-      "value": "\\.{3}|…"
+      "value": "(\\.{3}|…)|\\.([ \\t]+\\.){2,7}"
     },
     "parenthetical": {
       "type": "SEQ",

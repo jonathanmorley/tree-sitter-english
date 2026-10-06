@@ -133,9 +133,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 
 - Harvest residuals (queued 2026-10-06 from the 100-book final
   ranking; `/` excluded — all 27 hits are front-matter URLs):
-  (a) spaced ellipsis (`. . .`, 85×/5b, body pauses incl. verse
-  quotes): widen `ellipsis`/`ellipsis_end` to spaced runs, same
-  shape as the pilot `…` fix; check EWT spacing first.
+  (a) spaced ellipsis (DONE 2026-10-06, mid-only): internal
+  `ellipsis` widened to 3–8-dot spaced runs (75× 3-dot, 37×
+  4-dot, 11× 6–8-dot). Two discoveries along the way: the
+  external run counter never fires for spaced runs (consulted
+  only when no internal token matches — proven by isolated-dot
+  vs in-sentence debug runs), so terminal splitting is out of
+  reach and spaced runs chunk mid-sentence (error-free but
+  unsplit; boundary-only divergence, oracle-harness only); and
+  tree-sitter silently compiles unbounded `{2,}` as exactly
+  `{2}`, so the bound is explicit (13-dot table leaders stay
+  errors, correctly). Sweep prose −105 (8 books better, 61
+  flat); one +1 (Twain 7-dot divider blame-shifts into heading
+  fallout — accepted, same class as before). Moby unchanged.
+  2 TDD corpus tests (3-dot + 4-dot mid); scanner untouched;
+  zero conflicts; full gates green.
   (b) mid-clause `&` (19×/7b: `R&D`, `C & M`): the trigger the
   residual named — it IS erroring. Candidate shapes: absorb
   letter-`&`-letter into `word` (check EWT tokenization first)

@@ -156,8 +156,17 @@ export default grammar({
     // boundary-ahead, or for 4+ runs wholesale); keeping the
     // trailing mark out of this rule avoids an absorb-vs-outer-end
     // conflict on `....`. Single dots stay with the period/end-dot
-    // logic.
-    ellipsis: $ => /\.{3}|…/,
+    // logic. Spaced runs (`. . .`, harvest: 75× 3-dot, 37× 4-dot,
+    // 11× 6-8-dot) lex here, 3–8 dots, mid-sentence pauses: the
+    // external run counter demonstrably never fires for spaced
+    // runs (framework consults it only when no internal token
+    // matches), so terminal splitting for spaced runs is out of
+    // reach — they chunk mid-sentence, error-free but unsplit
+    // (documented residual; boundary-only divergence). The bound
+    // is explicit because tree-sitter silently compiles unbounded
+    // `{2,}` as exactly `{2}` (observed: 4-dot matched 3); longer
+    // leaders stay errors, as they should (tables, not pauses).
+    ellipsis: $ => /(\.{3}|…)|\.([ \t]+\.){2,7}/,
 
     // A parenthetical aside: a clause in parens, with `;`- and
     // em-dash-joined follow-ups (`(it will do; it is easy)`,
