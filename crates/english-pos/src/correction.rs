@@ -36,7 +36,9 @@
 //! (consult-always, locks early), these consult wordlists only below
 //! the margin gate, as post-pass predicates through this same
 //! engine. Eleven candidates measured and removed (see `RULES`);
-//! survivors: `to-prep`, `have-verb`, `to-verb`.
+//! survivors: `to-prep`, `have-verb`, `to-verb`. A fourth,
+//! `that-det`, was admitted 2026-10-06 from the eval-margin probe
+//! (determiner-`that`, EWT 89:1 — see the rule).
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
@@ -92,6 +94,15 @@ pub struct Rule {
 /// exact ties (margin 0, blocked by design), so the gate cannot
 /// reach them; recorded, not assumed.
 ///
+/// ADMITTED 2026-10-06 (`that-det`, τ=2.0): determiner-`that`
+/// after ADP/sentence-start before ADJ/NOUN (EWT gold DET 89:1;
+/// VERB/ADV/DET/NUM/PROPN-next stay out per measured splits).
+/// EWT ±0 (zero fires both splits — the shipped three carry the
+/// +6/+1); production-path evals fix 2 (moby-sample `That`,
+/// hard `that`+NOUN) with zero new breaks (244 confident / 8 ties
+/// unchanged). Fourth rule; the gate plus EWT measurement did
+/// their job again.
+///
 /// REJECTED 2026-10-06 (measured, removed): `s-verb-lex` (dev ±0:
 /// `steps` fixed, `structures` broken — the lexicon did not save it
 /// from its predecessor's fate), `imperative-lex` (dev −1 on `Lifts`,
@@ -116,6 +127,11 @@ pub const RULES: &[Rule] = &[
         name: "to-verb",
         threshold: 2.0,
         test: to_verb,
+    },
+    Rule {
+        name: "that-det",
+        threshold: 2.0,
+        test: that_det,
     },
 ];
 
@@ -167,6 +183,23 @@ fn to_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
         return None;
     }
     known_verb_form(&pieces[i]).then_some(Tag::Verb)
+}
+
+/// Determiner `that` read as relative pronoun (`of that slouching
+/// snow`, sentence-initial `That ...`): after a preposition (or at
+/// sentence start) and before a nominal (ADJ/NOUN), EWT gold is DET
+/// 89:1 — relatives take clauses (VERB/AUX next, PRON gold), never
+/// bare nominals. Guards, not just gates: VERB/ADV/DET/NUM/PROPN
+/// next all stay out (EWT splits there favor PRON or are tiny).
+/// Candidate from the 2026-10-06 eval-margin probe (4 actionable
+/// fires); admit only with EWT dev/test ≥ 0 measured.
+fn that_det(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+        return None;
+    }
+    let prev_ok = i == 0 || tags.get(i - 1) == Some(&Tag::Adp);
+    let next_ok = matches!(tags.get(i + 1), Some(Tag::Adj) | Some(Tag::Noun));
+    (prev_ok && next_ok).then_some(Tag::Det)
 }
 
 /// Apply `rules` to decoded `(tag, margin)` pairs in place.

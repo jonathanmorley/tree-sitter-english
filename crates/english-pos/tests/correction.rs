@@ -230,3 +230,46 @@ fn function_words_disambiguate() {
         );
     }
 }
+
+#[test]
+fn that_det_fixes_determiner_that() {
+    // `of that slouching snow`: PRON after ADP before nominal → DET.
+    assert_eq!(
+        run(
+            &["of", "that", "snow"],
+            &[(Tag::Adp, 5.0), (Tag::Pron, 1.0), (Tag::Noun, 9.0)],
+            "that-det",
+        )[1],
+        Tag::Det
+    );
+    // Sentence-initial `That man ...` (no prev) fires too.
+    assert_eq!(
+        run(
+            &["that", "man"],
+            &[(Tag::Pron, 1.0), (Tag::Noun, 9.0)],
+            "that-det",
+        )[0],
+        Tag::Det
+    );
+    // Relative clause (`all that glitters`: VERB next) abstains.
+    assert_eq!(
+        run(
+            &["all", "that", "glitters"],
+            &[(Tag::Pron, 4.0), (Tag::Pron, 1.0), (Tag::Verb, 9.0)],
+            "that-det",
+        )[1],
+        Tag::Pron
+    );
+    // Non-preposition prev abstains even when the model says PRON:
+    // `said that men rejoice` is a complement clause, `saw that man`
+    // a determiner — the guard stays out of genuinely ambiguous
+    // territory (EWT never shows DET there the way ADP-prev does).
+    assert_eq!(
+        run(
+            &["said", "that", "men"],
+            &[(Tag::Verb, 9.0), (Tag::Pron, 1.0), (Tag::Noun, 9.0)],
+            "that-det",
+        )[1],
+        Tag::Pron
+    );
+}

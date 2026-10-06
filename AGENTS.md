@@ -810,8 +810,9 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 3-for-14 — engine plus first shipped rules
-  (`have-verb`, `to-prep`, `to-verb`) and the beam decoder; the
+  (2) correction layer 4-for-15 — engine plus shipped rules
+  (`have-verb`, `to-prep`, `to-verb`, `that-det`) and the beam
+  decoder; the
   load-bearing unproven piece left is distillation scale-up
   (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
   all rejected — 05 is the mirror case, evals up / EWT down, and
@@ -839,6 +840,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   correction-layer ties. Compounding greed at the tag→chunk seam
   is therefore unfixable-from-below: remaining misses are tagger
   misses, full stop. `ARCHITECTURE.md` risks updated.
+
+- Lexicon rule `that-det` (ADMITTED 2026-10-06, 4-for-15): the
+  eval-margin probe (production-path margins on all 271 eval
+  misses — 19 actionable, 244 confident, 8 ties; probe deleted)
+  surfaced determiner-`that` (4 fires). EWT check: after ADP or
+  at sentence start before ADJ/NOUN, gold is DET 89:1 (relatives
+  take VERB/AUX next; VERB/ADV/DET/NUM/PROPN-next stay out per
+  measured splits; VERB-prev excluded — complement-clause
+  ambiguity). Measured: EWT ±0 (zero fires; shipped three carry
+  +6/+1), production evals fix 2 with zero new breaks,
+  `flies` holds, unit tests pin fire/abstain shapes. The
+  attributive-ADJ shape (sharp/poor, 2 fires) was checked and
+  left: noun-noun base rates need an adjective lexicon the
+  support doesn't justify — same base-rate lesson as the
+  rejected morphology rules.
 
 - Inference optimization pass (DONE 2026-10-06, speed + size, zero
   accuracy delta): tag 185→104 ms (−44%), end-to-end 454k→546k
