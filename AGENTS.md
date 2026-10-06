@@ -563,10 +563,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   batches (titlecase OOV, prep-chains, 3sg, imperatives) over
   book-domain text, ch.36 batch-size discipline (small batches drift
   shared priors); zero runtime change; expect +1-2;
-  (2) char n-gram + cluster features — suffixes 4-5,
-  Titlecase×position, cap-split backoff, Brown/word2vec-256 clusters
-  as one feature (~1MB word→u8 map, hashing absorbs it, min-count
-  prunes to ~2-4MB); expect +1-1.5;
+  (2) char n-gram + cluster features (CHAR HALF MEASURED AND
+  REJECTED 2026-10-06: suffixes 4-5 with stem guard,
+  Titlecase×position conjunction, cap-split suffix 2-4 backoff —
+  min-count=1: dev −130 / test −80 at 2.82 MB; min-count=2 WORSE
+  at −181/−188, 2.27 MB (pruning drops the rare oracle-lexical
+  features the committed setup needs — min-count=1 is
+  load-bearing). Forensics: ADJ overfire everywhere
+  (NOUN/PROPN/VERB→ADJ +30/+30/+21 — longer suffixes memorize),
+  title-fragmentation (PROPN→NOUN +94 — splitting F_TITLE
+  starved the pooled evidence), diffuse re-convergence noise
+  (ADP→PART +36, AUX→VERB +32). Partial credit: NOUN→PROPN −66.
+  Same sparse-conjunction overfit that killed `w+t-1`. Code
+  fully reverted (weights restored `712e0fc7`); the one useful
+  artifact is negative knowledge. Cluster half (Brown/word2vec)
+  DEFERRED, not rejected — dense 256-class features don’t share
+  the sparse-memorization mechanism, but need their own offline
+  pipeline + licensing thought first),
   (3) lexicon backoffs (bytes) — verb-base-form list, name
   gazetteer, `-ness`/`-ous` vetoes, consulted only below margin τ
   (EWT-safe by construction, same argument as `lest`/`supposing`);
