@@ -21,7 +21,7 @@
 //! (dev 90.35% / test 90.53% on UD EWT; ~80% on the Moby-Dick sample),
 //! so accuracy on word content is preserved.
 
-use crate::{Model, Tag};
+use crate::{Model, RULES, Tag, apply_rules};
 
 /// Split a whole grammar word into UD-style pieces.
 ///
@@ -159,13 +159,19 @@ fn collect_pieces(tokens: &[english::Token]) -> Vec<String> {
 ///
 /// Contraction pieces expand (see [`split_contraction`]), so the output
 /// may hold more items than the clause has tokens.
+///
+/// Gated correction rules (`correction::RULES`) apply before return;
+/// with no admitted rules the guard below keeps this at one branch.
 pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)> {
     let pieces = clause_pieces(clause);
-    model
-        .tag(&pieces)
+    let mut tagged = model.tag_margins(&pieces);
+    if !RULES.is_empty() {
+        apply_rules(&pieces, &mut tagged, RULES);
+    }
+    tagged
         .into_iter()
         .zip(pieces)
-        .map(|(tag, text)| (text, tag))
+        .map(|((tag, _), text)| (text, tag))
         .collect()
 }
 
@@ -175,11 +181,14 @@ pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)>
 /// boundary), matching training on UD sentences.
 pub fn tag_sentence(model: &Model, sentence: &english::Sentence) -> Vec<(String, Tag)> {
     let pieces = sentence_pieces(sentence);
-    model
-        .tag(&pieces)
+    let mut tagged = model.tag_margins(&pieces);
+    if !RULES.is_empty() {
+        apply_rules(&pieces, &mut tagged, RULES);
+    }
+    tagged
         .into_iter()
         .zip(pieces)
-        .map(|(tag, text)| (text, tag))
+        .map(|((tag, _), text)| (text, tag))
         .collect()
 }
 

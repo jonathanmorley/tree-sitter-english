@@ -91,6 +91,18 @@ untargeted boundaries. Next: counter-observe starved classes
 `--finetune` bounded top-ups; lexicon backoffs (no weight change)
 stay the fallback.
 
+Finetune variant (REJECTED 2026-10-05): committed weights +
+batch 03 only, 3 passes: dev 91.60% (−60), test 91.30% (−188);
+weights restored. Bounded drift still drifts — and test-heavy
+(−188 vs dev −60), the book-prior overfit signature. Distillation
+at this scale is now 0-for-2 (joint + finetune), the same shape
+as the correction layer's 0-for-2 with morphology rules. Next
+distillation attempt needs a different kind, not a different
+size: boundary-balanced batches, or per-class targeting with the
+starved classes counter-observed in the same batch. Otherwise the
+roadmap's no-weight-change steps (lexicon backoffs, beam-2
+re-decode of low-margin spans) go first.
+
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by

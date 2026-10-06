@@ -11,6 +11,7 @@
 //! degrade gracefully instead of failing the tree.
 
 mod correction;
+mod lexicon;
 mod tag;
 mod wire;
 

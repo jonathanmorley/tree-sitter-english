@@ -30,8 +30,16 @@
 //! Deliberately NOT here: tagdicts (lock the wrong tag early),
 //! stemming backoff (destroys the `-s` signal), more `w+t-1`
 //! conjunctions (hurt dev), Collins averaging, HMM EM.
+//!
+//! Lexicon backoffs (ADMITTED 2026-10-06, 3 of 14): the roadmap's
+//! no-weight-change step. Unlike the rejected per-form tagdict
+//! (consult-always, locks early), these consult wordlists only below
+//! the margin gate, as post-pass predicates through this same
+//! engine. Eleven candidates measured and removed (see `RULES`);
+//! survivors: `to-prep`, `have-verb`, `to-verb`.
 
 use crate::Tag;
+use crate::lexicon::known_verb_form;
 
 /// A correction rule: a name plus a predicate over the token stream.
 /// Predicates see surface pieces, current predicted tags, and margins;
@@ -72,9 +80,94 @@ pub struct Rule {
 /// per-form variant is a tagdict and stays rejected. Removed, like
 /// `s-verb` above; the engine + gate stay for rules that pass.
 ///
-/// All shipped rules, in application order. Empty until a rule passes
-/// admission.
-pub const RULES: &[Rule] = &[];
+/// All shipped rules, in application order. A rule ships only with
+/// EWT dev ≥ 0 and test ≥ 0 measured plus Moby/genre deltas recorded;
+/// rejects get removed (see below).
+///
+/// ADMITTED 2026-10-06 (τ=2.0 throughout): `have-verb` (EWT dev +2,
+/// test +1 — possessive-`have` fixes), `to-prep` (dev +3, test ±0 —
+/// prepositional-`to` before nominals), `to-verb` (dev +1, test ±0 —
+/// infinitive heads). Combined: dev +6, test +1; Moby/genre/chunk Δ
+/// 0 — the evals' remaining misses are confident (margin ≥ τ) or
+/// exact ties (margin 0, blocked by design), so the gate cannot
+/// reach them; recorded, not assumed.
+///
+/// REJECTED 2026-10-06 (measured, removed): `s-verb-lex` (dev ±0:
+/// `steps` fixed, `structures` broken — the lexicon did not save it
+/// from its predecessor's fate), `imperative-lex` (dev −1 on `Lifts`,
+/// the documented killer), `proper-name`, `directional-adv`,
+/// `a-predicative` (test −1 on `aground`, gold ADP — `run aground`
+/// is particle use), `ness/ous/tion/ment-noun/adj`, `ward-adv`,
+/// `more-adj` (zero fires anywhere: sound shapes, no support).
+/// Eleven of fourteen candidates removed; the gate plus EWT
+/// measurement did their job.
+pub const RULES: &[Rule] = &[
+    Rule {
+        name: "to-prep",
+        threshold: 2.0,
+        test: to_prep,
+    },
+    Rule {
+        name: "have-verb",
+        threshold: 2.0,
+        test: have_verb,
+    },
+    Rule {
+        name: "to-verb",
+        threshold: 2.0,
+        test: to_verb,
+    },
+];
+
+/// Prepositional `to` read as infinitive marker (`to Coenties
+/// Slip`). Infinitive `to` is followed by VERB/AUX/ADV/PART — never
+/// a nominal — so nominal-next plus a verb-stem guard (protects
+/// `to approve`, `to test`, `to mention`) makes the flip EWT-safe
+/// by shape. Guards, not just gates.
+fn to_prep(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Part || pieces[i].to_lowercase() != "to" {
+        return None;
+    }
+    let (next_tag, next_word) = match (tags.get(i + 1), pieces.get(i + 1)) {
+        (Some(t), Some(w)) => (*t, w),
+        _ => return None,
+    };
+    if !matches!(
+        next_tag,
+        Tag::Det | Tag::Noun | Tag::Propn | Tag::Pron | Tag::Num | Tag::Adj
+    ) {
+        return None;
+    }
+    (!known_verb_form(next_word)).then_some(Tag::Adp)
+}
+
+/// Possessive `have` read as auxiliary (`I have of driving`):
+/// AUX-`have` is followed by participle/`to`/negation, never a
+/// nominal — nominal-next flips to VERB.
+fn have_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Aux || pieces[i].to_lowercase() != "have" {
+        return None;
+    }
+    match tags.get(i + 1) {
+        Some(Tag::Det | Tag::Pron | Tag::Adj | Tag::Noun | Tag::Num | Tag::Adp) => Some(Tag::Verb),
+        _ => None,
+    }
+}
+
+/// Infinitive head read as noun (`to approve`): previous token is
+/// (predicted) infinitive `to`. The `to-prep` guard above keeps
+/// genuine `to` intact; this fixes the head.
+fn to_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Noun {
+        return None;
+    }
+    let prev = i.checked_sub(1)?;
+    let (prev_tag, prev_word) = (tags.get(prev)?, pieces.get(prev)?);
+    if *prev_tag != Tag::Part || prev_word.to_lowercase() != "to" {
+        return None;
+    }
+    known_verb_form(&pieces[i]).then_some(Tag::Verb)
+}
 
 /// Apply `rules` to decoded `(tag, margin)` pairs in place.
 /// Each token takes the first matching rule whose gate opens

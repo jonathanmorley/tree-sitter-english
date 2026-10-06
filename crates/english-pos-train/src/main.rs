@@ -112,20 +112,31 @@ fn accuracy_corrected(
     for (words, _, gold) in data {
         let mut tagged: Vec<(Tag, f32)> = model.tag_margins(words);
         let before: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
+        let margins: Vec<f32> = tagged.iter().map(|(_, m)| *m).collect();
         let pieces: Vec<String> = words.to_vec();
         apply_rules(&pieces, &mut tagged, RULES);
         for (i, ((t, m), b)) in tagged.iter().zip(&before).enumerate() {
             if t != b && shown < 15 {
                 // First-N-errors printer (TnT style): word, neighbor
-                // predicted tags, rewrite, gold, margin.
+                // predicted tags, rewrite, gold, margin — plus the
+                // firing rule, so multi-rule deltas attribute per rule.
                 let prev = if i > 0 {
                     before[i - 1].upos()
                 } else {
                     "<START>"
                 };
                 let next = before.get(i + 1).map(|x| x.upos()).unwrap_or("<END>");
+                let who = RULES
+                    .iter()
+                    .find(|r| {
+                        margins[i] > 0.0
+                            && margins[i] < r.threshold
+                            && (r.test)(&pieces, &before, i).is_some()
+                    })
+                    .map(|r| r.name)
+                    .unwrap_or("?");
                 eprintln!(
-                    "  fire: {} [{}/{}] {}->{} gold={} margin={m:.1}",
+                    "  fire: {} [{}/{}] {}->{} gold={} margin={m:.1} rule={who}",
                     words[i],
                     prev,
                     next,

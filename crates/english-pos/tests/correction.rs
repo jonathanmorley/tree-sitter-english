@@ -4,7 +4,7 @@
 //! behavior using a local toy rule (no production rule has passed
 //! admission yet — see the rejection note in `correction.rs`).
 
-use english_pos::{Rule, Tag, apply_rules};
+use english_pos::{RULES, Rule, Tag, apply_rules};
 
 /// Local stand-in for the rejected `imperative-0` shape (pos-0 NOUN
 /// + complement next → VERB): exercises engine paths without shipping
@@ -148,4 +148,85 @@ fn imperative_skips_non_verbs_and_verb_next() {
     let (pieces, mut tagged) = case(&["Glass", "breaks"], &[(Tag::Noun, 1.0), (Tag::Verb, 0.0)]);
     apply_rules(&pieces, &mut tagged, &[POS0]);
     assert_eq!(tagged[0].0, Tag::Noun);
+}
+
+/// Fetch a candidate rule by name (tests the production predicate,
+// not a toy). Rules here are under measurement — see `correction.rs`.
+fn rule(name: &str) -> Rule {
+    *RULES
+        .iter()
+        .find(|r| r.name == name)
+        .unwrap_or_else(|| panic!("candidate rule missing: {name}"))
+}
+
+fn run(pieces: &[&str], tags: &[(Tag, f32)], name: &str) -> Vec<Tag> {
+    let pieces: Vec<String> = pieces.iter().map(|s| s.to_string()).collect();
+    let mut tagged = tags.to_vec();
+    apply_rules(&pieces, &mut tagged, &[rule(name)]);
+    tagged.iter().map(|(t, _)| *t).collect()
+}
+
+#[test]
+fn to_verb_fixes_infinitive_head() {
+    assert_eq!(
+        run(
+            &["to", "approve"],
+            &[(Tag::Part, 0.0), (Tag::Noun, 1.0)],
+            "to-verb",
+        )[1],
+        Tag::Verb
+    );
+    // Genuine nominal after `to` stays (`to Detroit` shape).
+    assert_eq!(
+        run(
+            &["to", "Detroit"],
+            &[(Tag::Part, 0.0), (Tag::Noun, 1.0)],
+            "to-verb",
+        )[1],
+        Tag::Noun
+    );
+}
+
+#[test]
+fn function_words_disambiguate() {
+    // `to Coenties`: PART before nominal → ADP; `to approve`
+    // abstains via the verb-stem guard (leaves it for `to-verb`).
+    assert_eq!(
+        run(
+            &["to", "Coenties"],
+            &[(Tag::Part, 1.0), (Tag::Propn, 0.0)],
+            "to-prep",
+        )[0],
+        Tag::Adp
+    );
+    assert_eq!(
+        run(
+            &["to", "approve"],
+            &[(Tag::Part, 1.0), (Tag::Noun, 0.0)],
+            "to-prep",
+        )[0],
+        Tag::Part
+    );
+    // Possessive `have`: AUX before nominal → VERB; `have been`
+    // and `have to go` stay.
+    assert_eq!(
+        run(
+            &["have", "of"],
+            &[(Tag::Aux, 1.0), (Tag::Adp, 0.0)],
+            "have-verb",
+        )[0],
+        Tag::Verb
+    );
+    for next in [("been", Tag::Aux), ("to", Tag::Part)] {
+        assert_eq!(
+            run(
+                &["have", next.0],
+                &[(Tag::Aux, 1.0), (next.1, 0.0)],
+                "have-verb",
+            )[0],
+            Tag::Aux,
+            "have {} stays",
+            next.0
+        );
+    }
 }
