@@ -258,7 +258,7 @@ fn report(
 
 fn usage() -> ! {
     eprintln!(
-        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N]] [--correct] [--beam T MAX]"
+        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N] [--freeze-at K]] [--correct] [--beam T MAX]"
     );
     std::process::exit(2);
 }
@@ -270,6 +270,7 @@ fn main() {
     let mut eval_only: Option<String> = None;
     let mut finetune: Option<PathBuf> = None;
     let mut finetune_iters = 3usize;
+    let mut freeze_at: Option<usize> = None;
     let mut correct = false;
     let mut beam: Option<(f32, usize)> = None;
     let mut args = std::env::args().skip(1);
@@ -302,6 +303,14 @@ fn main() {
                     .unwrap_or_else(|| usage())
                     .parse()
                     .unwrap_or_else(|_| usage())
+            }
+            "--freeze-at" => {
+                freeze_at = Some(
+                    args.next()
+                        .unwrap_or_else(|| usage())
+                        .parse()
+                        .unwrap_or_else(|_| usage()),
+                )
             }
             "--correct" => correct = true,
             "--beam" => {
@@ -355,7 +364,21 @@ fn main() {
             ft_data.len(),
             ft_data.iter().map(|(w, _)| w.len()).sum::<usize>()
         );
-        model.finetune(&ft_data, finetune_iters);
+        match freeze_at {
+            Some(k) => {
+                let base_raw = parse_conllu(&split("train"));
+                let base: Vec<(Vec<String>, Vec<String>)> = base_raw
+                    .iter()
+                    .map(|(words, _, tags)| (words.clone(), tags.clone()))
+                    .collect();
+                println!(
+                    "frozen-prior finetune: base sentences: {}, freeze_at: {k}",
+                    base.len()
+                );
+                model.finetune_frozen(&base, &ft_data, finetune_iters, k);
+            }
+            None => model.finetune(&ft_data, finetune_iters),
+        }
         let json = model.to_json().expect("serialize weights");
         println!("weights: {} bytes", json.len());
         fs::write(&weights_path, &json).expect("write weights");

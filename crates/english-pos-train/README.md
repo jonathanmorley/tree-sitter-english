@@ -170,6 +170,45 @@ the floor hypothesis is dead with it — no batch shape is safe
 under joint training; only new mechanics (per-class weighting,
 frozen priors) remain on the roadmap.
 
+Frozen-prior finetune (MECHANICS REJECTED 2026-10-06, first new
+mechanics tried): `Model::finetune_frozen` (per-feature masking —
+features with base-corpus count ≥ K never update; novel/rare rows
+still learn) + trainer `--freeze-at K`, run on oracle batch 05
+(226 tok, 20 passes, base = committed EWT+01+02 corpus):
+
+| K | dev | test | moby | genre | hard |
+|---|---|---|---|---|---|
+| committed | 23096 | 23100 | 27 | 20 | 0.8644 |
+| 2 | 23096 | 23100 | — | — | — |
+| 5 | 23096 | 23100 | — | — | — |
+| 20 | 23096 | 23100 | 27¹ | 20 | 0.8644 |
+| 100 | 23092 | 23102 | 27 | 20 | — |
+| 500 | 23082 | 23105 | 27 | 20 | 0.8683 |
+| ∞ (plain joint) | 22990 | 23001 | 23 | 13 | 0.8883 |
+
+¹moby miss list entry-identical to committed, not just count-equal.
+
+Zero drift at K≤20 (bit-identical EWT) — the mechanism works —
+but zero gain everywhere it matters: every frozen K leaves all
+book evals untouched, while plain joint moves them ±. K=500 buys
+hard +0.004 (+6 tok) for dev −14: pure cost, rejected by the
+gates like everything else. Flip-forensics cross-tab (plain-05
+fixes × EWT word counts) explains why: ~half the gains ride
+ultra-shared rows (`that`×3, `have`, `of`, `this`, `the`, `does`,
+`take`, `look`, `after`, `next` — EWT counts 100–9,075, frozen
+at every K), and the rare-word half (`watery`, `pistol`,
+`landsmen`, `approve`, `Exports`, `improves`, `predicts`,
+`markets`, `demands` — counts 0–10) never materializes under
+freezing either, because perceptron updates fire on mispredicts:
+frozen shared rows change mid-training predictions, so rare rows
+learn different weights than in plain joint. Gains and damage are
+*dynamically* entangled, not just statically shared — no masking
+threshold can separate them. Per-class weighting is the only
+mechanics left untried, and this result predicts its shape: it
+must apply EWT counter-pressure on the same shared rows, not
+avoid them. Code kept (`finetune_frozen`, `--freeze-at`) as
+measured infrastructure; weights restored (`56082361`).
+
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by

@@ -669,6 +669,87 @@ impl Model {
         self.weights.retain(|_, arr| arr.iter().any(|w| *w != 0.0));
     }
 
+    /// Fine-tune with frozen shared priors: like [`Model::finetune`],
+    /// but features seen `freeze_at` or more times in `base` (the
+    /// corpus the model originally trained on) never update — only
+    /// novel or rare in-domain features move.
+    ///
+    /// Mechanism for the distillation drift (0-for-5): joint/finetune
+    /// training lets a small oracle batch pull high-count shared
+    /// features (`that` word-identity, tag bigrams, `be` forms),
+    /// fixing book-domain misses while dragging EWT boundaries the
+    /// other way. Masking per feature (not per token) keeps the
+    /// in-domain lexical learning — a mispredicted `maddens` still
+    /// trains its novel word-identity row — while the shared rows
+    /// that EWT converged stay exactly put. `freeze_at` sweeps the
+    /// boundary in the trainer (`--freeze-at`); `freeze_at = 0`
+    /// freezes everything (no-op), `usize::MAX` is plain finetune.
+    pub fn finetune_frozen(
+        &mut self,
+        base: &[(Vec<String>, Vec<String>)],
+        data: &[(Vec<String>, Vec<String>)],
+        iters: usize,
+        freeze_at: usize,
+    ) {
+        let mut counts: U64Map<usize> = U64Map::default();
+        let mut feats = Vec::with_capacity(20);
+        for (raw, gold) in base {
+            let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
+            let mut prev1 = START1;
+            let mut prev2 = START2;
+            for (i, g) in gold.iter().enumerate() {
+                features(raw, &lower, i, prev1, prev2, &mut feats);
+                for f in &feats {
+                    *counts.entry(*f).or_insert(0) += 1;
+                }
+                prev2 = prev1;
+                prev1 = g.as_str();
+            }
+        }
+
+        for _ in 0..iters {
+            for (raw, gold) in data {
+                let lower: Vec<String> = raw.iter().map(|w| w.to_lowercase()).collect();
+                let mut prev1 = START1;
+                let mut prev2 = START2;
+                for (i, g) in gold.iter().enumerate() {
+                    features(raw, &lower, i, prev1, prev2, &mut feats);
+                    let mut acc = [0.0f32; 17];
+                    for f in &feats {
+                        if let Some(arr) = self.weights.get(f) {
+                            for (a, w) in acc.iter_mut().zip(arr.iter()) {
+                                *a += *w;
+                            }
+                        }
+                    }
+                    let mut best = 0;
+                    for t in 1..17 {
+                        if acc[t] > acc[best] {
+                            best = t;
+                        }
+                    }
+                    let gold_idx = tag_index(g).expect("training tag must be a UPOS code");
+                    if best != gold_idx {
+                        for f in &feats {
+                            // Frozen shared rows sit out; novel/rare
+                            // rows (missing counts as 0) still learn.
+                            if counts.get(f).copied().unwrap_or(0) >= freeze_at {
+                                continue;
+                            }
+                            let arr = self.weights.entry(*f).or_insert([0.0; 17]);
+                            arr[gold_idx] += 1.0;
+                            arr[best] -= 1.0;
+                        }
+                    }
+                    prev2 = prev1;
+                    prev1 = g.as_str();
+                }
+            }
+        }
+
+        self.weights.retain(|_, arr| arr.iter().any(|w| *w != 0.0));
+    }
+
     /// Train on gold sentences of `(surface word, tag)` with the
     /// (unaveraged) perceptron for `iters` passes. `min_count` drops rare
     /// features (below threshold) to bound model size.
