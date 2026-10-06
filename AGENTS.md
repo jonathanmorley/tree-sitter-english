@@ -367,7 +367,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   bar 0.86, no model change in this commit. Cross-genre gold table
   (GUM test splits) lives in train README alongside.
 
-- NLTK Punkt trainer port, harvest-only offline (NOT STARTED):
+- NLTK Punkt trainer port, harvest-only offline (DONE 2026-10-06
+  by direct use, not a port): NLTK 3.10.3 was installed in this
+  env, so `scripts/punkt-harvest.py` calls its reference trainer
+  (`PunktTrainer`, Kiss & Strunk 2006) on Moby-Dick and prints
+  Dunning-LL-ranked candidates with scores, our-list membership
+  (read from `scanner.rs`, single source of truth), counts, and
+  contexts — zero reimplementation risk, no regexes/wordlists
+  copied (Apache-2.0 respected by non-copy). Measured: 3,361
+  period-final types; ours rank high (`mr` 46.4, `st` 20.4,
+  `dr`/`mrs` ~4–9). Top NEW items dispositioned, zero additions:
+  roman numerals (`ii` 13.9, `iii`, `iv`, `vi`, `xvi`, `v`) =
+  chapter-heading artifacts (out of scope); dotted initialisms
+  (`a.d` 13.0, `u.s`, `p.m`, `n.e`, `a.s`, `s.w.f`) = already
+  handled by the `dotted` token (Punkt confirms, no list action);
+  single letters = initial rule covers; quote/markup-glued
+  (`"mr`, `it_`, `—_n`) = tokenizer artifacts; `lbs` 7× = real
+  unit but needs no listing (lowercase-`of` next keeps it inside
+  via rule ③; `lbs.` before capitals correctly ends); `etc` 3× =
+  standing rejection re-confirmed; `vat` 0.34 = common-noun trap,
+  textbook over-listing harm — rejected with prejudice. Two
+  nuances for the standing rule: `rev`/`mt` score BELOW threshold
+  (0.68) yet stay curated (rare-but-real titles — LL alone would
+  drop them, curation over automation); and Punkt never lists
+  `no` either (common-word prior crushes it), independently
+  confirming the `No.`-removal. Scope kept: offline `scripts/`
+  only, no grammar/runtime change in this item.
   source `nltk/tokenize/punkt.py` (1880 lines; Kiss & Strunk 2006).
   Trainer passes: word-split keeping periods glued → type counts →
   Dunning log-likelihood reclassify (hardcoded `p2=0.99`, scalings
@@ -384,16 +409,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   unsupervised discovery ranking, (b) per-type ortho bitmasks
   (ours fires rule ③ on any lowercase-next), (c) sent-starter list
   for abbr-dot-that-ends-sentence, (d) initial/ordinal collocations.
-  Scope: offline `scripts/` binary only (same pattern as
+  Scope (as planned; SUPERSEDED by direct use above — kept as
+  reference): offline `scripts/` binary only (same pattern as
   `crates/english-pos-train`), outputs sorted candidate lists for
   human curation into the abbreviation-harvest item — never runtime
   tables (breaks 37ms/58MB budget). Faithful port ~600-900 lines;
   harvest-only subset (tokenize+counts+LL ranking) ~250 lines.
+  (Direct NLTK use made the port unnecessary; the notes below
+  remain the reference if NLTK ever becomes unavailable.)
   Pitfalls: `_word_tokenize_fmt` keeps periods glued; numeric/initial
   regexes use `[^\W\d]` (Unicode letters count); `typ[:-1]` slicing
   is verbatim-don't-fix; overlap-dedup load-bearing; train on
   literary prose, not WSJ. License: NLTK Apache-2.0 — reimplement,
-  don't copy regexes/wordlists verbatim. Acceptance: candidate
+  don't copy regexes/wordlists verbatim. Acceptance (MET by direct
+  use 2026-10-06 — see the DONE note atop this item): candidate
   lists with LL scores on Moby-Dick, top items dispositioned per
   harvest criteria, zero grammar/runtime changes in this item.
 
