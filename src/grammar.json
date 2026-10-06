@@ -215,6 +215,22 @@
                   "name": "_sentence_end"
                 },
                 {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "REPEAT1",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "em_dash"
+                      }
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_sentence_end"
+                    }
+                  ]
+                },
+                {
                   "type": "ALIAS",
                   "content": {
                     "type": "SYMBOL",

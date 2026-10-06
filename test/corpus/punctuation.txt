@@ -711,3 +711,84 @@ The ship - he was a prisoner there.
         (word)
         (word)
         (word)))))
+
+==================
+Interrupted question hands off across a blank line
+==================
+
+“Then your manuscript—?”
+
+“Is in old ink.”
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (quote)
+        (word)
+        (word)
+        (word))
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (quote)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Doubled dash before a quoted question
+==================
+
+“Your name is——?”
+
+“My name is Sawyer.”
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (quote)
+        (word)
+        (word)
+        (word))
+      (em_dash)
+      (em_dash)))
+  (paragraph_break)
+  (paragraph
+    (sentence
+      (clause
+        (quote)
+        (word)
+        (word)
+        (word)
+        (word)))))
+
+==================
+Interrupted exclamation ends the sentence
+==================
+
+“Oh—!” He quitted the chair.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (quote)
+        (word))
+      (em_dash))
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)))))

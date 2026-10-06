@@ -178,11 +178,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   artifact). 3 TDD corpus tests; examples snapshots identical;
   Moby unchanged; full gates green. Residual `-`: TOC dot-dash,
   URLs, dialogue fragments (all bucketed classes).
-  (d) dialogue handoff (`—”` 57×/8b, `?”␤␤“` 24×,
-  Dumas-heavy): quote-boundary turn-taking across blank lines;
-  investigation only — likely quote-architecture, price it
-  before building. Recommended build order: a, b, c, d
-  (hits × safety).
+  (d) dialogue handoff (DONE 2026-10-06, −352 prose, zero
+  rises): interrupted quoted questions/exclamations (`children—?”`,
+  `oh—!”`, doubled `name——?”` — turn-taking across blank lines,
+  Dumas/James/Doyle). New sentence-final alternative
+  `seq(repeat1(em_dash), _sentence_end)`: needs no scanner
+  arbitration (mark vs clause-word disjoint in one lookahead, so
+  the join reading never collides — unlike the boundary
+  handoffs). Cascade bonus beyond the ~80 targeted hits (43
+  books better). Moby 5→4 (`:` stage directions + `—` cleared;
+  one heading-fallout `It` exposed, accepted class). 3 TDD
+  corpus tests (incl. blank-line two-paragraph shape);
+  zero conflicts; full gates + snapshots green.
 
 - Em-dash interruptions (~247× on Moby-Dick) and parentheticals
   (~256×): the remaining error budget after hyphens. TDD with corpus

@@ -101,15 +101,19 @@ export default grammar({
         // em-dash run with only a boundary after it (`Faith, sir,
         // I've——` + blank), optionally introduced by a colon
         // (`something like this:—` + blank, where the elaboration never
-        // comes), or at an abandoned elaboration: a bare colon with
-        // only a boundary after it (`He said:` + blank). The ends take
-        // disjoint first sets (marks, dash run, colon), and the colon
-        // prefix is shared with elaborations only up to the dash, where
-        // the scanner has already arbitrated (boundary → handoff token,
-        // text → internal join dash) — so no conflict. Times (`10:30`)
-        // refuse in the scanner (digits ahead) and behave as before.
+        // comes), at an abandoned elaboration: a bare colon with
+        // only a boundary after it (`He said:` + blank), or at an
+        // interrupted question/exclamation: dashes handing off to a
+        // mark with no clause between (`children—?”`, `oh—!”`,
+        // doubled `name——?”` — dialogue turn-taking, Dumas/James
+        // 80×). The dash-led end needs no scanner arbitration (a
+        // mark and a clause word are disjoint in one lookahead, so
+        // the join reading never collides), unlike the boundary
+        // cases above. Times (`10:30`) refuse in the scanner
+        // (digits ahead) and behave as before.
         choice(
           $._sentence_end,
+          seq(repeat1($.em_dash), $._sentence_end),
           alias($._interruption, $.em_dash),
           seq($.colon, alias($._interruption, $.em_dash)),
           alias($._colon_handoff, $.colon)
