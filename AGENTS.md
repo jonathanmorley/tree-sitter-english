@@ -267,6 +267,29 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (dev-time use only — oracle parameters never enter the repo;
   only human-curated corpus tests or constrained fixes land).
 
+- Cross-book sweep (DONE 2026-10-06, breadth triage only):
+  Austen P&P (#1342), Doyle Adventures (#1661), Stevenson TI
+  (#120) to /tmp (public domain, out-of-repo like Moby), cut at
+  body start AND at `*** END OF` (front-matter `™`/`•`/dot-leader
+  noise otherwise counts as prose — the bucket only catches
+  `_`/`*`/`[]^{}`), audited: Austen 4 prose / 1289 transcription
+  (the `_` italics working as designed), Doyle 12 / 142,
+  Stevenson 48 / 17 on 112k/95k/62k words. Triage: Austen = 3×
+  known complete-parenthetical residual (`(unasked too!)`) + 1×
+  known `etc.` trade-off; Doyle = story-heading fallout (`I.` /
+  `II.` / ALL-CAPS titles, ~9) + `—!` residual + `½` symbol;
+  Stevenson = chapter-heading fallout (bare numerals, titles,
+  narrative-continued subheads, map inscription, coordinates,
+  prime marks) — the already-bucketed heading class, which the
+  tool undercounts (recovery lands on following body words, so
+  text-matching can't bucket it; left as is, no tool hack).
+  Abbreviation-harvest pattern (`\b[A-Z][a-z]{1,4}\. [A-Z]`) over
+  all three books: zero unknown candidates (all hits are
+  sentence-final words or interjections, correctly split —
+  including Doyle `No.`×7 + `Yes.`×8, generalizing the `No.` fix).
+  No new actionable prose class → no code change; these numbers
+  are the standing cross-book record, not new gates.
+
 - PDTB subordinator audit (DONE 2026-09-27): candidate PDTB
   subordinators checked against Moby evidence + EWT tags. ADDED
   `lest` (7x Moby, pure subordinator, EWT-absent) and `supposing`
