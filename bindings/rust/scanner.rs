@@ -254,6 +254,21 @@ unsafe fn end_ahead(lexer: *mut TSLexer) -> bool {
     }
 }
 
+// `…` (U+2026): consume the single char, then apply the terminal
+// test. Refusals rewind fully (like dot runs), so the internal
+// `ellipsis` rule retries mid-sentence uses.
+unsafe fn scan_ellipsis_char(lexer: *mut TSLexer, _valid_symbols: *const bool) -> bool {
+    unsafe {
+        advance(lexer, false);
+        mark_end(lexer);
+        if !ellipsis_end_ahead(lexer) {
+            return false;
+        }
+        (*lexer).result_symbol = TokenType::EllipsisEnd as TSSymbol;
+        true
+    }
+}
+
 // `...`: count the run (first dot already consumed). Runs of 4+ always
 // terminate, covering the whole run; a run of exactly 3 terminates on
 // boundary-ahead and otherwise yields to the internal mid-sentence
@@ -570,6 +585,15 @@ pub unsafe extern "C" fn tree_sitter_english_external_scanner_scan(
             && lookahead(lexer) == 0x2E
         {
             return scan_dot(scanner, lexer, valid_symbols);
+        }
+
+        // Single-char ellipsis U+2026: terminal `…` emits EllipsisEnd
+        // on boundary-ahead, else refuses (full rewind) so the
+        // internal `ellipsis` rule takes it mid-sentence. Mirrors
+        // the count == 3 arm of scan_dot_run; the 4+ wholesale rule
+        // has no single-char analogue.
+        if valid(valid_symbols, TokenType::EllipsisEnd) && lookahead(lexer) == 0x2026 {
+            return scan_ellipsis_char(lexer, valid_symbols);
         }
 
         // Abandoned clause hands off at a dash run: like the dot check

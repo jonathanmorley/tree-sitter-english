@@ -61,15 +61,13 @@ pub fn known_verb_form(raw: &str) -> bool {
             return true;
         }
     }
-    if let Some(stripped) = w.strip_suffix("es") {
-        if contains(&VERB_LEMMAS, stripped) {
-            return true;
-        }
+    if let Some(stripped) = w.strip_suffix("es")
+        && contains(&VERB_LEMMAS, stripped)
+    {
+        return true;
     }
     if let Some(stripped) = w.strip_suffix('s') {
-        if contains(&VERB_LEMMAS, stripped) {
-            return true;
-        }
+        return contains(&VERB_LEMMAS, stripped);
     }
     false
 }

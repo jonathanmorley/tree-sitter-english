@@ -13,6 +13,7 @@
         "LICENSE"
         "src/*" # generated parser
         "crates/english-pos/weights/*" # generated weights (compact JSON)
+        "crates/english-pos/lexicon/*" # generated wordlists, byte-stable
         "grammar.js" # upstream style, no JS formatter configured
         "binding.gyp"
         "test/corpus/*" # fixtures must stay byte-stable
@@ -29,6 +30,7 @@
         "Makefile" # generated
         "CMakeLists.txt" # generated
         "scripts/harmonize-ud.mjs" # node transform, no JS formatter configured
+        "scripts/*.py" # dev-time oracle scripts, no Python formatter configured
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

@@ -290,6 +290,27 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   No new actionable prose class → no code change; these numbers
   are the standing cross-book record, not new gates.
 
+- Pilot-slice grammar fixes (DONE 2026-10-06): the 10-book pilot
+  audit surfaced two small erroring classes, both fixed with TDD
+  corpus tests + minimal grammar/scanner edits, regenerated with
+  the pinned CLI (0.27.0, zero conflicts, no `array.h` churn):
+  (a) U+2026 `…` (Wells 4×) — internal `ellipsis` widened to
+  `/\.{3}|…/` plus a single-char external `ellipsis_end` arm
+  mirroring the count==3 terminal/refuse dance (no 4+ wholesale
+  analogue); behaves exactly like `...` (verified: `… and`
+  splits to conjunction like `... and`); (b) repeated `!`/`?`
+  (`!!`, `!!!`, `?!` — Twain/Dickens) — `_sentence_end` and
+  `complete_parenthetical` end marks widened to `[?!]+` (one end
+  mark; the `?!` case errored before). Recounts: wells 13→9,
+  twain 15→12, dickens 26→24, Moby unaffected (zero `…`/`!!`
+  there). Leftovers all dispositioned, no new classes: em-dash
+  `—!`/`—?”` + parenthetical `!)` (known em-dash/paren
+  residuals), quote-boundary singles, dot-leader transcription,
+  `JO.` signature (out of scope), `Mr. Rochester—` unreproduced
+  minimally (recovery attribution, no action), Shelley fully
+  attributed (letter heads, `17—` redaction fallout, chapter-head
+  fallout, known paren-interior `!`s).
+
 - PDTB subordinator audit (DONE 2026-09-27): candidate PDTB
   subordinators checked against Moby evidence + EWT tags. ADDED
   `lest` (7x Moby, pure subordinator, EWT-absent) and `supposing`

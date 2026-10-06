@@ -135,19 +135,20 @@ export default grammar({
     // and terminal `...` in one slot is ambiguous, so the scanner picks
     // by what follows (boundary ahead or not).
     _sentence_end: $ => seq(
-      choice($._end_dot, /[?!]/, alias($.ellipsis_end, $.ellipsis)),
+      choice($._end_dot, /[?!]+/, alias($.ellipsis_end, $.ellipsis)),
       repeat(choice(/["'\u2018\u2019\u201D\u201C]/, /[)\]}]/, $.em_dash))
     ),
 
     clause: $ => prec.left(repeat1(
       choice($._wordish, $.period, $._comma, $.quote, $.parenthetical, $.ellipsis, $.currency)
     )),
-    // Three dots, mid-sentence only. Terminal `...` lexes as the
-    // external ellipsis_end instead (emitted on boundary-ahead, or for
-    // 4+ runs wholesale); keeping the trailing mark out of this rule
-    // avoids an absorb-vs-outer-end conflict on `....`. Single dots
-    // stay with the period/end-dot logic.
-    ellipsis: $ => /\.{3}/,
+    // Three dots (or U+2026 …), mid-sentence only. Terminal `...`
+    // lexes as the external ellipsis_end instead (emitted on
+    // boundary-ahead, or for 4+ runs wholesale); keeping the
+    // trailing mark out of this rule avoids an absorb-vs-outer-end
+    // conflict on `....`. Single dots stay with the period/end-dot
+    // logic.
+    ellipsis: $ => /\.{3}|…/,
 
     // A parenthetical aside: a clause in parens, with `;`- and
     // em-dash-joined follow-ups (`(it will do; it is easy)`,
@@ -179,7 +180,7 @@ export default grammar({
     complete_parenthetical: $ => seq(
       '(',
       choice($.clause, $.subordinate_clause),
-      choice($._end_dot, /[?!]/),
+      choice($._end_dot, /[?!]+/),
       ')'
     ),
 

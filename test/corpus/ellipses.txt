@@ -72,3 +72,47 @@ He was... tired?
         (word)
         (ellipsis)
         (word)))))
+
+==================
+Unicode ellipsis mid-sentence
+==================
+
+He lit his last match … and it went out.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)
+        (word)
+        (word)
+        (word)
+        (ellipsis))
+      (conjunction)
+      (clause
+        (word)
+        (word)
+        (word)))))
+
+==================
+Unicode ellipsis ends the sentence
+==================
+
+He left… She stayed.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word))
+      (ellipsis))
+    (sentence
+      (clause
+        (word)
+        (word)))))

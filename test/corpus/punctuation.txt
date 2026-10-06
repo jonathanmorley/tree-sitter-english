@@ -586,3 +586,40 @@ He tossed the pipe.
         (word)
         (word)
         (word)))))
+
+==================
+Repeated bangs end the sentence once
+==================
+
+They cheered!! They left.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)))))
+
+==================
+Mixed question-bang ends the sentence once
+==================
+
+Really?! She asked.
+
+---
+
+(source_file
+  (paragraph
+    (sentence
+      (clause
+        (word)))
+    (sentence
+      (clause
+        (word)
+        (word)))))
