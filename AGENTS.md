@@ -810,10 +810,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   re-decode, but still no confidence (`tag_margins`) flowing into
   the chunker; tag→chunk cascade quantified on genre (chunker adds
   zero sentence errors; token 0.873 vs tag 0.884);
-  (2) correction layer 10-for-21 — engine plus shipped rules
+  (2) correction layer 11-for-22 — engine plus shipped rules
   (`have-verb`, `to-prep`, `to-verb`, `that-det`, `that-rel`,
   `det-noun`, `that-sconj`, `that-ccomp`, `subconj-adp`,
-  `apos-part`) and the beam decoder; the
+  `apos-part`, `to-part`) and the beam decoder; the
   load-bearing unproven piece left is distillation scale-up
   (0-for-5: joint 03, finetune 03, joint 04, joint 05, micro-06
   all rejected — 05 is the mirror case, evals up / EWT down, and
@@ -894,6 +894,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (cross-clausal `that wild Logan`, copula `'s` with
   nominal-misread neighbors — documented, EWT shows zero of
   either class). `flies` holds, suite green, probes deleted.
+
+- `to-part` (ADMITTED 2026-10-06, 11-for-22): pred-ADP `to`
+  before VERB → PART (EWT 2893:48, the mirror of `to-prep`).
+  EWT dev +5 / test +1 net; 20 Moby fires (~18 infinitive
+  markers, 2 gerund-complement residuals documented —
+  `preliminary to scalping`: ADJ-prev `to` + participle reads
+  prepositional but UPOS has no VBG/VB split, so no cheap guard;
+  accepted trigger). Remaining gate-zone mass after this is
+  singletons plus the ADJ-lexicon attributive shape (still thin)
+  — mine-the-gap stands at 4 admitted of 7 measured shapes.
 
 - External benchmark shootout (DONE 2026-10-06, same hardware,
   same data): NLTK averaged perceptron (WSJ-trained) and

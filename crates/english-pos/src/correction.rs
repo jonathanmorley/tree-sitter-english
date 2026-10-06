@@ -40,7 +40,9 @@
 //! admitted later the same day from margin probes and the
 //! external-rules survey: `that-det` (eval-margin probe),
 //! `that-rel` + `det-noun` (Brill/fnTBL/RDR/CG convergence),
-//! `that-sconj` (RDR tree-mining) — 7-for-18 total.
+//! `that-sconj` (RDR tree-mining), `that-ccomp` + `subconj-adp` +
+//! `apos-part` (gate-zone autopsy), `to-part` (gate-zone autopsy) —
+//! 11-for-22 total.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
@@ -165,6 +167,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: apos_part,
     },
+    Rule {
+        name: "to-part",
+        threshold: 2.0,
+        test: to_part,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -259,6 +266,26 @@ fn apos_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
         return None;
     }
     Some(Tag::Part)
+}
+
+/// Infinitive `to` read as preposition (`want to go`):
+/// pred-ADP `to` before a VERB is PART 2893:48 in EWT (98.4%) —
+/// a preposition never takes a bare-verb complement. The mirror
+/// of `to-prep` (which handles the nominal-next direction); the
+/// SCONJ/ADP residue is EWT annotation noise.
+///
+/// ADMITTED 2026-10-06 (τ=2.0): EWT dev +5 / test +1 net, all
+/// sampled fires gold-correct; 20 Moby fires, ~18 infinitive
+/// markers with 2 suspect gerund-complement residuals
+/// (`preliminary to scalping`, `used to impenitent` — ADJ-prev
+/// `to` + participle reads prepositional, but UPOS doesn't split
+/// VBG from VB so no cheap guard exists; documented trigger).
+/// `flies` holds.
+fn to_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Adp || pieces[i].to_lowercase() != "to" {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Verb)).then_some(Tag::Part)
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties

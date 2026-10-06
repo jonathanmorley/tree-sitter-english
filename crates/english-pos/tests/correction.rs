@@ -427,3 +427,25 @@ fn apos_part_fixes_possessive_s() {
         Tag::Aux
     );
 }
+
+#[test]
+fn to_part_fixes_infinitive_marker() {
+    // `want to go`: ADP before a verb → PART.
+    assert_eq!(
+        run(
+            &["want", "to", "go"],
+            &[(Tag::Verb, 9.0), (Tag::Adp, 1.0), (Tag::Verb, 9.0)],
+            "to-part",
+        )[1],
+        Tag::Part
+    );
+    // Genuine preposition (`go to school`: NOUN next) abstains.
+    assert_eq!(
+        run(
+            &["go", "to", "school"],
+            &[(Tag::Verb, 9.0), (Tag::Adp, 1.0), (Tag::Noun, 9.0)],
+            "to-part",
+        )[1],
+        Tag::Adp
+    );
+}
