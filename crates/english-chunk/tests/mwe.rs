@@ -109,3 +109,34 @@ fn no_partial_or_comma_span() {
         ]
     );
 }
+
+#[test]
+fn particle_ambiguous_merge_only_all_adp() {
+    // `out of` / `up to` / `because of` merge to one Prep only when
+    // every piece tags ADP (EWT: 83/84, 24/34, 39/42). Particle
+    // readings (ADV first) and clausal seconds (SCONJ) chunk through
+    // the cascade instead — the v2 tag gate.
+    for words in [
+        vec![("out", Tag::Adp), ("of", Tag::Adp)],
+        vec![("up", Tag::Adp), ("to", Tag::Adp)],
+        vec![("because", Tag::Adp), ("of", Tag::Adp)],
+    ] {
+        let input = pieces(&words);
+        let chunks = chunk_tagged(&input);
+        assert_eq!(kinds_of(&input), vec![ChunkKind::Prep], "{words:?}");
+        assert_eq!(chunks[0].span(), 0..words.len());
+    }
+    // Particle `up` (ADV) stays split: Adverb + Prep.
+    let input = pieces(&[("up", Tag::Adv), ("to", Tag::Adp), ("midnight", Tag::Propn)]);
+    assert_eq!(kinds_of(&input), vec![ChunkKind::Adverb, ChunkKind::Prep]);
+    // Clausal `of` (SCONJ) stays split: Subord + Prep + Noun.
+    let input = pieces(&[
+        ("because", Tag::Adp),
+        ("of", Tag::Sconj),
+        ("rain", Tag::Noun),
+    ]);
+    assert_eq!(
+        kinds_of(&input),
+        vec![ChunkKind::Prep, ChunkKind::Subord, ChunkKind::Noun]
+    );
+}

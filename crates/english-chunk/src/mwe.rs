@@ -20,111 +20,175 @@
 //! `such as` 8, `a lot of` 3, `in front of` 2, `in spite of` 1,
 //! `as usual` 2 — all four sweep books carry most of them).
 //! Deliberately excluded: `in order to` (infinitive semantics —
-//! merging would hide the nominal `order`), `because of` / `out
-//! of` / `up to` (particle ambiguity: `looked out of` reads the
-//! first word as a particle, and tag-blind merging would conflate
-//! it), `of course` (discourse semantics unclear). Kinds follow
+//! merging would hide the nominal `order`; EWT is unanimous
+//! ADP+NOUN+PART 15:0), `of course` (EWT unanimous ADP+NOUN 20:0 —
+//! it chunks as a Prep through the cascade already). Kinds follow
 //! the head reading: subordinators → Subord, coordinative
 //! `as well as` → Conj, prepositional phrases → Prep, `a lot of`
 //! → Noun (pronominal quantifier), temporal/discourse adverbials
 //! (`at all`, `no longer`, `in fact`, `as usual`) → Adverb.
+//! `out of` / `up to` / `because of` → Prep, but ONLY when every
+//! piece tags ADP (EWT: 83/84, 24/34, 39/42 — the remainders are
+//! particle ADV-first or clausal SCONJ-second readings that must
+//! stay split). This is the tag-aware v2: the trie consults the
+//! tag stream, so `stayed up to midnight` (ADV+ADP) never merges.
 //! Known imperfection: comparative `as well as I do` chunks Conj
 //! (the 95% coordinative reading wins the kind).
+
+use english_pos::Tag;
 
 use crate::ChunkKind;
 
 struct TrieNode {
     children: &'static [(&'static str, TrieNode)],
     kind: Option<ChunkKind>,
+    /// Required tags for the whole phrase (empty = tag-blind).
+    /// Checked against the input tag stream on match.
+    want: &'static [Tag],
 }
+
+const NONE: &[Tag] = &[];
+const ALL_ADP: &[Tag] = &[Tag::Adp, Tag::Adp];
 
 const AS_IF: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Subord),
 };
 const AS_WELL_AS: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Conj),
 };
 const WELL: TrieNode = TrieNode {
     children: &[("as", AS_WELL_AS)],
     kind: None,
+    want: NONE,
 };
 const AS: TrieNode = TrieNode {
     children: &[("well", WELL), ("if", AS_IF), ("usual", AS_USUAL)],
     kind: None,
+    want: NONE,
 };
 const AS_USUAL: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Adverb),
 };
 const SO_THAT: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Subord),
 };
 const SO: TrieNode = TrieNode {
     children: &[("that", SO_THAT)],
     kind: None,
+    want: NONE,
 };
 const SUCH_AS: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Subord),
 };
 const SUCH: TrieNode = TrieNode {
     children: &[("as", SUCH_AS)],
     kind: None,
+    want: NONE,
 };
 const IN_SPITE_OF: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Prep),
 };
 const SPITE: TrieNode = TrieNode {
     children: &[("of", IN_SPITE_OF)],
     kind: None,
+    want: NONE,
 };
 const IN_FRONT_OF: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Prep),
 };
 const FRONT: TrieNode = TrieNode {
     children: &[("of", IN_FRONT_OF)],
     kind: None,
+    want: NONE,
 };
 const IN_FACT: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Adverb),
 };
 const IN: TrieNode = TrieNode {
     children: &[("spite", SPITE), ("front", FRONT), ("fact", IN_FACT)],
     kind: None,
+    want: NONE,
 };
 const A_LOT_OF: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Noun),
 };
 const LOT: TrieNode = TrieNode {
     children: &[("of", A_LOT_OF)],
     kind: None,
+    want: NONE,
 };
 const A: TrieNode = TrieNode {
     children: &[("lot", LOT)],
     kind: None,
+    want: NONE,
 };
 const AT_ALL: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Adverb),
 };
 const AT: TrieNode = TrieNode {
     children: &[("all", AT_ALL)],
     kind: None,
+    want: NONE,
 };
 const NO_LONGER: TrieNode = TrieNode {
     children: &[],
+    want: NONE,
     kind: Some(ChunkKind::Adverb),
 };
 const NO: TrieNode = TrieNode {
     children: &[("longer", NO_LONGER)],
     kind: None,
+    want: NONE,
+};
+const OUT_OF: TrieNode = TrieNode {
+    children: &[],
+    want: ALL_ADP,
+    kind: Some(ChunkKind::Prep),
+};
+const OUT: TrieNode = TrieNode {
+    children: &[("of", OUT_OF)],
+    kind: None,
+    want: NONE,
+};
+const UP_TO: TrieNode = TrieNode {
+    children: &[],
+    want: ALL_ADP,
+    kind: Some(ChunkKind::Prep),
+};
+const UP: TrieNode = TrieNode {
+    children: &[("to", UP_TO)],
+    kind: None,
+    want: NONE,
+};
+const BECAUSE_OF: TrieNode = TrieNode {
+    children: &[],
+    want: ALL_ADP,
+    kind: Some(ChunkKind::Prep),
+};
+const BECAUSE: TrieNode = TrieNode {
+    children: &[("of", BECAUSE_OF)],
+    kind: None,
+    want: NONE,
 };
 
 const ROOT: TrieNode = TrieNode {
@@ -136,8 +200,12 @@ const ROOT: TrieNode = TrieNode {
         ("a", A),
         ("at", AT),
         ("no", NO),
+        ("out", OUT),
+        ("up", UP),
+        ("because", BECAUSE),
     ],
     kind: None,
+    want: NONE,
 };
 
 /// Longest listed phrase starting at `start`: `(length, kind)`.
@@ -161,7 +229,18 @@ pub(crate) fn match_len(
                 node = next;
                 i += 1;
                 if let Some(kind) = node.kind {
-                    best = Some((i - start, kind));
+                    // Tag-gated phrases (`out of` / `up to` /
+                    // `because of`): the whole span must carry the
+                    // listed tags, else the particle/clausal reading
+                    // holds and the cascade chunks as before.
+                    let gated = !node.want.is_empty()
+                        && !input[start..i]
+                            .iter()
+                            .zip(node.want.iter())
+                            .all(|((_, t), w)| t == w);
+                    if !gated {
+                        best = Some((i - start, kind));
+                    }
                 }
             }
             None => break,

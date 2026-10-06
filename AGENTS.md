@@ -597,7 +597,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   `because/out/up-to` (particle ambiguity), `of course`
   (discourse). TDD caught a 4-deep chain bug on `a lot of`
   before it shipped. Bench 8.5 ms full-book (~200 merges);
-  all prior evals byte-identical.
+  all prior evals byte-identical. V2 DONE 2026-10-06: tag-gated
+  `out of`/`up to`/`because of`→Prep (14 entries; trie nodes carry
+  `want` tag slices, empty = tag-blind as before). EWT conditions:
+  merge iff all-ADP (83/84, 24/34, 39/42; remainders are ADV-first
+  particles or SCONJ-second clausals that stay split — the model
+  already disambiguates, e.g. `up to midnight` ADV+ADP). `in order
+  to`/`of course` stay excluded with EWT numbers (15:0 and 20:0
+  nominal-second). Hard S5 gold re-derived at both `because of`
+  spots (hand-verified Prep+Noun splits); hard end-to-end token
+  1382→1383, genre unchanged; bench 9.3 ms (negligible).
 
 - Neural runtimes evicted, transformers as oracles only (DECIDED
   2026-09-27): Brill is not SOTA (transformers reach ~97-98% UPOS

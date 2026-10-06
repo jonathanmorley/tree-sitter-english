@@ -53,13 +53,14 @@ cascade (unlisted text chunks byte-identically without it):
 |---|---|---|
 | `as if`, `so that`, `such as` | Subord | 133, 127, 8 |
 | `in spite of`, `in front of` | Prep | 1, 2 |
+| `out of`, `up to`, `because of` | Prep, ADP-gated | Moby 230 total; 1184: 153, 74, 5; 145: 201, 53, 19 (EWT all-ADP 83/84, 24/34, 39/42; particle ADV-first stays split) |
 | `as well as` | Conj | 19 (comparative `as well as I do` chunks Conj too — documented imperfection) |
 | `a lot of` | Noun | 3 |
 | `at all`, `no longer`, `in fact`, `as usual` | Adverb | 87, 10, 13, 2 |
 
 List discipline: every entry attested in book-domain text (all four
 sweep books carry most of them). Excluded: `in order to`
-(infinitive semantics), `because of` / `out of` / `up to`
-(particle ambiguity), `of course` (discourse semantics unclear).
-Matching is strictly consecutive pieces, so a comma between words
-breaks the run; case-insensitive ASCII.
+(EWT unanimous ADP+NOUN+PART 15:0 — the nominal `order` must stay
+visible), `of course` (EWT unanimous ADP+NOUN 20:0 — already a Prep
+through the cascade). Matching is strictly consecutive pieces, so
+a comma between words breaks the run; case-insensitive ASCII.
