@@ -828,6 +828,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   genre end-to-end chunk eval (rule 20/20, cascade 9/20 sent /
   0.873 token, bar 0.43).
 
+- Chunker confidence flow (MEASURED AND CLOSED 2026-10-06, no
+  code): one-shot probe (production path — beam margins + gated
+  rules — over the 20 genre sentences, since deleted) asked
+  whether the 22 cascade miss tokens sit in the margin-actionable
+  zone. Answer: zero actionable, zero ties, all 22 confident
+  (margins 2–35, most ≥ 10; 2 further tag misses absorbed
+  losslessly by chunk shapes). No confidence signal the chunker
+  could read reaches a single miss — the exact analogue of the
+  correction-layer ties. Compounding greed at the tag→chunk seam
+  is therefore unfixable-from-below: remaining misses are tagger
+  misses, full stop. `ARCHITECTURE.md` risks updated.
+
 - Inference optimization pass (DONE 2026-10-06, speed + size, zero
   accuracy delta): tag 185→104 ms (−44%), end-to-end 454k→546k
   tok/s (+21%), weights 1.98→1.76 MB (−11%), keystroke ≈47→40 ms.

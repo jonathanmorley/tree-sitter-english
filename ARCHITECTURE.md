@@ -122,8 +122,10 @@ test-first, and rejections with measurements count as results.
 
 ## Open risks
 
-Compounding greed across three greedy stages (no confidence flows
-into the chunker yet), a correction layer still seeking its first
-shipped rule, and a chunker still awaiting its accuracy number —
-to be closed by scoring chunks end-to-end on the genre eval.
-`AGENTS.md` carries the itemized backlog.
+Compounding greed across three greedy stages — now measured at
+the tag→chunk seam and closed against: all 22 genre cascade
+misses decode with confident margins (≥ 2.0, most ≥ 10; two more
+tag misses absorbed losslessly), so no confidence signal the
+chunker could read would reach a single miss. The remaining
+compounding is the beam span re-decode plus the gated rules (both
+measured non-negative). `AGENTS.md` carries the itemized backlog.
