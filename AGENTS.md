@@ -1041,3 +1041,83 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   same bar as the rejected iters-15 peak). Reverted; identity
   re-verified. Standing lesson: never touch the decoder's
   tie-break without a principled reason and gate deltas.
+
+## Dependency post-pass (stage 1: unlabeled UAS — DONE 2026-10-07)
+
+- Fifth pipeline stage (never grammar — Tier-3 rule): greedy
+  arc-eager over tagged pieces, perceptron over configuration
+  features, new crates `english-dep` (inference: Config, static
+  oracle, features, Model with greedy/beam decode, margins,
+  JSON weights) + `english-dep-train` (offline CoNLL-U trainer,
+  never a runtime dep). Stage 1 is UNLABELED (heads only — UAS);
+  relation labels (LAS) follow on the frozen UAS foundation.
+- Bar: UAS 87 (MaltParser-class budget), set pre-evidence and
+  NEVER VERIFIED — no published linear-parser predicted-tag
+  EWT-UAS number was found (published EWT figures are neural
+  ~92 or gold-annotation UDPipe ~85; both out-of-setting).
+  The bar stands unchallenged but unverified; the curve below
+  is flattening well short of it regardless.
+- UAS curve (EWT dev/test +gold, pipeline +tagger in parens):
+  v1 singles 58.9/59.1 (55.2/55.7) → v2 MaltParser density
+  71.4/71.5 (67.4/67.3) → Collins averaging 78.7/78.6
+  (72.8/73.5) → v3 head/sibling/bigram 79.1/79.3 (73.7/74.3)
+  → LaSO-2 + beam2 81.4/81.1 (75.8/75.3) → LaSO-4 + beam4
+  82.3/82.1 (76.2/76.7). Mini-memorization (60 sents) 94.4 →
+  97.3 across v1→v2 pinned underfit, not a loop bug.
+  Train fit at v3: 92.9 vs dev 79.1 (overfit); min-count 2/3
+  flat (78.8/79.3, 11.5/9.3 MB — pruning buys size, not UAS);
+  iters-40 flat (78.7/79.0 — converged). Width gains halve
+  (+2.3, +0.85); width-8 REJECTED without running (projects
+  ~+0.4 at 2× decode cost on an already-4s pass).
+- Averaging reversal vs the tagger, kept as measurement:
+  Collins averaging was FALSIFIED for tagging (33% vs 88%
+  pilot) but wins +7.1 here — tagger data converges fast and
+  dense (averaging dilutes), parser oscillates on sparse shared
+  features (averaging settles). Same discipline, opposite
+  verdicts, both recorded.
+- Beam license (the load-bearing result): beam-2 decode of
+  greedily-trained weights LOSES 16 points (79.1→63.2) — not
+  a code bug (traced: beam faithfully finds higher-scoring
+  degenerate attach-all-to-verb chains the oracle path never
+  visits). Greedy-trained scores rank actions within a state
+  but compare meaninglessly across paths. LaSO early-update
+  beam training (Collins & Roark 2004, `train_beam`, averaging
+  built in, weights shape unchanged) is the license: beam
+  decode then beats greedy-of-same-weights by +3.6 and the old
+  best by +2.3. Train/decode widths must match (beam2 of
+  width-4 weights: 80.7 vs beam4's 82.3). Provenance: beam
+  decode of beam-trained weights is the ONLY licensed combo;
+  greedy decode of LaSO weights collapses (77.8, and 0/2 on
+  the tiny toy) — pinned in tests as expected behavior, not a
+  bug. `parse_beam` stays IFF trained weights ship with it.
+- REJECTED with measurements: ROOT/NULL split (±0.1 noise —
+  root aliasing is not the constraint; split kept for feature
+  readability); min-count/iters (flat); width-8 (projected).
+- Speed (EWT dev 25k toks, release, `depbench` example — kept
+  as the standing harness): greedy 296k tok/s, beam2 118k,
+  beam4 55k → ~4 s/book at beam4. Dep is a BATCH/SAVE-PASS
+  stage, never keystroke (20–100× over the keystroke budget
+  before optimization; the inference-optimization playbook
+  could claw ~3–5×, still not keystroke). API shape follows:
+  document-level, not per-keystroke.
+- Budgets tiered (DECIDED 2026-10-07): Tier 0 grammar keeps
+  current budgets (keystroke, zero-dep, bindings); Tier 1
+  post-pass models are accuracy-gated with relaxed size
+  (vendored single-digit MB, lazy asset past that); Tier 2
+  offline tooling unbounded except reproducibility. The 29 MB
+  LaSO-4 artifact is therefore a packaging question, not a
+  ship-blocker — but it is NOT vendored: `weights/*.json`
+  gitignored, regeneration documented in the trainer
+  (`--corpus` + `--beam-train 4 --beam 4`, corpora stay
+  out-of-repo in /tmp like all training data). Artifacts:
+  dep-laso02/04.json + dep-v3/v4root.json in /tmp (ephemeral).
+- Standing gaps, highest-impact first: (a) cascade 5.4 pts
+  (gold 82.1 → tagger 76.7) — tagger misses propagate; joint
+  tag-parse is a new stage, not a tweak; (b) labels (LAS)
+  on the frozen UAS foundation — the consumer-facing output,
+  open next; (c) non-projective eval kept honest (287 train
+  sentences filtered, eval untouched — static oracle is
+  projective-only, Reduce backstop strands instead of
+  looping); (d) EWT-majority bar still needs a real linear
+  comparator (CoNLL UDPipe-baseline EWT row) if the 87 bar is
+  ever adjudicated.

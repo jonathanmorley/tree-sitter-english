@@ -38,6 +38,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-dep"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "english-dep-train"
+version = "0.1.0"
+dependencies = [
+ "english-dep",
+ "english-pos",
+]
+
+[[package]]
 name = "english-pos"
 version = "0.1.0"
 dependencies = [

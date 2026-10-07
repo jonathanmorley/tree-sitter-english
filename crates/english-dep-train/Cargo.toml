@@ -1,0 +1,15 @@
+[package]
+name = "english-dep-train"
+version = "0.1.0"
+edition = "2024"
+authors = ["Jonathan Morley <morley.jonathan@gmail.com>"]
+license = "MIT"
+description = "Offline trainer for the english-dep arc-eager parser (never a runtime dep)"
+
+[[bin]]
+name = "english-dep-train"
+path = "src/main.rs"
+
+[dependencies]
+english-dep = { version = "0.1.0", path = "../english-dep" }
+english-pos = { version = "0.1.0", path = "../english-pos" }

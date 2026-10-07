@@ -49,3 +49,8 @@ zig-out/
 
 # Local git worktrees
 .worktrees/
+
+# Dep-parser weights are a lazy Tier-1 asset (29 MB LaSO-4), not
+# vendored: regenerate via english-dep-train --beam-train 4.
+# (Tagger weights stay vendored: 1.76 MB, single-digit rule.)
+crates/english-dep/weights/

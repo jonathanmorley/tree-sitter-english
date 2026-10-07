@@ -34,4 +34,4 @@ cc = "1.2"
 tree-sitter = "0.27.0"
 
 [workspace]
-members = ["crates/english", "crates/english-pos", "crates/english-pos-train", "crates/english-chunk"]
+members = ["crates/english", "crates/english-pos", "crates/english-pos-train", "crates/english-chunk", "crates/english-dep", "crates/english-dep-train"]
