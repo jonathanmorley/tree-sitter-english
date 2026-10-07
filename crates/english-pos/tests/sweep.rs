@@ -265,19 +265,18 @@ const SENTENCES: &[(&str, &str, &str, &[&str], &[&str])] = &[
 ];
 
 fn prod_tags(model: &Model, words: &[String]) -> Vec<(Tag, f32)> {
-    let mut tagged = model.tag_beam_margins(words);
+    let (mut tagged, lower) = model.tag_beam_margins_lowered(words);
     if !RULES.is_empty() {
-        apply_rules(words, &mut tagged, RULES);
+        apply_rules(&mut tagged, RULES, &lower);
     }
     tagged
 }
 
-fn firing_rule(words: &[String], beam: &[(Tag, f32)], i: usize) -> Option<&'static str> {
+fn firing_rule(low: &[String], beam: &[(Tag, f32)], i: usize) -> Option<&'static str> {
     let snap: Vec<Tag> = beam.iter().map(|(t, _)| *t).collect();
-    let low: Vec<String> = words.iter().map(|w| w.to_lowercase()).collect();
     RULES.iter().find_map(|r| {
         let (_, m) = beam[i];
-        if m > 0.0 && m < r.threshold && (r.test)(words, &snap, &low, i).is_some() {
+        if m > 0.0 && m < r.threshold && (r.test)(&snap, low, i).is_some() {
             Some(r.name)
         } else {
             None
@@ -319,6 +318,7 @@ fn sweep_production_meets_bar() {
         let greedy = model.tag(&ws);
         let beam = model.tag_beam_margins(&ws);
         let tagged = prod_tags(&model, &ws);
+        let lower: Vec<String> = ws.iter().map(|w| w.to_lowercase()).collect();
         for (i, (g, (bt, _))) in gold.iter().zip(beam.iter()).enumerate() {
             total += 1;
             let gg = Tag::from_upos(g).unwrap();
@@ -332,13 +332,13 @@ fn sweep_production_meets_bar() {
                         words[i],
                         gt.upos(),
                         bt.upos(),
-                        firing_rule(&ws, &beam, i)
+                        firing_rule(&lower, &beam, i)
                     );
                 } else if gt != gg {
                     beam_fix += 1;
                 }
             } else if gt == gg && *bt == gg {
-                rule_break.push((book, id, words[i], pt.upos(), firing_rule(&ws, &beam, i)));
+                rule_break.push((book, id, words[i], pt.upos(), firing_rule(&lower, &beam, i)));
             }
         }
     }

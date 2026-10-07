@@ -12,7 +12,7 @@ use english_pos::{RULES, Rule, Tag, apply_rules};
 const POS0: Rule = Rule {
     name: "pos0-toy",
     threshold: 2.0,
-    test: |_pieces, tags, low, i| {
+    test: |tags, low, i| {
         let alpha = low[i].chars().all(|c| c.is_ascii_lowercase());
         if i == 0 && tags[i] == Tag::Noun && alpha {
             match tags.get(1).copied() {
@@ -31,8 +31,8 @@ const POS0: Rule = Rule {
 const TOY: Rule = Rule {
     name: "toy",
     threshold: 2.0,
-    test: |pieces, tags, _low, i| {
-        if tags[i] == Tag::Noun && pieces[i] == "glitters" {
+    test: |tags, low, i| {
+        if tags[i] == Tag::Noun && low[i] == "glitters" {
             Some(Tag::Verb)
         } else {
             None
@@ -44,13 +44,19 @@ fn case(texts: &[&str], tags: &[(Tag, f32)]) -> (Vec<String>, Vec<(Tag, f32)>) {
     (texts.iter().map(|s| s.to_string()).collect(), tags.to_vec())
 }
 
+/// Lowercased pieces for rule shape tests (test-only helper; production
+/// reuses the decoder's copy — see `tag_beam_margins_lowered`).
+fn low_of(pieces: &[String]) -> Vec<String> {
+    pieces.iter().map(|p| p.to_lowercase()).collect()
+}
+
 #[test]
 fn rule_fires_inside_gate() {
     let (pieces, mut tagged) = case(
         &["Orion", "glitters", "tonight"],
         &[(Tag::Noun, 0.0), (Tag::Noun, 1.0), (Tag::Adv, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[TOY]);
+    apply_rules(&mut tagged, &[TOY], &low_of(&pieces));
     assert_eq!(
         tagged.iter().map(|(t, _)| *t).collect::<Vec<_>>(),
         vec![Tag::Noun, Tag::Verb, Tag::Adv]
@@ -63,7 +69,7 @@ fn gate_blocks_confident_tokens() {
         &["Orion", "glitters", "tonight"],
         &[(Tag::Noun, 0.0), (Tag::Noun, 5.0), (Tag::Adv, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[TOY]);
+    apply_rules(&mut tagged, &[TOY], &low_of(&pieces));
     assert_eq!(tagged[1].0, Tag::Noun);
 }
 
@@ -75,7 +81,7 @@ fn gate_blocks_exact_ties() {
         &["Orion", "glitters", "tonight"],
         &[(Tag::Noun, 0.0), (Tag::Noun, 0.0), (Tag::Adv, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[TOY]);
+    apply_rules(&mut tagged, &[TOY], &low_of(&pieces));
     assert_eq!(tagged[1].0, Tag::Noun);
 }
 
@@ -85,7 +91,7 @@ fn non_matching_tokens_untouched() {
         &["the", "glass", "broke"],
         &[(Tag::Det, 0.0), (Tag::Noun, 1.0), (Tag::Verb, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[TOY]);
+    apply_rules(&mut tagged, &[TOY], &low_of(&pieces));
     assert_eq!(
         tagged.iter().map(|(t, _)| *t).collect::<Vec<_>>(),
         vec![Tag::Det, Tag::Noun, Tag::Verb]
@@ -97,7 +103,7 @@ fn first_matching_rule_wins() {
     let other = Rule {
         name: "other",
         threshold: 2.0,
-        test: |_, tags, _low, i| {
+        test: |tags, _low, i| {
             if tags[i] == Tag::Noun {
                 Some(Tag::Adj)
             } else {
@@ -109,13 +115,13 @@ fn first_matching_rule_wins() {
         &["Orion", "glitters", "tonight"],
         &[(Tag::Noun, 0.0), (Tag::Noun, 1.0), (Tag::Adv, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[TOY, other]);
+    apply_rules(&mut tagged, &[TOY, other], &low_of(&pieces));
     assert_eq!(tagged[1].0, Tag::Verb);
     let (pieces, mut tagged) = case(
         &["Orion", "glitters", "tonight"],
         &[(Tag::Noun, 0.0), (Tag::Noun, 1.0), (Tag::Adv, 0.0)],
     );
-    apply_rules(&pieces, &mut tagged, &[other, TOY]);
+    apply_rules(&mut tagged, &[other, TOY], &low_of(&pieces));
     assert_eq!(tagged[1].0, Tag::Adj);
 }
 
@@ -131,7 +137,7 @@ fn imperative_fires_on_base_verb_with_complement() {
             (Tag::Noun, 0.0),
         ],
     );
-    apply_rules(&pieces, &mut tagged, &[POS0]);
+    apply_rules(&mut tagged, &[POS0], &low_of(&pieces));
     assert_eq!(tagged[0].0, Tag::Verb);
 }
 
@@ -139,11 +145,11 @@ fn imperative_fires_on_base_verb_with_complement() {
 fn imperative_skips_non_verbs_and_verb_next() {
     // Gerund shapes never qualify ...
     let (pieces, mut tagged) = case(&["Morning", "came"], &[(Tag::Noun, 1.0), (Tag::Verb, 0.0)]);
-    apply_rules(&pieces, &mut tagged, &[POS0]);
+    apply_rules(&mut tagged, &[POS0], &low_of(&pieces));
     assert_eq!(tagged[0].0, Tag::Noun);
     // ... and neither does a following verb (`Glass breaks`).
     let (pieces, mut tagged) = case(&["Glass", "breaks"], &[(Tag::Noun, 1.0), (Tag::Verb, 0.0)]);
-    apply_rules(&pieces, &mut tagged, &[POS0]);
+    apply_rules(&mut tagged, &[POS0], &low_of(&pieces));
     assert_eq!(tagged[0].0, Tag::Noun);
 }
 
@@ -159,7 +165,7 @@ fn rule(name: &str) -> Rule {
 fn run(pieces: &[&str], tags: &[(Tag, f32)], name: &str) -> Vec<Tag> {
     let pieces: Vec<String> = pieces.iter().map(|s| s.to_string()).collect();
     let mut tagged = tags.to_vec();
-    apply_rules(&pieces, &mut tagged, &[rule(name)]);
+    apply_rules(&mut tagged, &[rule(name)], &low_of(&pieces));
     tagged.iter().map(|(t, _)| *t).collect()
 }
 

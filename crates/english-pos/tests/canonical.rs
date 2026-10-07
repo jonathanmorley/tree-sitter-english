@@ -25,7 +25,8 @@ fn flies_stays_verb_corrected() {
     let words = ["Time", "flies", "like", "an", "arrow"];
     let pieces: Vec<String> = words.iter().map(|s| s.to_string()).collect();
     let mut tagged = model.tag_margins(&words);
-    apply_rules(&pieces, &mut tagged, RULES);
+    let lower: Vec<String> = pieces.iter().map(|p| p.to_lowercase()).collect();
+    apply_rules(&mut tagged, RULES, &lower);
     let tags: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
     assert_eq!(
         tags,

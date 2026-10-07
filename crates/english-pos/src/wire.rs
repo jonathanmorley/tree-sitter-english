@@ -205,9 +205,9 @@ fn push_piece_merged(out: &mut Vec<String>, prev: &mut Option<(usize, bool)>, to
 /// (EWT dev +13 / test +24, Moby +1, genre/chunk ±0, `flies` holds).
 pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)> {
     let pieces = clause_pieces(clause);
-    let mut tagged = model.tag_beam_margins(&pieces);
+    let (mut tagged, lower) = model.tag_beam_margins_lowered(&pieces);
     if !RULES.is_empty() {
-        apply_rules(&pieces, &mut tagged, RULES);
+        apply_rules(&mut tagged, RULES, &lower);
     }
     tagged
         .into_iter()
@@ -222,9 +222,9 @@ pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)>
 /// boundary), matching training on UD sentences.
 pub fn tag_sentence(model: &Model, sentence: &english::Sentence) -> Vec<(String, Tag)> {
     let pieces = sentence_pieces(sentence);
-    let mut tagged = model.tag_beam_margins(&pieces);
+    let (mut tagged, lower) = model.tag_beam_margins_lowered(&pieces);
     if !RULES.is_empty() {
-        apply_rules(&pieces, &mut tagged, RULES);
+        apply_rules(&mut tagged, RULES, &lower);
     }
     tagged
         .into_iter()

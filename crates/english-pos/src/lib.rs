@@ -300,8 +300,19 @@ impl Model {
     /// winning history on-span. Feeds the correction gate the same
     /// way [`Model::tag_margins`] does.
     pub fn tag_beam_margins<S: AsRef<str>>(&self, words: &[S]) -> Vec<(Tag, f32)> {
-        let (tags, margins, _) = self.decode_beam(words, BEAM_MARGIN_T, BEAM_MAX_SPAN);
-        tags.into_iter().zip(margins).collect()
+        self.tag_beam_margins_lowered(words).0
+    }
+
+    /// [`Model::tag_beam_margins`], also returning the lowercased
+    /// forms. The correction layer's shape tests read lowercase, so
+    /// production callers reuse this instead of lowercasing the
+    /// sentence a second time.
+    pub fn tag_beam_margins_lowered<S: AsRef<str>>(
+        &self,
+        words: &[S],
+    ) -> (Vec<(Tag, f32)>, Vec<String>) {
+        let (tags, margins, lower, _) = self.decode_beam(words, BEAM_MARGIN_T, BEAM_MAX_SPAN);
+        (tags.into_iter().zip(margins).collect(), lower)
     }
 
     /// [`Model::tag_beam`] with explicit span threshold and cap, plus
@@ -314,7 +325,7 @@ impl Model {
         margin_t: f32,
         max_span: usize,
     ) -> (Vec<Tag>, usize, usize) {
-        let (tags, _, stats) = self.decode_beam(words, margin_t, max_span);
+        let (tags, _, _, stats) = self.decode_beam(words, margin_t, max_span);
         (tags, stats.0, stats.1)
     }
 
@@ -327,7 +338,7 @@ impl Model {
         margin_t: f32,
         max_span: usize,
     ) -> (Vec<(Tag, f32)>, (usize, usize)) {
-        let (tags, margins, stats) = self.decode_beam(words, margin_t, max_span);
+        let (tags, margins, _, stats) = self.decode_beam(words, margin_t, max_span);
         (tags.into_iter().zip(margins).collect(), stats)
     }
 
@@ -418,10 +429,10 @@ impl Model {
         words: &[S],
         margin_t: f32,
         max_span: usize,
-    ) -> (Vec<Tag>, Vec<f32>, (usize, usize)) {
+    ) -> (Vec<Tag>, Vec<f32>, Vec<String>, (usize, usize)) {
         let (mut tags, mut margins, lower) = self.decode_lower(words);
         if words.is_empty() {
-            return (tags, margins, (0, 0));
+            return (tags, margins, lower, (0, 0));
         }
         // Index-space copy of greedy tags for history reads.
         let mut idx: Vec<usize> = tags
@@ -530,7 +541,7 @@ impl Model {
                 rescored += 1;
             }
         }
-        (tags, margins, (spans.len(), rescored))
+        (tags, margins, lower, (spans.len(), rescored))
     }
 
     /// Per-tag weights for one feature id, or `None` when the feature

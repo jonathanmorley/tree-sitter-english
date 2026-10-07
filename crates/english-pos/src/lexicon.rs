@@ -32,12 +32,14 @@ fn contains(list: &[&str], word: &str) -> bool {
     list.binary_search(&word).is_ok()
 }
 
-/// True when `word` is a known verb base form or a regular `-s`
-/// inflection of one (`wears`→`wear`, `watches`→`watch`,
-/// `tries`/`flies`→`try`/`fly`). Lowercases first; never strips
-/// `ss` (`glass`, `status`); bare `-s` words whose stem is not a
-/// verb (`theories`→`theory`, `news`→`new`, `arms`→`arm` is — see
-/// below) correctly abstain.
+/// True when pre-lowered `w` is a known verb base form or a regular
+/// `-s` inflection of one (`wears`→`wear`, `watches`→`watch`,
+/// `tries`/`flies`→`try`/`fly`). Callers pass already-lowercased
+/// text (the correction layer holds a pre-lowered slice) so this
+/// never allocates, except the `ies`→`y` restem which fires solely
+/// on `-ies` words. Never strips `ss` (`glass`, `status`); bare
+/// `-s` words whose stem is not a verb (`theories`→`theory`,
+/// `news`→`new`, `arms`→`arm` is — see below) correctly abstain.
 ///
 /// NOTE on `arms`/`means`/`thanks`: their stems (`arm`, `mean`,
 /// `thank`) ARE verb lemmas, so this returns true and the calling
@@ -45,14 +47,7 @@ fn contains(list: &[&str], word: &str) -> bool {
 /// the margin gate must carry the precision — `folded his arms`
 /// (prev PRON, next end) is the known-risk shape. Measured, not
 /// assumed: see `--correct` reporting.
-pub fn known_verb_form(raw: &str) -> bool {
-    known_verb_form_lc(&raw.to_lowercase())
-}
-
-/// Lower-cased-input variant: same answer, no allocation. The
-/// correction rules already hold a pre-lowered slice for their
-/// shape tests, so they use this.
-pub fn known_verb_form_lc(w: &str) -> bool {
+pub fn known_verb_form(w: &str) -> bool {
     if contains(&VERB_LEMMAS, w) {
         return true;
     }

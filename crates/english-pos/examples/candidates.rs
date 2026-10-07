@@ -58,7 +58,8 @@ fn main() {
                 let beam = model.tag_beam_margins(&pieces);
                 let mut corrected: Vec<(Tag, f32)> = greedy.iter().map(|(t, m)| (*t, *m)).collect();
                 let owned: Vec<String> = pieces.clone();
-                apply_rules(&owned, &mut corrected, RULES);
+                let lowered: Vec<String> = owned.iter().map(|p| p.to_lowercase()).collect();
+                apply_rules(&mut corrected, RULES, &lowered);
                 let tags: Vec<Tag> = greedy.iter().map(|(t, _)| *t).collect();
 
                 let mut score = 0i32;
@@ -86,8 +87,7 @@ fn main() {
                         // Attribute by re-testing rules (offline only).
                         for r in RULES {
                             let snap: Vec<Tag> = greedy.iter().map(|(x, _)| *x).collect();
-                            let low: Vec<String> = owned.iter().map(|p| p.to_lowercase()).collect();
-                            if (r.test)(&owned, &snap, &low, i).is_some() {
+                            if (r.test)(&snap, &lowered, i).is_some() {
                                 fires.push(r.name);
                                 break;
                             }

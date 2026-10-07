@@ -110,7 +110,8 @@ fn hard_end_to_end() {
         .collect();
     let surf: Vec<String> = flat.iter().map(|s| s.to_string()).collect();
     let mut tagged = model.tag_beam_margins(&surf);
-    english_pos::apply_rules(&surf, &mut tagged, english_pos::RULES);
+    let lower: Vec<String> = surf.iter().map(|s| s.to_lowercase()).collect();
+    english_pos::apply_rules(&mut tagged, english_pos::RULES, &lower);
     let tags: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
     // NOTE: end-to-end here runs the shipped pipeline (beam +
     // rules), unlike the tagger evals which pin the raw model.

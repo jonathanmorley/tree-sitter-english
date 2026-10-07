@@ -45,13 +45,13 @@
 //! 12-for-24 total.
 
 use crate::Tag;
-use crate::lexicon::{known_verb_form, known_verb_form_lc};
+use crate::lexicon::known_verb_form;
 
 /// A correction rule: a name plus a predicate over the token stream.
-/// Predicates see surface pieces, current predicted tags, and margins;
-/// they return the replacement tag (or `None` to leave the token).
-/// Conditions use *predicted* tags (what the decoder actually saw,
-/// including its mistakes) — never gold.
+/// Predicates see current predicted tags, lowercased surface pieces,
+/// and margins; they return the replacement tag (or `None` to leave
+/// the token). Conditions use *predicted* tags (what the decoder
+/// actually saw, including its mistakes) — never gold.
 #[derive(Clone, Copy)]
 pub struct Rule {
     /// Short identifier (`s-verb`, `imperative-0`, …).
@@ -59,8 +59,9 @@ pub struct Rule {
     /// Margin gate: applies only when the token decoded with margin
     /// strictly inside `(0, threshold)`. Calibrated per rule.
     pub threshold: f32,
-    /// The rewrite test. `i` indexes `pieces`/`tags`/`margins`.
-    pub test: fn(&[String], &[Tag], &[String], usize) -> Option<Tag>,
+    /// The rewrite test. `i` indexes `tags`/`low` (and margins, via
+    /// the gate in [`apply_rules`]).
+    pub test: fn(&[Tag], &[String], usize) -> Option<Tag>,
 }
 
 /// Margin gates are double-bounded `0 < margin < threshold`: exact
@@ -204,7 +205,7 @@ fn fin_ahead(tags: &[Tag], i: usize) -> bool {
 /// reach). The CG/RDR barrier shape for the direction `that-det`
 /// cannot cover. Candidate from the 2026-10-06 gate-zone autopsy;
 /// admit only with EWT dev/test ≥ 0 measured.
-fn that_ccomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn that_ccomp(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
@@ -228,7 +229,7 @@ fn that_ccomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Opti
 /// through the same barrier test. Candidate from the 2026-10-06
 /// gate-zone autopsy (10 instances, largest single mass); admit
 /// only with EWT dev/test ≥ 0 measured.
-fn subconj_adp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn subconj_adp(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Sconj {
         return None;
     }
@@ -254,7 +255,7 @@ fn subconj_adp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Opt
 /// human` stay out via the nominal-next guard). Candidate from
 /// the 2026-10-06 gate-zone autopsy; admit only with EWT dev/test
 /// ≥ 0 measured.
-fn apos_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn apos_part(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if !matches!(tags[i], Tag::Aux | Tag::Adp) {
         return None;
     }
@@ -286,7 +287,7 @@ fn apos_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Optio
 /// `to` + participle reads prepositional, but UPOS doesn't split
 /// VBG from VB so no cheap guard exists; documented trigger).
 /// `flies` holds.
-fn to_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn to_part(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Adp || low[i] != "to" {
         return None;
     }
@@ -303,7 +304,7 @@ fn to_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<
 /// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
 /// 2 Moby hand-verified fixes (`happened that those boats`,
 /// `saw that this ship`), zero known breaks, `flies` holds.
-fn that_vcomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn that_vcomp(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
@@ -318,7 +319,7 @@ fn that_vcomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Opti
 /// a nominal — so nominal-next plus a verb-stem guard (protects
 /// `to approve`, `to test`, `to mention`) makes the flip EWT-safe
 /// by shape. Guards, not just gates.
-fn to_prep(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn to_prep(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Part || low[i] != "to" {
         return None;
     }
@@ -332,13 +333,13 @@ fn to_prep(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<
     ) {
         return None;
     }
-    (!known_verb_form_lc(&low[i + 1])).then_some(Tag::Adp)
+    (!known_verb_form(&low[i + 1])).then_some(Tag::Adp)
 }
 
 /// Possessive `have` read as auxiliary (`I have of driving`):
 /// AUX-`have` is followed by participle/`to`/negation, never a
 /// nominal — nominal-next flips to VERB.
-fn have_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn have_verb(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Aux || low[i] != "have" {
         return None;
     }
@@ -351,7 +352,7 @@ fn have_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Optio
 /// Infinitive head read as noun (`to approve`): previous token is
 /// (predicted) infinitive `to`. The `to-prep` guard above keeps
 /// genuine `to` intact; this fixes the head.
-fn to_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn to_verb(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Noun {
         return None;
     }
@@ -363,7 +364,7 @@ fn to_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<
     if prev_tag != Tag::Part || low[prev] != "to" {
         return None;
     }
-    known_verb_form_lc(&low[i]).then_some(Tag::Verb)
+    known_verb_form(&low[i]).then_some(Tag::Verb)
 }
 
 /// Determiner `that` read as relative pronoun (`of that slouching
@@ -374,7 +375,7 @@ fn to_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<
 /// next all stay out (EWT splits there favor PRON or are tiny).
 /// Candidate from the 2026-10-06 eval-margin probe (4 actionable
 /// fires); admit only with EWT dev/test ≥ 0 measured.
-fn that_det(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn that_det(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
@@ -395,7 +396,7 @@ fn that_det(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option
 /// dexterous...`, `that found in the secret...` — participles
 /// can't head SCONJ clauses, so both are relative PRON), zero
 /// known breaks, `flies` holds.
-fn that_rel(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn that_rel(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Sconj || low[i] != "that" {
         return None;
     }
@@ -424,7 +425,7 @@ fn that_rel(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option
 /// `so that the whole rope will bear`, `so that the precious
 /// gold seems...` — all full clauses with NP subjects), zero
 /// known breaks, `flies` holds.
-fn that_sconj(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn that_sconj(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
@@ -433,7 +434,7 @@ fn that_sconj(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Opti
         _ => None,
     }
 }
-fn det_noun(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+fn det_noun(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Verb {
         return None;
     }
@@ -458,20 +459,19 @@ fn det_noun(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option
 
 /// Apply `rules` to decoded `(tag, margin)` pairs in place.
 /// Each token takes the first matching rule whose gate opens
-/// (`0 < margin < threshold`). Pieces are needed for shape tests.
-/// Predicates all see the pre-pass tag sequence (snapshotted once),
-/// not mid-rewrite state — later rules never observe earlier rewrites
-/// within a pass.
-pub fn apply_rules(pieces: &[String], tagged: &mut [(Tag, f32)], rules: &[Rule]) {
+/// (`0 < margin < threshold`). `low` is the lowercased surface
+/// pieces for shape tests — production callers reuse the decoder's
+/// copy (see [`Model::tag_beam_margins_lowered`]) instead of
+/// lowercasing the sentence again. Predicates all see the pre-pass
+/// tag sequence (snapshotted once), not mid-rewrite state — later
+/// rules never observe earlier rewrites within a pass.
+pub fn apply_rules(tagged: &mut [(Tag, f32)], rules: &[Rule], low: &[String]) {
     let snapshot = tags_snapshot(tagged);
-    // One lowercased pass for every rule's shape test — rules were
-    // each lowercasing their probe word inside every call.
-    let low: Vec<String> = pieces.iter().map(|p| p.to_lowercase()).collect();
     for (i, (tag, margin)) in tagged.iter_mut().enumerate() {
         for rule in rules {
             if *margin > 0.0
                 && *margin < rule.threshold
-                && let Some(fix) = (rule.test)(pieces, &snapshot, &low, i)
+                && let Some(fix) = (rule.test)(&snapshot, low, i)
             {
                 *tag = fix;
                 break;
