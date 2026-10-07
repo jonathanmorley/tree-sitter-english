@@ -54,6 +54,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-lint"
+version = "0.1.0"
+dependencies = [
+ "english",
+ "english-dep",
+ "english-pos",
+]
+
+[[package]]
 name = "english-pos"
 version = "0.1.0"
 dependencies = [
