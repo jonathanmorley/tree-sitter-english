@@ -53,6 +53,9 @@ re-deriving: the queued AGENTS.md items cite them by name.
   /tmp/ud/ewt/en_ewt-ud-test.conllu --moby /tmp/moby.txt`
   (inside `nix develop` for the ours leg; every competitor
   missing from the env is skipped with an install hint).
+  Wall clock: `scripts/bench-commands.sh --moby /tmp/moby.txt`
+  (hyperfine, in the devShell; see its header for the
+  `BENCH_VENV`/`TREETAGGER_*` opt-ins).
 
 ## Segmentation and tokenization
 

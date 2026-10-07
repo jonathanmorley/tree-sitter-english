@@ -1686,3 +1686,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   2026-10-06 numbers in the shootout item until a rerun
   replaces them. `docs/references.md` gains the TreeTagger
   entry + the external-systems list pointing at the script.
+  Hyperfine outer runner (same day): `hyperfine` added to the
+  devShell + `scripts/bench-commands.sh` (shfmt `-i 2` clean like
+  the other scripts) hyperfines the repo-owned commands
+  (`bench` end-to-end, `tag_tokens` on Moby words; release
+  binaries built once so the build is never timed) with
+  `--warmup 2 --runs 5 --export-markdown`, appending
+  nltk/rdr/spacy one-liners only when `BENCH_VENV` provides
+  them and treetagger only when `TREETAGGER_BIN`/`_PARAMS`
+  are set. Split of duties: bench-taggers.py owns accuracy +
+  in-process breakdowns (spawn excluded), bench-commands.sh
+  owns wall clock. Verified on a 6-word stub (spawn-dominated,
+  as documented) incl. the nltk leg; fixed a real quoting bug
+  along the way (newline-split fragments become separate argv
+  elements — single strings only).
