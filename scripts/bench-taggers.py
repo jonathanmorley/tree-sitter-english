@@ -186,22 +186,21 @@ def leg_nltk(sents):
     return (pred, dt), None
 
 
-def leg_rdr(sents, model, repo=None):
-    """UPOS-exact via the RDRPOSTagger tree (in-process; needs the repo
-    root on sys.path for its absolute imports). DICT is the sibling
-    of the .RDR model (same stem, .DICT suffix)."""
-    if model is None:
-        return None, "skip (--rdr-model not given)"
-    if repo is None:
-        return None, "skip (--rdr-repo not given: path to RDRPOSTagger checkout)"
+_RDR = {}
+
+
+def load_rdr(model, repo):
+    """Load (tree, lexicon) once, cached by model path."""
+    if model in _RDR:
+        return _RDR[model], None
     import os
     import sys
     if not os.path.isfile(model):
-        return None, f"skip (RDR model missing: {model})"
+        return None, f"RDR model missing: {model}"
     stem = model[:-len(".RDR")] if model.endswith(".RDR") else model
     lex = stem + ".DICT"
     if not os.path.isfile(lex):
-        return None, f"skip (RDR lexicon missing: {lex})"
+        return None, f"RDR lexicon missing: {lex}"
     if repo not in sys.path:
         sys.path.insert(0, repo)
     # The module chdir()s ("../" then "./pSCRDRtagger") assuming it
@@ -212,16 +211,31 @@ def leg_rdr(sents, model, repo=None):
     try:
         from pSCRDRtagger.RDRPOSTagger import RDRPOSTagger
         from Utility.Utils import readDictionary
-    except ImportError as e:
-        return None, f"skip (RDRPOSTagger import failed: {e})"
-    finally:
+    except Exception as e:  # noqa: BLE001 - chdir/import errors surface as-is
         os.chdir(keep)
+        return None, f"RDRPOSTagger import failed: {e}"
+    os.chdir(keep)
     try:
         r = RDRPOSTagger()
         r.constructSCRDRtreeFromRDRfile(model)
-        dictionary = readDictionary(lex)
+        _RDR[model] = (r, readDictionary(lex))
+        return _RDR[model], None
     except Exception as e:  # noqa: BLE001 - path/parse errors surface as-is
-        return None, f"skip (RDR model load failed: {e})"
+        return None, f"RDR model load failed: {e}"
+
+
+def leg_rdr(sents, model, repo=None):
+    """UPOS-exact via the RDRPOSTagger tree (in-process; needs the repo
+    root on sys.path for its absolute imports). DICT is the sibling
+    of the .RDR model (same stem, .DICT suffix)."""
+    if model is None:
+        return None, "skip (--rdr-model not given)"
+    if repo is None:
+        return None, "skip (--rdr-repo not given: path to RDRPOSTagger checkout)"
+    (handle, err) = load_rdr(model, repo)
+    if err:
+        return None, f"skip ({err})"
+    r, dictionary = handle
     pred, t = [], time.perf_counter()
     for words, _ in sents:
         tagged = r.tagRawSentence(dictionary, " ".join(words))
@@ -230,6 +244,17 @@ def leg_rdr(sents, model, repo=None):
     if len(pred) != sum(len(w) for w, _ in sents):
         return None, "skip (RDR token count drifted)"
     return (pred, dt), None
+
+
+def speed_rdr(words, model, repo):
+    """Wall-clock tagger-only speed on a flat word list (single call)."""
+    (handle, err) = load_rdr(model, repo)
+    if err:
+        return None
+    r, dictionary = handle
+    t = time.perf_counter()
+    r.tagRawSentence(dictionary, " ".join(words))
+    return len(words) / max(time.perf_counter() - t, 1e-9)
 
 
 def leg_spacy(sents):
@@ -363,7 +388,8 @@ def main(argv):
         ex = score_exact(pred, gold)
         cn, cd = score_coarse(pred, gold, coarse_upos)
         rows.append(("rdr", ex / len(gold), len(gold),
-                     cn / cd, cd, None, "speed: rerun tagRawSentence timed"))
+                     cn / cd, cd, speed_rdr(mwords, a.rdr_model, a.rdr_repo),
+                     "UPOS-EWT tree; speed rerun timed"))
 
     # spaCy (exact UPOS on aligned subset).
     (res, skip, note) = leg_spacy(sents)

@@ -1841,3 +1841,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   1.1 MB binary. Front table now has no "—" left except RDR
   (no model file) and production tok/s (batch-stage question,
   unmeasured by design so far).
+
+## RDR row complete (DONE 2026-10-07)
+
+- Pre-trained UPOS-EWT tree from the RDRPOSTagger repo
+  (`Models/ud-treebanks-v2.4/UD_English-EWT`, 0.36 MB .RDR+.DICT;
+  no PyPI package — driven in-process from a repo checkout,
+  `--rdr-model` + `--rdr-repo`). Full harness: exact 92.30
+  (reproduces the 2026-10-06 record to the digit), coarse 94.70;
+  Moby-body speed ~42k tok/s single-call (harness `speed_rdr`,
+  rerunnable). Front table + charts carry 92.30/94.70/42k/0.36.
+  Gotchas recorded in-harness: no PyPI package, module
+  hard-codes a chdir dance (enter from `pSCRDRtagger/`),
+  DICT is the .RDR stem sibling.

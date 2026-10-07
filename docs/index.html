@@ -138,16 +138,16 @@ with forensics.</p>
 <h4>Tag throughput, log tok/s</h4>
 <svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Tag throughput, log tokens per second: ours 2.1M, RDR 51k, NLTK 24k">
 <text x="0" y="18">ours 2.1M</text><rect x="150" y="5" width="241" height="18" rx="3"><title>ours ~2.1M tokens/sec tag pass</title></rect>
-<text x="0" y="52">RDR 51k</text><rect x="150" y="39" width="74" height="18" rx="3" class="dim"><title>RDRPOSTagger ~51k tokens/sec (41x slower)</title></rect>
+<text x="0" y="52">RDR 42k</text><rect x="150" y="39" width="60" height="18" rx="3" class="dim"><title>RDRPOSTagger ~42k tokens/sec, Moby body rerun</title></rect>
 <text x="0" y="86">NLTK 24k</text><rect x="150" y="73" width="40" height="18" rx="3" class="dim"><title>NLTK perceptron ~24k tokens/sec (90x slower)</title></rect>
-<text x="150" y="116" class="t2">log scale, axis 10⁴–10⁶·⁵ · 41× / 90× gaps · blue ours</text>
+<text x="150" y="116" class="t2">log scale, axis 10⁴–10⁶·⁵ · blue ours</text>
 </svg>
 </div>
 <div>
 <h4>Weights size (MB)</h4>
 <svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Weights size in megabytes: ours 1.76, RDR 0.38, NLTK 1.5">
 <text x="0" y="18">ours 1.76</text><rect x="150" y="5" width="247" height="18" rx="3"><title>ours 1.76 MB weights JSON</title></rect>
-<text x="0" y="52">RDR 0.38</text><rect x="150" y="39" width="53" height="18" rx="3" class="dim"><title>RDRPOSTagger 0.38 MB — exception trees share structure</title></rect>
+<text x="0" y="52">RDR 0.36</text><rect x="150" y="39" width="50" height="18" rx="3" class="dim"><title>RDRPOSTagger 0.36 MB measured (.RDR + .DICT) — exception trees share structure</title></rect>
 <text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="211" height="18" rx="3" class="dim"><title>NLTK perceptron 1.5 MB</title></rect>
 <text x="150" y="116" class="t2">RDR wins on size — exception trees share structure · blue ours</text>
 </svg>
@@ -174,7 +174,7 @@ with forensics.</p>
 <tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th></tr>
 <tr><td>Ours, production</td><td class="num">92.22</td><td class="num">94.55</td><td class="num">2.1M</td><td class="num">1.76 MB</td></tr>
 <tr><td>Ours, greedy</td><td class="num">92.05</td><td class="num">94.40</td><td class="num">2.1M</td><td class="num">1.76 MB</td></tr>
-<tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">—</td><td class="num">51k</td><td class="num">0.38 MB</td></tr>
+<tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td></tr>
 <tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td></tr>
 <tr><td>spaCy en_core_web_sm</td><td class="num">93.15 †</td><td class="num">95.43</td><td class="num">4.9k ‡</td><td class="num">15 MB</td></tr>
 <tr><td>TreeTagger + english.par</td><td>Penn/CLAWS mix</td><td class="num">89.52</td><td class="num">66k</td><td class="num">15 MB</td></tr>
