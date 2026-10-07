@@ -23,9 +23,11 @@
 //!
 //! Miss arbitration 2026-10-07 (gold stands throughout): 2×
 //! documented `-ment` costs (`take a moment`); 1× deferred `-ing`
-//! (`give warning`); 2× light-`do` mistagged AUX by the tagger
-//! (`did violence`, `does the baking` — do-support reading
-//! overfires on light uses; a tagger gap, not a rule bug).
+//! (`give warning`); 3× light-`do` mistagged AUX by the tagger
+//! (`did violence`, `does the baking`, `did damage` — do-support
+//! reading overfires on light uses; a tagger gap, not a rule bug;
+//! the `-age` tripwire itself fires correctly wherever the tagger
+//! reads VERB).
 
 use english_lint::{Models, Nominalization, Rule, lint};
 
@@ -72,10 +74,15 @@ const SENTENCES: &[(&str, bool)] = &[
     ("He took the ordering over the phone.", true),
     ("Billing takes training.", true),
     ("I gave the movie a glowing rating.", true),
+    // Composed -age/-edge positives (EWT web-review shapes).
+    ("They took advantage of the confusion.", true),
+    ("She had no knowledge of the incident.", true),
+    ("It took courage to speak up.", true),
+    ("We got the message yesterday.", true),
+    ("Foreign aid gives leverage to small states.", true),
     ("He has an appreciation of music.", true),
     // Negatives: suffix gaps (rule-silent by construction).
     ("And men take care that they should.", false),
-    ("She did damage to the engine.", false),
     ("He made an inquiry into the matter.", false),
     ("They reached an agreement.", false),
     ("She made her choice yesterday.", false),
@@ -94,6 +101,9 @@ const SENTENCES: &[(&str, bool)] = &[
     ("He made dinner for everyone.", false),
     ("We take pride in our work.", false),
     ("He did his duty without complaint.", false),
+    // Tripwire flipped by the -age branch: "did damage" IS
+    // light+nominal by the rule's own definition.
+    ("She did damage to the engine.", true),
     // Negatives: clean actives (shared with the passive eval).
     ("His manner was not effusive.", false),
     ("The astonishment of the ladies was just what he wished.", false),
@@ -112,7 +122,7 @@ const SENTENCES: &[(&str, bool)] = &[
 
 #[test]
 fn nominalization_precision_recall() {
-    assert_eq!(SENTENCES.len(), 66);
+    assert_eq!(SENTENCES.len(), 71);
     let models = match Models::load_workspace() {
         Ok(m) => m,
         Err(e) => {

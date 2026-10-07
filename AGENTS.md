@@ -1407,6 +1407,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   overfire on light uses, a tagger gap worth its own note).
 - `-age`/`-edge` stays deferred (`did damage` tripwire stands).
 
+## Vale alternative, rule 2 v1.2: -age/-edge (DONE 2026-10-07,
+  P 0.923 / R 0.923)
+
+- `-age` tripwire converts: `did damage` IS light+nominal, so the
+  branch ships (+ NOUN-gate and no-`tmod`, same guards as `-ing`;
+  `-edge` rides along — `knowledge` fires correctly as TP) and the
+  gold flips with it (documented in-test). Eval 66 → 71 (+5
+  composed `-age` positives, +1 flip); all 5 new positives fire.
+- All 6 misses dispositioned, gold stands: 2× documented `-ment`
+  costs, 1× deferred `-ing` (`give warning`), 3× light-`do`→AUX
+  tagger mistags (`did violence`, `does the baking`, `did damage`
+  — the rule is 3-for-3 clean on correct pipeline input, blocked
+  only by the tagger's do-support overfire).
+- Note: a background eval run mid-edits reported stale numbers
+  (race between edit and cargo fingerprint) — foreground re-run
+  to confirm whenever counts look off; the numbers above are the
+  confirmed run.
+
 ## Correction rule 13: pass-by (ADMITTED 2026-10-07)
 
 - From the lint pilot's participle misses: predicted ADJ after a

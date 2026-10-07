@@ -429,11 +429,17 @@ const LIGHT_VERBS: &[&str] = &[
 /// NOUN (verbal gerunds like inceptive `get going` read VERB),
 /// temporal `obl:tmod` never counts as government, and the generic
 /// nouns `thing`/`things` stay out (indefinite pro-forms, never
-/// deverbial). Deliberately NOT here: `-age`/`-edge` (`damage`,
-/// `knowledge` — mixed deverbial density, same deal).
-const NOMINAL_SUFFIXES: &[&str] = &["tion", "sion", "ment", "ance", "ence", "sis", "ing"];
+/// deverbial). `-age`/`-edge` joined 2026-10-07 with the same three
+/// guards (EWT web-review ≈ 18 true vs ~5 FP: phrasal `take out X`,
+/// source `from`-adjuncts, typo noise — rare, accepted). Other
+/// suffixes need no guards (unambiguous by form). The suffix
+/// inventory is closed pending new evidence.
+const NOMINAL_SUFFIXES: &[&str] = &[
+    "tion", "sion", "ment", "ance", "ence", "sis", "ing", "age", "edge",
+];
 
-/// Generic-noun carve-out for the `-ing` branch only (`do things`,
+/// Generic-noun carve-out for the `-ing`/`-age` branches only (`do
+/// things`, `take a moment`-class shapes are not nominalizations;
 /// `take a moment`-class shapes are not nominalizations; the other
 /// suffixes are unambiguous by form and need no list).
 const GENERIC_NOUNS: &[&str] = &["thing", "things"];
@@ -484,12 +490,13 @@ impl Rule for Nominalization {
                     Some(s) => s,
                     None => continue,
                 };
-                // `-ing` guards (EWT-measured): the dependent must read
-                // as a noun (verbal gerunds like inceptive `get going`
-                // read VERB), and generic `thing(s)` stays out
-                // (indefinite pro-forms, never deverbial). Other
-                // suffixes are unambiguous by form and need no list.
-                if suffix == "ing" {
+                // `-ing`/`-age` guards (EWT-measured): the dependent must
+                // read as a noun (verbal gerunds like inceptive `get
+                // going` read VERB; non-nominal `-age` likewise), and
+                // generic `thing(s)` stays out (indefinite pro-forms,
+                // never deverbial). Other suffixes are unambiguous by
+                // form and need no list.
+                if suffix == "ing" || suffix == "age" || suffix == "edge" {
                     if sent.tags.get(k - 1) != Some(&Tag::Noun) {
                         continue;
                     }
@@ -759,6 +766,30 @@ mod tests {
             &[Tag::Pron, Tag::Verb, Tag::Noun],
             &[0, 2, 0, 2],
             &["", "nsubj", "root", "obl:tmod"],
+            1,
+            0,
+        )]);
+        assert!(Nominalization.check(&d).is_empty());
+    }
+
+    #[test]
+    fn nominalization_age_branch_guards() {
+        // `-age` nominal object fires (`give leverage`).
+        let d = doc(vec![sent(
+            &["they", "give", "leverage"],
+            &[Tag::Pron, Tag::Verb, Tag::Noun],
+            &[0, 2, 0, 2],
+            &["", "nsubj", "root", "obj"],
+            1,
+            0,
+        )]);
+        assert_eq!(Nominalization.check(&d).len(), 1);
+        // Verb-reading `-age` stays silent (`they damage goods`).
+        let d = doc(vec![sent(
+            &["they", "damage", "goods"],
+            &[Tag::Pron, Tag::Verb, Tag::Noun],
+            &[0, 2, 0, 2],
+            &["", "nsubj", "root", "obj"],
             1,
             0,
         )]);
