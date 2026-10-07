@@ -12,8 +12,13 @@ trivial `u64`-keyed map — no SipHash re-hashing of pre-hashed ids), so
 tagging runs ~2.1M tokens/sec on the tag pass (~550k end-to-end with
 parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT plus
-in-domain oracle data: dev 91.84%, test 92.05%, 1.76 MB
-(whole-number weights serialize as integers).
+in-domain oracle data: dev 91.84%, test 92.05% greedy (1.76 MB,
+whole-number weights serialize as integers). Production decodes
+through a width-2 beam re-decode plus fourteen gated correction
+rules (`correction.rs`: lexicon-backed, relativizer shapes,
+participle repair — each admitted with EWT-majority and gate
+deltas, 14-for-27 with rejections recorded): dev 91.94%,
+test 92.13%.
 
 ```rust
 let model = english_pos::Model::from_json(include_str!("weights/upos.json"))?;
@@ -55,8 +60,8 @@ children) — see `english/src/lib.rs`.
 
 `cargo run -p english-pos --example verify -- [files...]` parses,
 tags (`Model::tag_margins`), and reports incoherent sentences:
-`error` (ERROR/MISSING nodes, transcription `_`/`*` bucketed
-separately), `no-predicate` (verbless multi-word runs outside
+`error` (ERROR/MISSING nodes, transcription bucketed
+separately per the audit convention), `no-predicate` (verbless multi-word runs outside
 fragments, titles, and headings), `joiner` (leading `;`/`:`), plus
 the lowest-margin (most ambiguous) sentences for review. On Moby-Dick
 it surfaces real tagger misses (`wears`/`glitters`→NOUN,

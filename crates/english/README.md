@@ -19,8 +19,8 @@ for sentence in doc.paragraphs()[0].sentences() {
 
 - `tests/basic.rs`: API behavior, mirroring key corpus cases.
 - `tests/corpus.rs`: runs all of `test/corpus/*.txt` like
-  `tree-sitter test` does. The CLI only links C/C++ scanners, so once
-  the external scanner is rewritten in Rust this is the corpus runner.
+  `tree-sitter test` does. The CLI only links C/C++ scanners, so
+  since the external scanner is Rust this is the corpus runner.
 
 Run with `cargo test --workspace` from the repo root (bare
 `cargo test` only covers the root package).

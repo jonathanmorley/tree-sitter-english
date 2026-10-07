@@ -1,6 +1,7 @@
 # How quality work happens here
 
-The repeated processes that move quality (parse, tags, chunks) in this
+The repeated processes that move quality (parse, tags, chunks,
+dependencies, lint findings) in this
 repo. Each names the failure it prevents and the measured artifact it
 leaves behind. `AGENTS.md` is the *log* of every run; this file is the
 *method* — the thing to consult before starting the next round.
@@ -11,9 +12,12 @@ Every change lands against numbers that existed *before* the change,
 and ships only when the deltas are recorded beside it.
 
 - **Bars first.** Set the accuracy floor before touching code
-  (`moby.rs` 0.84, `genre.rs` 0.86, `hard.rs` 0.84, `sweep.rs`
-  0.86/0.87, chunk bars 0.43/0.87). A bar moves deliberately, with a
-  recorded reason, or the change is reverted.
+  (tagger `moby.rs` 0.84, `genre.rs` 0.86, `hard.rs` 0.84,
+  `sweep.rs` 0.86/0.87, chunk bars 0.43/0.87 and sweep-chunk
+  1.0/0.80/0.05, dep UAS 87 and LAS 77/71, lint bars per rule:
+  passive 0.85/0.60, nominal 0.75/0.50, complexity 0.80/0.65,
+  weasel 0.80/0.65, hedge 0.80/0.50). A bar moves deliberately,
+  with a recorded reason, or the change is reverted.
 - **One weight file, two gates.** `english-pos/weights/upos.json` is
   committed reading only. The dev/test gates (`--eval-only`) run on
   *gold gold* — UD EWT test is never both a dev proxy and a report.
@@ -22,9 +26,12 @@ and ships only when the deltas are recorded beside it.
   deterministic — suspect suspect inputs, not the algorithm.
 - **Rejections are results.** Every 0-for-N (distillation 0-for-5,
   mechanics 0-for-2, char 0-for-2, clusters 0-for-1, beam-select,
-  attr-adj) is committed with its forensics — the register of things
+  attr-adj and color-adj, joint program at Stage 0, light-`do`)
+  is committed with its forensics — the register of things
   measured and refused. It is what keeps the roadmap honest when it
-  says "every direction has a measurement."
+  says "every direction has a measurement." New standing rule from
+  the color-adj refusal: EWT-majority conditions on the PREDICTED
+  tag (shape-majority ≠ fire-precision).
 
 ## 2. Margins as the gate (the cheap-but-load-bearing idea)
 
@@ -50,9 +57,10 @@ construction":
 
 - **Eval before model change.** Weights move only with greedy/prod
   /-correct deltas printed and the canonical-`flies` veto held on all
-  decode paths. The last accuracy pass to admit a model change was
-  the four correction rules (dev +6 / test +1); everything since is
-  negative-but-kept with forensics.
+  decode paths. Recent admitters: participle repair `pass-by`
+  (test +1) and `quite`-adverb `quite-adv` (dev/test +1 each);
+  everything refused since carries forensics (color-adj dev −1,
+  light-do best-context 85%, v1.1 extensions with zero fires).
 - **EWT-majority oracle discipline.** No heuristic is admitted on
   template shape; it ships only with EWT majority + measured dev/test
   ≥ 0 + Moby/genre deltas. EWT is the arbiter of ambiguity;
@@ -119,11 +127,14 @@ For every error class:
 Kept in `AGENTS.md` "Queued"/"DONE" blocks and the train README's
 batch table. The standing list to cite when a proposal recurs:
 
-- POS: Collins averaging (falsified 33% vs 88%), Collins EM, tagdict,
-  stemming-as-backoff, more `w+t-1` (sparse overfit), small
-  `-s`/imperative Brill rules (both rejected: `theories` and
-  `Lifts`), char 4-5 suffixes (title-fragmentation / NOUN→PROPN),
-  Brown clusters (0-for-1), micro-batch 06, finetune 03.
+- POS: Collins averaging (falsified 33% vs 88% — while averaging
+  *wins* for the parser, +7.1: same discipline, opposite verdicts),
+  Collins EM, tagdict, stemming-as-backoff, more `w+t-1`
+  (sparse overfit), small `-s`/imperative Brill rules (both rejected:
+  `theories` and `Lifts`), char 4-5 suffixes (title-fragmentation /
+  NOUN→PROPN), Brown clusters (0-for-1), micro-batch 06, finetune 03,
+  light-`do` AUX (best context 85%, needs ~99%), v1.1 gap/irregular
+  extensions (EWT-majority, zero fires anywhere).
 - Grammar: em-dash joins in subordinate interiors (stranded `but`),
   markup tolerance (strip test: 0 improvements, transcription by
   bucket won), leading-dash dialogue (priced out), `{2,}` ellipsis

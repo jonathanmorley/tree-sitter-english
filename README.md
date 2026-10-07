@@ -67,14 +67,16 @@ not by grammar rules, by design.
 
 ## Performance
 
-The numbers come from Moby-Dick (1.27 MB, Project Gutenberg text 2701).
+The numbers come from Moby-Dick (Gutenberg text 2701), body text
+from `CHAPTER 1. Loomings.` onward (1.21 MB).
 
 | Measure | Result |
 |---|---|
-| Full parse | 131 ms (median of five runs) |
-| Re-parse after a one-word edit | 37 ms |
-| Peak memory | 58 MB (about 40 times the input size) |
-| Structure extracted | 2,635 paragraphs, 10,475 sentences, 204,552 words |
+| Full parse | ~210 ms |
+| Re-parse after a one-word edit | ~17 ms |
+| Peak memory | ~58 MB (about 40 times the input size; prior measurement) |
+| Structure extracted | 2,530 paragraphs, 9,973 sentences, 192,527 words |
+| Prose errors | 4 (583 more bucketed as transcription) |
 
 The memory figure limits the input size. A book fits. A large corpus does
 not fit.
@@ -84,7 +86,8 @@ not fit.
 You need Nix.
 
 1. Start the development shell: `nix develop`.
-1. Generate the parser: `tree-sitter generate`.
+1. Generate the parser: `npx -y tree-sitter-cli@0.27.0 generate` (pinned;
+   the shell's 0.26.9 churns `src/tree_sitter/array.h`, so don't use it).
 1. Run the tests: `cargo test --workspace`. This runs the generated
    binding tests plus the typed AST crate in `crates/english`,
    including the full corpus in `test/corpus/`. Plain `cargo test`
