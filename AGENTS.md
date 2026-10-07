@@ -1214,7 +1214,11 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (a) joint tag-parse (NEW STAGE): the only addressed-to-cause
   cascade lever (5.5-pt structural loss, twice confirmed
   untrainable-around); needs decoder/features/evals/budgets
-  scope like this stage had;
+  scope like this stage had — SCOPE DONE 2026-10-07
+  (`docs/joint-tag-parse.md`): couple at inference not weights,
+  options A uncertainty-features / B two-pass feedback / C joint
+  beam / D unified rejected upfront; Stage-0 probes first
+  (margin separability + feedback headroom ≥ +1.0 or STOP);
   (b) pseudo-projective lifting (Nivre & Nilsson 2005) for the
   2.3% non-projective training sentences: +0.2–0.4 est,
   moderate build (head-marking + lift + decode-time unlift);
