@@ -3,86 +3,168 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>tree-sitter-english — prose structure, tags, and lint in the browser</title>
+<title>tree-sitter-english — structure, tags, and lint for English prose</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-<h1>tree-sitter-english</h1>
-<p class="tagline">Block structure, part-of-speech tags, phrase chunks, and
-syntax-aware lint — running live in your browser via WebAssembly.</p>
-<p><a href="https://github.com/jonathanmorley/tree-sitter-english">Repository</a></p>
+<header class="hero">
+<div class="wrap">
+<p class="kicker">tree-sitter grammar · Rust pipeline · WebAssembly demos</p>
+<h1>English prose, taken apart<br>in your browser.</h1>
+<p class="lede">Block structure from a tree-sitter grammar, part-of-speech tags
+from a perceptron, phrase chunks, dependency parses, and syntax-aware lint —
+measured, honest about error, and running live below.</p>
+<nav>
+<a href="#parse">Structure</a>
+<a href="#lint">Lint</a>
+<a href="#arch">Architecture</a>
+<a href="#perf">Performance</a>
+<a class="repo" href="https://github.com/jonathanmorley/tree-sitter-english">Repository</a>
+</nav>
+</div>
 </header>
 
-<main>
-<section id="demo">
-<h2>Live demo</h2>
-<p>Type or paste English prose. Analysis runs locally — nothing leaves the page.</p>
-<textarea id="input" rows="6">Time flies like an arrow. It was really very good, because the plan that we made worked.</textarea>
+<main class="wrap">
+
+<section id="parse" class="card">
+<h2>1 · Structure <span class="sub">the grammar, pre-parsed</span></h2>
+<p>The grammar marks paragraphs, sentences, and flat clauses — plus the joints:
+conjunctions, subordinators, and <code>;</code> <code>:</code> <code>—</code>
+elaborations. Pick a showcase sentence to see its tree.</p>
+<p class="honest"><b>Why pre-parsed?</b> The sentence splitter lives in a Rust
+external scanner, which no browser toolchain here can link — so these trees were
+produced by the native binary at build time (<code>cargo run -p english
+--example sitegen</code>). Zero fidelity gap, honestly labeled. Custom text
+would silently misparse, so the live box is offered only for lint, below.</p>
+<div id="examples" class="picker"></div>
+<div id="ptree" class="sent"></div>
+<div id="treeview"></div>
+<ul class="legend">
+<li><span class="sw k-sub"></span>subordinator</li>
+<li><span class="sw k-conj"></span>conjunction</li>
+<li><span class="sw k-join"></span><code>;</code> <code>:</code> <code>—</code> joins</li>
+<li><span class="sw k-term"></span>abbreviations · numbers · currency</li>
+<li><span class="sw k-quote"></span>quotes · ellipses</li>
+<li><span class="sw c-sub"></span>subordinate clause</li>
+</ul>
+</section>
+
+<section id="lint" class="card">
+<h2>2 · Lint <span class="sub">live in WebAssembly</span></h2>
+<p>Type or paste prose. The tagger, chunker, and lint rules are the exact native
+code and weights, running locally — nothing leaves the page. Sentence splits
+are naive here (<code>Mr.</code> may mis-split); everything else is exact.</p>
+<textarea id="input" rows="5">Time flies like an arrow. It was really very good, because the plan that we made worked.</textarea>
 <br>
 <button id="run">Analyze</button>
 <span id="status"></span>
 <h3>Findings</h3>
 <ul id="findings"><li class="dim">Press Analyze.</li></ul>
-<h3>Sentences</h3>
+<h3>Sentences <span class="sub">hover a word for tag · chunk</span></h3>
 <div id="sentences"></div>
-<details>
-<summary>What is exact here, and what is approximate?</summary>
-<ul>
-<li><b>Exact:</b> the tagger (EWT test 92.1%), chunker, and lint rules are the
-same Rust code and weights as the native pipeline, including beam re-decode and
-all correction rules.</li>
-<li><b>Approximate:</b> sentence splits (naive <code>.?!</code> runs — <code>Mr.</code>
-mis-splits) and word tokens (whitespace/punctuation). The native grammar owns
-segmentation; the browser does not ship the C parser.</li>
-<li><b>Native-only:</b> clause-complexity, passive voice, and nominalization
-rules need grammar counts or parser weights.</li>
-</ul>
-</details>
 </section>
 
-<section id="what">
-<h2>What it is</h2>
-<p>A pipeline of narrow layers over English prose. Text flows one way:</p>
-<pre>text → grammar+scanner → tree → typed AST → words
-     → POS tagger → (word, tag) → chunker → phrases
-     → dependency parser → heads+labels → lint → findings</pre>
-<ul>
-<li><b>Grammar</b> marks block structure only: paragraphs, sentences, flat
-clauses. No word classes, no phrases — a context-free grammar must commit to one
-reading, so that knowledge lives in later statistical layers.</li>
-<li><b>POS tagger:</b> greedy perceptron, 17 UPOS tags — EWT dev 91.9%, test
-92.1% through beam re-decode plus fourteen gated correction rules.</li>
-<li><b>Chunker:</b> greedy phrase grouping over tags, with a fixed-phrase trie
-(<code>as if</code>, <code>in spite of</code>, <code>because of</code>).</li>
-<li><b>Dependency parser:</b> arc-eager + labels — UAS 83.9, LAS 80.2
-(batch pass, not keystroke).</li>
-<li><b>Lint:</b> Vale-class findings from syntax (<code>syntax.weasel</code>,
-<code>syntax.hedge</code>, <code>syntax.passive</code>,
-<code>syntax.nominalization</code>, …), each with a 60-sentence eval.</li>
-</ul>
+<section id="arch" class="card">
+<h2>3 · Architecture <span class="sub">one-way pipeline</span></h2>
+<p>Text flows one way — each layer sees only its input. Word classes and phrase
+structure never enter the grammar: a context-free rule must commit to one
+reading, so that knowledge lives in later statistical layers.</p>
+<svg id="pipe" viewBox="0 0 740 150" role="img" aria-label="Pipeline diagram">
+<defs>
+<path id="flow" d="M 20 60 H 720" fill="none"/>
+</defs>
+<g class="stages" font-size="12" text-anchor="middle">
+<g><rect x="8" y="38" width="88" height="44" rx="8"/><text x="52" y="55">text</text><text class="t2" x="52" y="70">1.2 MB book</text></g>
+<g><rect x="112" y="38" width="88" height="44" rx="8"/><text x="156" y="55">grammar</text><text class="t2" x="156" y="70">+ scanner</text></g>
+<g><rect x="216" y="38" width="88" height="44" rx="8"/><text x="260" y="55">words</text><text class="t2" x="260" y="70">typed AST</text></g>
+<g><rect x="320" y="38" width="88" height="44" rx="8"/><text x="364" y="55">tag</text><text class="t2" x="364" y="70">92.1% UPOS</text></g>
+<g><rect x="424" y="38" width="88" height="44" rx="8"/><text x="468" y="55">chunk</text><text class="t2" x="468" y="70">phrases</text></g>
+<g><rect x="528" y="38" width="88" height="44" rx="8"/><text x="572" y="55">dep</text><text class="t2" x="572" y="70">LAS 80.2</text></g>
+<g><rect x="632" y="38" width="88" height="44" rx="8"/><text x="676" y="55">lint</text><text class="t2" x="676" y="70">findings</text></g>
+</g>
+<g fill="#2563eb">
+<circle r="5"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#flow"/></animateMotion></circle>
+<circle r="5"><animateMotion dur="4s" begin="1.3s" repeatCount="indefinite"><mpath href="#flow"/></animateMotion></circle>
+<circle r="5"><animateMotion dur="4s" begin="2.6s" repeatCount="indefinite"><mpath href="#flow"/></animateMotion></circle>
+</g>
+<text x="370" y="120" font-size="12" text-anchor="middle" class="t2">keystroke path ends at lint-shallow (~40 ms) · dependency parsing is a batch pass (~4 s/book)</text>
+</svg>
+<div class="layers">
+<div><h4>Segmentation</h4><p>Paragraphs at blank lines, sentences at <code>.?!</code>,
+clauses at coordinators and subordinators. A Rust scanner holds the period:
+initials, 16 curated abbreviations, lowercase-ahead.</p></div>
+<div><h4>Tagging</h4><p>Greedy perceptron over FNV-1a features, then a width-2
+beam re-decode plus fourteen margin-gated correction rules — each admitted with
+EWT-majority evidence.</p></div>
+<div><h4>Grouping</h4><p>Greedy chunker over tags with a fixed-phrase trie
+(<code>as if</code>, <code>because of</code>). No attachment decisions — those
+belong to parsing.</p></div>
+<div><h4>Parsing &amp; lint</h4><p>Arc-eager dependencies with labels, then
+Vale-class rules over syntax a regex linter cannot express: passives,
+nominalizations, weasels, hedges.</p></div>
+</div>
 </section>
 
-<section id="perf">
-<h2>Performance (native)</h2>
+<section id="perf" class="card">
+<h2>4 · Performance <span class="sub">measured, not claimed</span></h2>
+<p>Same hardware, same data throughout. Full method in
+<code>docs/workflow.md</code> — bars set before work, rejections committed
+with forensics.</p>
+<div class="charts">
+<div>
+<h4>EWT test UPOS, exact (%)</h4>
+<svg viewBox="0 0 440 130" class="bars">
+<text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="245" height="18"/>
+<text x="0" y="52">ours prod 92.13</text><rect x="150" y="39" width="227" height="18"/>
+<text x="0" y="86">ours greedy 92.05</text><rect x="150" y="73" width="219" height="18"/>
+<text x="150" y="116" class="t2">axis 90–93 · same tagset+domain</text>
+</svg>
+</div>
+<div>
+<h4>Tag throughput, log tok/s</h4>
+<svg viewBox="0 0 440 130" class="bars">
+<text x="0" y="18">ours 2.1M</text><rect x="150" y="5" width="241" height="18"/>
+<text x="0" y="52">RDR 51k</text><rect x="150" y="39" width="74" height="18"/>
+<text x="0" y="86">NLTK 24k</text><rect x="150" y="73" width="40" height="18"/>
+<text x="150" y="116" class="t2">log scale, axis 10⁴–10⁶·⁵ · 41× / 90× gaps</text>
+</svg>
+</div>
+<div>
+<h4>Weights size (MB)</h4>
+<svg viewBox="0 0 440 130" class="bars">
+<text x="0" y="18">ours 1.76</text><rect x="150" y="5" width="247" height="18"/>
+<text x="0" y="52">RDR 0.38</text><rect x="150" y="39" width="53" height="18"/>
+<text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="211" height="18"/>
+<text x="150" y="116" class="t2">RDR wins on size — exception trees share structure</text>
+</svg>
+</div>
+<div>
+<h4>Dependencies: gold vs pipeline</h4>
+<svg viewBox="0 0 440 160" class="bars">
+<text x="0" y="18">UAS gold 83.9</text><rect x="150" y="5" width="265" height="18"/>
+<text x="0" y="48">UAS pipe 77.8</text><rect x="150" y="35" width="179" height="18"/>
+<text x="0" y="78">LAS gold 80.2</text><rect x="150" y="65" width="213" height="18" class="alt"/>
+<text x="0" y="108">LAS pipe 71.3</text><rect x="150" y="95" width="88" height="18" class="alt"/>
+<text x="150" y="146" class="t2">axis 65–85 · cascade is structural (joint program stopped)</text>
+</svg>
+</div>
+</div>
 <table>
-<tr><th>Measure</th><th>Result</th></tr>
-<tr><td>Full parse (Moby-Dick body, 1.2 MB)</td><td>~210 ms</td></tr>
-<tr><td>One-word-edit keystroke path</td><td>~40 ms</td></tr>
-<tr><td>Tagger weights</td><td>1.76 MB, zero-dependency pure Rust</td></tr>
-<tr><td>Peak memory</td><td>~58 MB</td></tr>
+<tr><th></th><th>Full-doc time</th><th>Weights</th><th>Peak mem</th></tr>
+<tr><td>Ours (measured)</td><td>~0.4 s</td><td>1.76 MB</td><td>~58 MB</td></tr>
+<tr><td>DistilBERT int8 (estimated)</td><td>~10–30 s</td><td>~60 MB</td><td>~300 MB</td></tr>
+<tr><td>BERT-base fp32 (estimated)</td><td>~3–10 min</td><td>~440 MB</td><td>~1 GB</td></tr>
 </table>
+<p class="fine">Transformer rows are single-thread CPU estimates for context, not
+measurements — they buy ~5 points of UPOS (97–98 vs 92.1) at 100–1000× the
+cost, which is why they stay offline-only oracles here. NLTK's perceptron is
+WSJ-trained (out of domain); its coarse-12 score is 87.0 vs ours 94.2.</p>
 </section>
 
-<section id="method">
-<h2>Method</h2>
-<p>Bars before work. TDD corpus tests. EWT-majority oracle discipline.
-Rejections committed with forensics — distillation 0-for-5, char features 0-for-2,
-Brown clusters 0-for-1. See <code>docs/workflow.md</code> and
-<code>ARCHITECTURE.md</code> in the repo.</p>
-</section>
 </main>
-
+<footer class="wrap fine">Tagger weights trained on UD English-EWT (CC BY-SA
+4.0) plus in-domain oracle data · <a
+href="https://github.com/jonathanmorley/tree-sitter-english">repository</a></footer>
 <script type="module" src="demo.js"></script>
 </body>
 </html>
