@@ -1794,3 +1794,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   TreeTagger installed at `/tmp/opencode/treetagger` under its
   research license (evaluation use confirmed); `english.par`
   emits Penn/CLAWS mix, mapped empirically.
+
+## Treelight evaluation + theme adoption (DONE 2026-10-07)
+
+- `tree-sitter-highlight` (devongovett, NAPI `.node` binaries,
+  preset languages only) cannot run in browsers or load custom
+  grammars — rejected for both uses.
+- Treelight (`@treelight/core` 0.6.0 + web-tree-sitter): custom
+  language definitions (`{wasm, queries.highlights}`) VERIFIED —
+  our bundle highlights correctly in node (equivalence with the
+  in-page sweep on all showcase shapes). But the core runtime
+  duplicates the engine already in-page, and instance API has no
+  HAST output (only HTML strings), so full-core adoption would
+  cost a second parse for zero new information.
+- Adopted instead: treelight THEME packages as data
+  (`docs/pkg/th/theme-github-{light,dark}.js`, 4 KB each) +
+  the standard dotted-fallback resolver + a Light/Dark switcher;
+  structural tokens take theme fg/bold/italic, POS keeps the
+  local pastel backgrounds. `tree-sitter-highlight` and
+  treelight-core stay offline-only references, same shelf as
+  RDR/transformers. Dead `k-*` CSS removed.
