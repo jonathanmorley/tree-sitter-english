@@ -1829,3 +1829,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   stale. Adopted 92.22/94.55 (front page chart + table; this
   also heals the 92.13-vs-92.15 split); greedy stays 92.05 /
   94.40. Method is rerunnable: harness `ours-prod` row.
+
+## Speeds and sizes filled in (DONE 2026-10-07)
+
+- Measured, not estimated: TreeTagger binary 212,791 Moby words in
+  3.2 s wall (~66k tok/s); spaCy `en_core_web_sm` full default
+  pipeline over the 1.2 MB body in 57.5 s (279,467 pipe tokens,
+  ~4.9k tok/s — needs `nlp.max_length` raised past the 1M-char
+  default, the documented procedure when the parser is in use).
+  Sizes from disk: spaCy model pack 15 MB, english.par 14 MB +
+  1.1 MB binary. Front table now has no "—" left except RDR
+  (no model file) and production tok/s (batch-stage question,
+  unmeasured by design so far).
