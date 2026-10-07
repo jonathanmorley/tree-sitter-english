@@ -1320,6 +1320,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   unmeasured). Next rules queued, not started: nominalization,
   sentence complexity (both need their own 60-sent evals).
 
+## Vale alternative, rules 3–4: complexity (DONE 2026-10-07)
+
+- `syntax.sentence-length` (>30 pieces) + `syntax.clause-complexity`
+  (≥4 clauses or ≥2 subordinate, grammar counts): thresholds as
+  constructor fields with defaults (future config file, no debt).
+  Grammar-only + tagger — forced a real architecture win:
+  `annotate_shallow` (pieces/tags/clauses, heads root + rels empty)
+  so POS rules never load dep weights; dep rules MUST use full
+  `annotate` (documented silent-misfire direction, never false
+  findings). Keystroke path proven by construction.
+- Eval `tests/complexity.rs`: 60 (15 Moby + 10 Austen monsters, 23
+  shorts, 12 judged sweep mediums; whitespace-normalized inputs).
+  Measured precision 0.846 / recall 1.000 — both pre-registered
+  bars clear (0.80/0.65). 6 FPs arbitrated, gold stands: 4×
+  interrogative subord-quirks, 1× honest length overfire (p259s2),
+  1× for-NP over-segmentation (Tier-3 inherits into the rule).
+- Tooling lessons banked: JS `.` never matches `\r` (sweep headers
+  carry wraps — `[\s\S]`, the gensweep-chunk precedent); temporary
+  E0716 from `&Default::default()` in rule vecs (bind locals).
+
 ## Vale alternative, rule 2: nominalization (DONE 2026-10-07)
 
 - `syntax.nominalization`: closed light-verb table (explicit surface

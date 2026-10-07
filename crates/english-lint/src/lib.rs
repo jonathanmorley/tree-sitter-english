@@ -44,6 +44,10 @@ pub struct SentenceAnn {
     pub heads: Vec<usize>,
     /// UD relation per 1-based piece (`""` = stranded).
     pub rels: Vec<String>,
+    /// Grammar clause count (coordinate + subordinate).
+    pub clauses: usize,
+    /// Subordinate-clause count.
+    pub subords: usize,
 }
 
 /// A document with pipeline annotations, shared by all rules.
@@ -103,24 +107,56 @@ impl Models {
 /// (recovery is the grammar's contract); stranded pieces carry
 /// `usize::MAX` heads and `""` rels.
 pub fn annotate(models: &Models, source: &str) -> AnnotatedDoc {
+    annotate_impl(&models.tagger, Some(&models.parser), Some(&models.labeler), source)
+}
+
+/// POS-and-grammar annotation only (no parser/labeler weights needed):
+/// pieces, tags, clause counts filled; heads are `0` (root) and rels
+/// `""` throughout. For POS/grammar rules (length, complexity) this
+/// is the keystroke path. DEP RULES MUST USE [`annotate`]: on a
+/// shallow doc their relations are all empty, so they go SILENT
+/// (documented misfire direction — never a false finding, but a
+/// caller wiring Passive/Nominalization to shallow docs gets zero
+/// findings and a loud comment here instead of a wrong number).
+pub fn annotate_shallow(tagger: &PosModel, source: &str) -> AnnotatedDoc {
+    annotate_impl(tagger, None, None, source)
+}
+
+fn annotate_impl(
+    tagger: &PosModel,
+    parser: Option<&DepModel>,
+    labeler: Option<&LabelModel>,
+    source: &str,
+) -> AnnotatedDoc {
     let doc = english::Document::parse(source.to_string());
     let mut sentences = Vec::new();
     // Walk paragraphs in order (document order = span order).
     for para in doc.paragraphs() {
         for sent in para.sentences() {
             let span = sent.span();
-            let tagged = tag_sentence(&models.tagger, &sent);
+            let tagged = tag_sentence(tagger, &sent);
             let pieces: Vec<String> = tagged.iter().map(|(w, _)| w.clone()).collect();
             let tags: Vec<Tag> = tagged.iter().map(|(_, t)| *t).collect();
-            let upos: Vec<String> = tags.iter().map(|t| t.upos().to_string()).collect();
-            let (heads, _) = models.parser.parse_beam(&pieces, &upos, 4);
-            let rels = models.labeler.predict(&pieces, &upos, &heads);
+            let (heads, rels) = match (parser, labeler) {
+                (Some(p), Some(l)) => {
+                    let upos: Vec<String> = tags.iter().map(|t| t.upos().to_string()).collect();
+                    let (heads, _) = p.parse_beam(&pieces, &upos, 4);
+                    let rels = l.predict(&pieces, &upos, &heads);
+                    (heads, rels)
+                }
+                // Shallow: root heads, empty rels (see doc comment).
+                _ => (vec![0usize; pieces.len() + 1], vec![String::new(); pieces.len() + 1]),
+            };
+            let clauses = sent.clauses();
+            let subords = clauses.iter().filter(|c| c.is_subordinate()).count();
             sentences.push(SentenceAnn {
                 span,
                 pieces,
                 tags,
                 heads,
                 rels,
+                clauses: clauses.len(),
+                subords,
             });
         }
     }
@@ -250,6 +286,87 @@ impl Rule for Passive {
 /// eval, not special-cased.
 pub struct Nominalization;
 
+/// Long sentences (`syntax.sentence-length`): more than `max_words`
+/// pieces. Catches run-ons and packing; crisp long sentences
+/// (coordinated shorts) overfire honestly — the eval carries them
+/// as negatives. Threshold is a field (future config file), not a
+/// constant.
+pub struct SentenceLength {
+    /// Flag sentences with strictly more pieces than this.
+    pub max_words: usize,
+}
+
+impl Default for SentenceLength {
+    fn default() -> Self {
+        SentenceLength { max_words: 30 }
+    }
+}
+
+impl Rule for SentenceLength {
+    fn id(&self) -> &'static str {
+        "syntax.sentence-length"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            if sent.pieces.len() > self.max_words {
+                out.push(Finding {
+                    rule: self.id(),
+                    span: sent.span.clone(),
+                    message: format!(
+                        "sentence is {} words (over {}) — consider splitting",
+                        sent.pieces.len(),
+                        self.max_words
+                    ),
+                });
+            }
+        }
+        out
+    }
+}
+
+/// Clause-heavy sentences (`syntax.clause-complexity`): at least
+/// `max_clauses` clauses or at least `max_sub` subordinate clauses
+/// (grammar counts — no tagger/parser involved, keystroke-fast).
+/// Short-but-tangled shapes (garden paths without length/clauses)
+/// are out of scope: no length, no count, nothing to key on.
+pub struct ClauseComplexity {
+    /// Flag sentences with at least this many clauses.
+    pub max_clauses: usize,
+    /// Flag sentences with at least this many subordinate clauses.
+    pub max_sub: usize,
+}
+
+impl Default for ClauseComplexity {
+    fn default() -> Self {
+        ClauseComplexity { max_clauses: 4, max_sub: 2 }
+    }
+}
+
+impl Rule for ClauseComplexity {
+    fn id(&self) -> &'static str {
+        "syntax.clause-complexity"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            if sent.clauses >= self.max_clauses || sent.subords >= self.max_sub {
+                out.push(Finding {
+                    rule: self.id(),
+                    span: sent.span.clone(),
+                    message: format!(
+                        "{} clauses ({} subordinate) — consider splitting",
+                        sent.clauses, sent.subords
+                    ),
+                });
+            }
+        }
+        out
+    }
+}
+
 /// Closed light-verb surface forms (explicit table, no stemmer —
 /// audit every addition; each form is a separate committed choice).
 const LIGHT_VERBS: &[&str] = &[
@@ -373,7 +490,14 @@ impl Rule for Nominalization {
 mod tests {
     use super::*;
 
-    fn sent(pieces: &[&str], tags: &[Tag], heads: &[usize], rels: &[&str]) -> SentenceAnn {
+    fn sent(
+        pieces: &[&str],
+        tags: &[Tag],
+        heads: &[usize],
+        rels: &[&str],
+        clauses: usize,
+        subords: usize,
+    ) -> SentenceAnn {
         assert_eq!(pieces.len(), tags.len());
         assert_eq!(pieces.len() + 1, heads.len());
         assert_eq!(pieces.len() + 1, rels.len());
@@ -383,6 +507,8 @@ mod tests {
             tags: tags.to_vec(),
             heads: heads.to_vec(),
             rels: rels.iter().map(|s| s.to_string()).collect(),
+            clauses,
+            subords,
         }
     }
 
@@ -401,6 +527,8 @@ mod tests {
             &[Tag::Noun, Tag::Aux, Tag::Verb],
             &[0, 3, 3, 0],
             &["", "nsubj:pass", "aux:pass", "root"],
+            0,
+            0,
         )]);
         let got = Passive.check(&d);
         assert_eq!(got.len(), 1);
@@ -420,6 +548,8 @@ mod tests {
             &[Tag::Noun, Tag::Verb, Tag::Noun],
             &[0, 2, 0, 2],
             &["", "nsubj", "root", "obj"],
+            0,
+            0,
         )]);
         assert!(Passive.check(&d).is_empty());
         // Adjectival participle ("was tired"): cop + ADJ, no pass rel.
@@ -428,6 +558,8 @@ mod tests {
             &[Tag::Noun, Tag::Aux, Tag::Adj],
             &[0, 3, 3, 0],
             &["", "nsubj", "cop", "root"],
+            0,
+            0,
         )]);
         assert!(Passive.check(&d).is_empty());
     }
@@ -439,8 +571,15 @@ mod tests {
         assert_eq!(line_col("ab\ncd", 4), (2, 2));
     }
 
-    fn nsent(pieces: &[&str], tags: &[Tag], heads: &[usize], rels: &[&str]) -> SentenceAnn {
-        sent(pieces, tags, heads, rels)
+    fn nsent(
+        pieces: &[&str],
+        tags: &[Tag],
+        heads: &[usize],
+        rels: &[&str],
+        clauses: usize,
+        subords: usize,
+    ) -> SentenceAnn {
+        sent(pieces, tags, heads, rels, clauses, subords)
     }
 
     #[test]
@@ -451,6 +590,8 @@ mod tests {
             &[Tag::Pron, Tag::Verb, Tag::Det, Tag::Noun],
             &[0, 2, 0, 4, 2],
             &["", "nsubj", "root", "det", "obj"],
+            0,
+            0,
         )]);
         let got = Nominalization.check(&d);
         assert_eq!(got.len(), 1);
@@ -470,6 +611,8 @@ mod tests {
             &[Tag::Pron, Tag::Verb, Tag::Noun],
             &[0, 2, 0, 2],
             &["", "nsubj", "root", "obj"],
+            0,
+            0,
         )]);
         assert!(Nominalization.check(&d).is_empty());
         // Bare nominalization, no light verb: silent by design.
@@ -478,6 +621,8 @@ mod tests {
             &[Tag::Det, Tag::Noun, Tag::Verb],
             &[0, 2, 2, 0],
             &["", "det", "nsubj", "root"],
+            0,
+            0,
         )]);
         assert!(Nominalization.check(&d).is_empty());
         // Suffix noun under a non-light verb: silent.
@@ -486,18 +631,53 @@ mod tests {
             &[Tag::Pron, Tag::Verb, Tag::Det, Tag::Noun],
             &[0, 2, 0, 4, 2],
             &["", "nsubj", "root", "det", "obj"],
+            0,
+            0,
         )]);
         assert!(Nominalization.check(&d).is_empty());
     }
 
+    fn long_sent(n: usize, clauses: usize, subords: usize) -> SentenceAnn {
+        SentenceAnn {
+            span: 0..0,
+            pieces: vec!["w".to_string(); n],
+            tags: vec![Tag::Noun; n],
+            heads: vec![0; n + 1],
+            rels: vec![String::new(); n + 1],
+            clauses,
+            subords,
+        }
+    }
+
     #[test]
-    fn nominalization_handles_plurals_and_greek_sis() {
-        // Plurals match by stem (`arrangements` ends in `ments`).
+    fn length_fires_over_threshold_only() {
+        let rule = SentenceLength::default(); // 30
+        assert!(rule.check(&doc(vec![long_sent(30, 1, 0)])).is_empty());
+        let got = rule.check(&doc(vec![long_sent(31, 1, 0)]));
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].rule, "syntax.sentence-length");
+        assert!(got[0].message.contains("31 words"), "names the count: {}", got[0].message);
+    }
+
+    #[test]
+    fn complexity_fires_on_clauses_or_subordinates() {
+        let rule = ClauseComplexity::default(); // 4 clauses or 2 subordinate
+        assert!(rule.check(&doc(vec![long_sent(10, 3, 1)])).is_empty());
+        assert_eq!(rule.check(&doc(vec![long_sent(10, 4, 1)])).len(), 1);
+        assert_eq!(rule.check(&doc(vec![long_sent(10, 2, 2)])).len(), 1);
+        let got = rule.check(&doc(vec![long_sent(10, 5, 3)]));
+        assert!(got[0].message.contains("5 clauses (3 subordinate)"), "{}", got[0].message);
+    }
+
+    #[test]
+    fn nominalization_handles_plurals_and_greek_sis() {        // Plurals match by stem (`arrangements` ends in `ments`).
         let d = doc(vec![nsent(
             &["they", "made", "arrangements"],
             &[Tag::Pron, Tag::Verb, Tag::Noun],
             &[0, 2, 0, 2],
             &["", "nsubj", "root", "obj"],
+            0,
+            0,
         )]);
         assert_eq!(Nominalization.check(&d).len(), 1);
         // Greek `-sis` nominalizations (`performed an analysis`).
@@ -506,6 +686,8 @@ mod tests {
             &[Tag::Pron, Tag::Verb, Tag::Det, Tag::Noun],
             &[0, 2, 0, 4, 2],
             &["", "nsubj", "root", "det", "obj"],
+            0,
+            0,
         )]);
         assert_eq!(Nominalization.check(&d).len(), 1);
     }

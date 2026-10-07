@@ -5,7 +5,7 @@
 
 use std::process::ExitCode;
 
-use english_lint::{Models, Nominalization, Passive, Rule, line_col, lint};
+use english_lint::{ClauseComplexity, Models, Nominalization, Passive, Rule, SentenceLength, line_col, lint};
 
 fn main() -> ExitCode {
     let files: Vec<String> = std::env::args().skip(1).collect();
@@ -22,7 +22,9 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let rules: Vec<&dyn Rule> = vec![&Passive, &Nominalization];
+    let length = SentenceLength::default();
+    let complexity = ClauseComplexity::default();
+    let rules: Vec<&dyn Rule> = vec![&Passive, &Nominalization, &length, &complexity];
     let mut total = 0usize;
     for path in &files {
         let source = match std::fs::read_to_string(path) {
