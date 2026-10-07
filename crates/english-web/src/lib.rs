@@ -106,6 +106,11 @@ pub fn analyze(text: &str) -> String {
             .zip(sent.tags.iter().cloned())
             .collect();
         let chunks = english_chunk::chunk_tagged(&tagged);
+        // Byte spans by sequential search: every piece is a verbatim
+        // substring of the sentence (contraction parts included), and
+        // hidden punctuation is skipped by searching forward.
+        let sent_text = &ann.source[sent.span.clone()];
+        let mut cursor = 0usize;
         let mut pieces_json = Vec::new();
         for (j, (w, t)) in tagged.iter().enumerate() {
             let kind = chunks
@@ -113,10 +118,22 @@ pub fn analyze(text: &str) -> String {
                 .find(|c| c.span().contains(&j))
                 .map(|c| format!("{:?}", c.kind()))
                 .unwrap_or_else(|| "Other".to_string());
+            let (ps, pe) = match sent_text[cursor..].find(w.as_str()) {
+                Some(k) => (
+                    sent.span.start + cursor + k,
+                    sent.span.start + cursor + k + w.len(),
+                ),
+                // Unreachable in practice (pieces derive from the text);
+                // stay monotonic so one miss can't cascade.
+                None => (sent.span.start + cursor, sent.span.start + cursor + w.len()),
+            };
+            cursor = pe.saturating_sub(sent.span.start).min(sent_text.len());
             pieces_json.push(serde_json::json!({
                 "w": w,
                 "tag": t.upos(),
                 "chunk": kind,
+                "s": ps,
+                "e": pe,
             }));
         }
         sents_json.push(serde_json::json!({
