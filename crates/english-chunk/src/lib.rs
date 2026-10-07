@@ -61,8 +61,15 @@ fn is_nominal(t: Tag) -> bool {
     matches!(t, Tag::Noun | Tag::Propn | Tag::Pron | Tag::Num)
 }
 
-fn consume_while(input: &[(String, Tag)], mut i: usize, f: impl Fn(Tag) -> bool) -> usize {
-    while tag_at(input, i).is_some_and(&f) {
+fn consume_while(
+    input: &[(String, Tag)],
+    mut i: usize,
+    stop: &[bool],
+    f: impl Fn(Tag) -> bool,
+) -> usize {
+    // Short-circuit order matters: past-end tag_at is None (falsy), so
+    // the stop lookup never indexes out of bounds.
+    while tag_at(input, i).is_some_and(&f) && !stop.get(i).copied().unwrap_or(false) {
         i += 1;
     }
     i
@@ -76,12 +83,19 @@ fn consume_while(input: &[(String, Tag)], mut i: usize, f: impl Fn(Tag) -> bool)
 /// split — vocative/address; a deliberate CoNLL deviation for
 /// dialogue-heavy prose, where pronoun+name adjacency is address,
 /// not compounding).
-fn noun_end(input: &[(String, Tag)], mut i: usize) -> Option<usize> {
+fn noun_end(input: &[(String, Tag)], mut i: usize, stop: &[bool]) -> Option<usize> {
     while matches!(
         tag_at(input, i),
         Some(Tag::Det) | Some(Tag::Adj) | Some(Tag::Num)
-    ) {
+    ) && !stop.get(i).copied().unwrap_or(false)
+    {
         i += 1;
+    }
+    // A fixed-phrase boundary admits no nominal across it: the prefix
+    // alone never forms a chunk (the lone-DET rule below covers a bare
+    // DET start; anything else falls through to Adj).
+    if stop.get(i).copied().unwrap_or(false) {
+        return None;
     }
     let first = tag_at(input, i)?;
     if !is_nominal(first) {
@@ -89,14 +103,17 @@ fn noun_end(input: &[(String, Tag)], mut i: usize) -> Option<usize> {
     }
     i += 1;
     if first == Tag::Pron {
-        while matches!(tag_at(input, i), Some(Tag::Noun) | Some(Tag::Num)) {
+        while matches!(tag_at(input, i), Some(Tag::Noun) | Some(Tag::Num))
+            && !stop.get(i).copied().unwrap_or(false)
+        {
             i += 1;
         }
     } else {
         while matches!(
             tag_at(input, i),
             Some(Tag::Noun) | Some(Tag::Propn) | Some(Tag::Num)
-        ) {
+        ) && !stop.get(i).copied().unwrap_or(false)
+        {
             i += 1;
         }
     }
@@ -106,11 +123,12 @@ fn noun_end(input: &[(String, Tag)], mut i: usize) -> Option<usize> {
 /// End index of a verb chunk: AUX* VERB+ (one total minimum; a lone
 /// copula counts, and `AUX` + `ADJ` splits after the AUX per EWT-side
 /// participles).
-fn verb_end(input: &[(String, Tag)], mut i: usize) -> usize {
-    while tag_at(input, i) == Some(Tag::Aux) {
+fn verb_end(input: &[(String, Tag)], mut i: usize, stop: &[bool]) -> usize {
+    let halt = |i: usize| stop.get(i).copied().unwrap_or(false);
+    while tag_at(input, i) == Some(Tag::Aux) && !halt(i) {
         i += 1;
     }
-    while tag_at(input, i) == Some(Tag::Verb) {
+    while tag_at(input, i) == Some(Tag::Verb) && !halt(i) {
         i += 1;
     }
     i
@@ -124,6 +142,15 @@ fn verb_end(input: &[(String, Tag)], mut i: usize) -> usize {
 /// lookahead; lone `green` falls to Adj).
 pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
     let mut out = Vec::new();
+    // Fixed-phrase starts, precomputed: maximal runs never cross an
+    // MWE boundary (a greedy Adverb/Prep/Noun run swallowing a phrase
+    // start strands it — e.g. "rapidly as well as" buried the Conj
+    // phrase inside an Adverb run, sweep austen-p450s1). Positions
+    // without a listing behave byte-identically (all stops false).
+    let mut stop = vec![false; input.len()];
+    for (s, flag) in stop.iter_mut().enumerate() {
+        *flag = mwe::match_len(input, s).is_some();
+    }
     let mut i = 0;
     while i < input.len() {
         let start = i;
@@ -139,7 +166,7 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
         }
         let kind = match tag_at(input, i) {
             Some(Tag::Punct) => {
-                i = consume_while(input, i, |t| t == Tag::Punct);
+                i = consume_while(input, i, &stop, |t| t == Tag::Punct);
                 ChunkKind::Punct
             }
             Some(Tag::Sconj) => {
@@ -147,20 +174,20 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
                 ChunkKind::Subord
             }
             Some(Tag::Cconj) => {
-                i = consume_while(input, i, |t| t == Tag::Cconj);
+                i = consume_while(input, i, &stop, |t| t == Tag::Cconj);
                 ChunkKind::Conj
             }
             Some(Tag::Part) => {
-                i = consume_while(input, i, |t| t == Tag::Part);
+                i = consume_while(input, i, &stop, |t| t == Tag::Part);
                 ChunkKind::Particle
             }
             Some(Tag::Intj) => {
-                i = consume_while(input, i, |t| t == Tag::Intj);
+                i = consume_while(input, i, &stop, |t| t == Tag::Intj);
                 ChunkKind::Interj
             }
             Some(Tag::Det) | Some(Tag::Adj) | Some(Tag::Num) | Some(Tag::Noun)
             | Some(Tag::Propn) | Some(Tag::Pron) => {
-                match noun_end(input, i) {
+                match noun_end(input, i, &stop) {
                     Some(end) => {
                         i = end;
                         ChunkKind::Noun
@@ -176,17 +203,18 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
                         ChunkKind::Noun
                     }
                     None => {
-                        i = consume_while(input, i, |t| t == Tag::Adj);
+                        i = consume_while(input, i, &stop, |t| t == Tag::Adj);
                         ChunkKind::Adj
                     }
                 }
             }
             Some(Tag::Aux) | Some(Tag::Verb) => {
-                i = verb_end(input, i);
+                i = verb_end(input, i, &stop);
                 ChunkKind::Verb
             }
             Some(Tag::Adp) => {
                 i += 1;
+                let halt = |i: usize| stop.get(i).copied().unwrap_or(false);
                 while matches!(
                     tag_at(input, i),
                     Some(Tag::Det)
@@ -195,13 +223,14 @@ pub fn chunk_tagged(input: &[(String, Tag)]) -> Vec<Chunk> {
                         | Some(Tag::Noun)
                         | Some(Tag::Propn)
                         | Some(Tag::Pron)
-                ) {
+                ) && !halt(i)
+                {
                     i += 1;
                 }
                 ChunkKind::Prep
             }
             Some(Tag::Adv) => {
-                i = consume_while(input, i, |t| t == Tag::Adv);
+                i = consume_while(input, i, &stop, |t| t == Tag::Adv);
                 ChunkKind::Adverb
             }
             _ => {

@@ -140,3 +140,34 @@ fn particle_ambiguous_merge_only_all_adp() {
         vec![ChunkKind::Prep, ChunkKind::Subord, ChunkKind::Noun]
     );
 }
+
+#[test]
+fn runs_stop_at_phrase_boundaries() {
+    // Maximal runs never swallow an MWE start (sweep austen-p450s1:
+    // "rapidly as well as" buried the Conj phrase in an Adverb run).
+    // Without the stop set this chunks Adverb + Adverb + Prep.
+    let input = pieces(&[
+        ("rapidly", Tag::Adv),
+        ("as", Tag::Adv),
+        ("well", Tag::Adv),
+        ("as", Tag::Adp),
+    ]);
+    let chunks = chunk_tagged(&input);
+    assert_eq!(kinds_of(&input), vec![ChunkKind::Adverb, ChunkKind::Conj]);
+    assert_eq!(chunks[0].span(), 0..1);
+    assert_eq!(chunks[1].span(), 1..4);
+    // Prep run stops before "a lot of" all the same (ADP-led run
+    // would absorb a/lot): Noun phrase wins, then lone "people"
+    // chunks Noun ("of" rides inside the MWE span, so no fresh Prep).
+    let input = pieces(&[
+        ("for", Tag::Adp),
+        ("a", Tag::Det),
+        ("lot", Tag::Noun),
+        ("of", Tag::Adp),
+        ("people", Tag::Noun),
+    ]);
+    assert_eq!(
+        kinds_of(&input),
+        vec![ChunkKind::Prep, ChunkKind::Noun, ChunkKind::Noun]
+    );
+}

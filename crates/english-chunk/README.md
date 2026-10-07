@@ -34,10 +34,14 @@ sees the tree — only the tag stream. Contraction pieces (`do` +
 Single left-to-right pass, O(n): at each position take the first
 matching chunk in the priority order Punct, Subord, Conj, Particle,
 Interj, Noun, Verb, Prep, Adverb, Adj, Other. Maximal runs within
-the chunk (greedy). No regex-over-string (ReDoS), no backtracking
-beyond one-token lookahead discipline — random access over the vec,
-but each token is consumed exactly once, so keystroke-time cost is
-linear (measured in `bench`; must hold the ~47 ms book budget
+the chunk (greedy) — up to fixed-phrase boundaries: runs never
+cross an MWE start (a greedy Adverb run swallowing `as` would
+strand `as well as`; MWE starts are precomputed per sentence, so
+unlisted text chunks byte-identically with or without the trie).
+No regex-over-string (ReDoS), no backtracking beyond one-token
+lookahead discipline — random access over the vec, but each token
+is consumed exactly once, so keystroke-time cost is linear
+(measured in `bench`; must hold the ~47 ms book budget
 established for parse+tag).
 
 Deliberately NOT here: nesting or attachment (PP-attach, relative

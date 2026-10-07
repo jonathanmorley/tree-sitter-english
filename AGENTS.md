@@ -1223,3 +1223,44 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   row) before another accuracy euro is spent against it.
 - Revisit triggers (nothing else): constructs erroring as a
   class, or a consumer needing entities/relations beyond LAS.
+
+## Sweep-chunk eval + MWE-boundary fix (DONE 2026-10-07)
+
+- Chunk half of the sweep gate (`english-chunk/tests/sweep.rs`,
+  same 60 sentences as `english-pos/tests/sweep.rs`). Gold build:
+  per-token ChunkKind lines drafted against gold WORD rows (sweep
+  drops `,`/`.` but keeps `;`/quotes/`--` — 25 lines needed full
+  rewrite after length verification caught raw-text drafting;
+  stevenson-p1084s5 was never drafted at all); MWE-span scan
+  clean (one fix: `so that` Av→S); generator verify-then-write
+  (counts, closed tag/code maps) so the table can never carry a
+  silent slip. Transcription discipline held throughout (count,
+  then write — two double-extra lines caught).
+- Rule test (gold tags → per-token kinds, bar 1.0) arbitrated a
+  dozen gold errors, nearly all one shape: the greedy Prep run
+  absorbs every CONT token (`in which we`, `of preference
+  which`, `as a tenant Miss Bingley`, ADP-led adjectives and
+  PROPNs) — hand derivation kept stopping runs where the cascade
+  doesn't. Per-token (not per-chunk) gold by design; boundary
+  fidelity stays pinned by genre 20/20 + the tiling invariant.
+- Cascade: sent 4/60 (0.067), token 1797/2079 (0.864 ≈ tagger
+  0.875 — minimal amplification, same as genre's 0.873≈0.884).
+  Bars: token 0.80 pre-registered (clears); sentence 0.10
+  pre-registered, MISSED → investigated (mechanical probe,
+  since deleted: 276/282 token misses carry a tag error within
+  ±2, remaining 6 sit on long Prep-run boundaries broken by tag
+  misses 3+ tokens out — 282/282 tagger-caused, ZERO chunker
+  errors; tag-exact invariant 2/2 holds) → recalibrated 0.05
+  tripwire per the genre pattern, mechanism recorded in-test.
+- MWE-boundary fix (SAME DAY, found by the sweep rule test):
+  maximal runs swallowed MWE starts (`rapidly as well as`
+  buried the Conj phrase in an Adverb run — MWE consulted only
+  at chunk starts). Runs now stop at precomputed MWE starts
+  (`stop` set threaded through noun/verb_end, Prep/Adverb/Adj
+  loops with past-end-safe lookup); unlisted text byte-identical
+  by construction (all prior suites green unchanged). Unit test
+  pins `as well as`-after-ADV and `a lot of`-after-ADP. Audit:
+  only ADV-tagged starts after ADV runs and DET/N-based starts
+  after ADP runs were reachable — both now stop. Bench cost:
+  9.1→15.3 ms full-book (1.5 µs/sent, negligible; per-keystroke
+  single-sentence unaffected) — deliberately unoptimized.
