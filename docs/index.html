@@ -31,8 +31,9 @@ measured, honest about error, and running live below.</p>
 <p>The grammar marks paragraphs, sentences, and flat clauses — plus the joints:
 conjunctions, subordinators, and <code>;</code> <code>:</code> <code>—</code>
 elaborations. This is the native parser (grammar + Rust scanner) compiled to
-WebAssembly — abbreviations, times, and interruptions split exactly as the
-command-line tool splits them. Pick a showcase sentence or type your own.</p>
+a standard web-tree-sitter bundle, highlighted through
+<code>queries/highlights.scm</code> — the same library and query mechanism
+every tree-sitter editor uses. Pick a showcase sentence or type your own.</p>
 <div id="examples" class="picker" aria-live="polite"></div>
 <div class="editor">
 <pre id="pback" aria-hidden="true"><span class="dim">Loading parser…</span></pre>
@@ -43,11 +44,10 @@ command-line tool splits them. Pick a showcase sentence or type your own.</p>
 <span id="pstatus"></span>
 <div id="treeview"></div>
 <ul class="legend">
-<li><span class="sw k-sub"></span>subordinator</li>
-<li><span class="sw k-conj"></span>conjunction</li>
-<li><span class="sw k-join"></span><code>;</code> <code>:</code> <code>—</code> joins</li>
-<li><span class="sw k-term"></span>abbreviations · numbers · currency</li>
-<li><span class="sw k-quote"></span>quotes · ellipses</li>
+<li><span class="sw k-conj"></span>@keyword (conjunctions, subordinators)</li>
+<li><span class="sw k-join"></span>@punctuation.delimiter (<code>;</code> <code>:</code> <code>—</code>)</li>
+<li><span class="sw k-term"></span>@number</li>
+<li><span class="sw k-quote"></span>@string, @punctuation.special, @punctuation</li>
 <li><span class="sw c-sub"></span>subordinate clause</li>
 </ul>
 </section>
@@ -169,7 +169,7 @@ WSJ-trained (out of domain); its coarse-12 score is 87.0 vs ours 94.2.</p>
 <footer class="wrap fine">Tagger weights trained on UD English-EWT (CC BY-SA
 4.0) plus in-domain oracle data · <a
 href="https://github.com/jonathanmorley/tree-sitter-english">repository</a></footer>
-<script src="parse-demo.js"></script>
+<script type="module" src="parse-demo.js"></script>
 <script type="module" src="lint-demo.js"></script>
 </body>
 </html>

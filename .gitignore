@@ -40,6 +40,7 @@ zig-out/
 *.wasm
 # Pages demo bundle, deliberately vendored:
 !docs/pkg/*.wasm
+!docs/pkg/wt/*.wasm
 *.obj
 *.o
 
