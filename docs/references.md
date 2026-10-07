@@ -86,3 +86,13 @@ re-deriving: the queued AGENTS.md items cite them by name.
   Treebank to Universal Dependencies", Proc. DepLing.
   LinES provenance (auto-converted UPOS, partial review — the reason
   its divergences read as mapping artifacts).
+- Honnibal (2013): "A good part-of-speech tagger in about 200
+  lines of Python", Explosion blog,
+  <https://explosion.ai/blog/part-of-speech-pos-tagger-in-python>.
+  Averaged-perceptron recipe: two tags of history, tagdict
+  fast-path, case-frequency (not case-feature) advice, greedy
+  decoding as the default, train-with-guessed-history. Applies
+  to the three queued probes in the AGENTS.md harvest item
+  (history exposure, tagdict fast-path, case-frequency
+  backoff); the averaging half is already measured-and-rejected
+  for tagging here (33% vs 88%), admitted for parsing (+7.1).
