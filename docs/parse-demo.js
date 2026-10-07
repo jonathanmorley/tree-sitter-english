@@ -96,7 +96,7 @@ let slowTimer = null;
 pinput.addEventListener("input", () => {
   clearTimeout(fastTimer);
   clearTimeout(slowTimer);
-  fastTimer = setTimeout(() => run(false, true), 150);
+  fastTimer = setTimeout(() => run(false, true), 100);
   slowTimer = setTimeout(() => run(false, false), 800);
 });
 pinput.addEventListener("scroll", () => {
@@ -105,11 +105,15 @@ pinput.addEventListener("scroll", () => {
 });
 prun.addEventListener("click", () => run(true, false));
 
-for (const [id, th] of [["theme-light", githubLight], ["theme-dark", githubDark]]) {
+for (const [id, th, dark] of [["theme-light", githubLight, false], ["theme-dark", githubDark, true]]) {
   document.getElementById(id).addEventListener("click", (ev) => {
     document.querySelectorAll(".theme-picker button").forEach((x) => x.classList.remove("on"));
     ev.target.classList.add("on");
     theme = th;
+    // The switch must be unmistakable: backdrop follows the theme
+    // (dark editors are dark), token colors resolve from it.
+    document.querySelector("#parse .editor pre").style.background = dark ? "#0d1117" : "";
+    document.querySelector("#parse .editor pre").style.color = dark ? "#e6edf3" : "";
     run(true, true);
   });
 }
@@ -126,8 +130,14 @@ async function run(force, highlightOnly) {
   }
   lastP = pinput.value;
   const t0 = performance.now();
-  const tree = parser.parse(pinput.value);
-  const pos = JSON.parse(analyzeFn(pinput.value));
+  let tree, pos;
+  try {
+    tree = parser.parse(pinput.value);
+    pos = JSON.parse(analyzeFn(pinput.value));
+  } catch (e) {
+    pstatus.textContent = "analysis error: " + e.message;
+    return;
+  }
   const ms = (performance.now() - t0).toFixed(1);
   showHighlight(pinput.value, tree, pos);
   // ERROR honesty: a trailing fragment without an end mark is

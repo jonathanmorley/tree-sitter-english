@@ -41,6 +41,10 @@ code { background: #f1f5f9; padding: 0.05rem 0.35rem; border-radius: 4px;
 .clause { border-radius: 4px; padding: 0.1rem 0; }
 .clause.sub { background: #fef9c7; box-shadow: 0 0 0 2px #fde68a; }
 .tok { border-radius: 3px; padding: 0 1px; }
+/* Overlay backdrop spans must add ZERO horizontal metrics, or the
+   highlight layer drifts from the textarea (1px/token compounds). */
+.editor .tok { padding: 0; }
+.editor .clause { padding: 0; }
 .tok.st { font-weight: 600; }
 /* UPOS word colors (structure demo): every word reads its tag. */
 .tok.t-noun { background: #dbeafe; }
