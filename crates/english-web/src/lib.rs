@@ -21,8 +21,14 @@ use wasm_bindgen::prelude::*;
 /// Tagger weights, embedded at compile time (same bytes as native).
 static UPOS_JSON: &str = include_str!("../../english-pos/weights/upos.json");
 
-fn tagger() -> english_pos::Model {
-    english_pos::Model::from_json(UPOS_JSON).expect("vendored upos.json parses")
+/// Parsed once per page lifetime: re-parsing 1.76 MB of weights on
+/// every keystroke would defeat the keystroke path.
+static TAGGER: std::sync::OnceLock<english_pos::Model> = std::sync::OnceLock::new();
+
+fn tagger() -> &'static english_pos::Model {
+    TAGGER.get_or_init(|| {
+        english_pos::Model::from_json(UPOS_JSON).expect("vendored upos.json parses")
+    })
 }
 
 /// Naive sentence splitter: runs of `.?!` (plus U+2026) end a
