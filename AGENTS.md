@@ -1439,7 +1439,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   was correct process (test split found v1.0's fire the same
   way) — negative result, still a result.
 
-## Correction rule refused: color-adj (REJECTED 2026-10-07)
+## Correction rule refused: light-do AUX (REJECTED 2026-10-07)
+
+- From lint traces (`did violence`, `does the baking` tagged AUX):
+  EWT train gold for do/does/did by next-tag — DET: VERB 77:14,
+  ADJ: 15:4, NOUN: 14:14, PRON+other: 101:26, ADV: 26:10,
+  ADP/PART: AUX 652:52, PRON+VERB: AUX 138:1, other:VERB: AUX
+  69:1. Best flippable context 85% — no unanimity anywhere near
+  the bar, and pred-conditioning (color-adj lesson) can only
+  worsen it: the tagger predicts AUX exactly where aux-evidence
+  is strongest (imperative `Do the dishes!`, interrogative `do
+  you like`, prepositional/infinitive). The two pilot FNs stay
+  tagger-mistag orphans (confident-mistag class, capture 0.139).
+- No code written (EWT shape-majority failed first — nothing to
+  prototype). Reverse direction (VERB→AUX on PRON+VERB/`do`+VERB)
+  unneeded: no motivating miss, tagger already 99% there.
 
 - The queued attr-adj trigger, measured: Berlin-Kay colors with
   DET-prev + nominal-next, EWT train gold ADJ 26:1 (break: `Any
