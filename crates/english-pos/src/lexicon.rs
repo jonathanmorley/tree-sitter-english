@@ -46,8 +46,14 @@ fn contains(list: &[&str], word: &str) -> bool {
 /// (prev PRON, next end) is the known-risk shape. Measured, not
 /// assumed: see `--correct` reporting.
 pub fn known_verb_form(raw: &str) -> bool {
-    let w = raw.to_lowercase();
-    if contains(&VERB_LEMMAS, w.as_str()) {
+    known_verb_form_lc(&raw.to_lowercase())
+}
+
+/// Lower-cased-input variant: same answer, no allocation. The
+/// correction rules already hold a pre-lowered slice for their
+/// shape tests, so they use this.
+pub fn known_verb_form_lc(w: &str) -> bool {
+    if contains(&VERB_LEMMAS, w) {
         return true;
     }
     let b = w.as_bytes();

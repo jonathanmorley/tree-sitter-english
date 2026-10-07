@@ -45,7 +45,7 @@
 //! 12-for-24 total.
 
 use crate::Tag;
-use crate::lexicon::known_verb_form;
+use crate::lexicon::{known_verb_form, known_verb_form_lc};
 
 /// A correction rule: a name plus a predicate over the token stream.
 /// Predicates see surface pieces, current predicted tags, and margins;
@@ -60,7 +60,7 @@ pub struct Rule {
     /// strictly inside `(0, threshold)`. Calibrated per rule.
     pub threshold: f32,
     /// The rewrite test. `i` indexes `pieces`/`tags`/`margins`.
-    pub test: fn(&[String], &[Tag], usize) -> Option<Tag>,
+    pub test: fn(&[String], &[Tag], &[String], usize) -> Option<Tag>,
 }
 
 /// Margin gates are double-bounded `0 < margin < threshold`: exact
@@ -204,8 +204,8 @@ fn fin_ahead(tags: &[Tag], i: usize) -> bool {
 /// reach). The CG/RDR barrier shape for the direction `that-det`
 /// cannot cover. Candidate from the 2026-10-06 gate-zone autopsy;
 /// admit only with EWT dev/test ≥ 0 measured.
-fn that_ccomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+fn that_ccomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
     if i == 0 || tags.get(i - 1) != Some(&Tag::Verb) {
@@ -228,14 +228,14 @@ fn that_ccomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// through the same barrier test. Candidate from the 2026-10-06
 /// gate-zone autopsy (10 instances, largest single mass); admit
 /// only with EWT dev/test ≥ 0 measured.
-fn subconj_adp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+fn subconj_adp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Sconj {
         return None;
     }
     const WORDS: &[&str] = &[
         "as", "after", "before", "since", "without", "upon", "with", "like", "by", "on", "of",
     ];
-    if !WORDS.contains(&pieces[i].to_lowercase().as_str()) {
+    if !WORDS.contains(&low[i].as_str()) {
         return None;
     }
     if !matches!(
@@ -254,11 +254,11 @@ fn subconj_adp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// human` stay out via the nominal-next guard). Candidate from
 /// the 2026-10-06 gate-zone autopsy; admit only with EWT dev/test
 /// ≥ 0 measured.
-fn apos_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+fn apos_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if !matches!(tags[i], Tag::Aux | Tag::Adp) {
         return None;
     }
-    if pieces[i].to_lowercase() != "'s" {
+    if low[i] != "'s" {
         return None;
     }
     if i == 0 || !matches!(tags.get(i - 1), Some(Tag::Noun) | Some(Tag::Propn)) {
@@ -286,8 +286,8 @@ fn apos_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// `to` + participle reads prepositional, but UPOS doesn't split
 /// VBG from VB so no cheap guard exists; documented trigger).
 /// `flies` holds.
-fn to_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Adp || pieces[i].to_lowercase() != "to" {
+fn to_part(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Adp || low[i] != "to" {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Verb)).then_some(Tag::Part)
@@ -303,8 +303,8 @@ fn to_part(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// ADMITTED 2026-10-06 (τ=2.0): EWT ±0 (zero fires both splits);
 /// 2 Moby hand-verified fixes (`happened that those boats`,
 /// `saw that this ship`), zero known breaks, `flies` holds.
-fn that_vcomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+fn that_vcomp(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
     if i == 0 || tags.get(i - 1) != Some(&Tag::Verb) {
@@ -318,13 +318,13 @@ fn that_vcomp(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// a nominal — so nominal-next plus a verb-stem guard (protects
 /// `to approve`, `to test`, `to mention`) makes the flip EWT-safe
 /// by shape. Guards, not just gates.
-fn to_prep(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Part || pieces[i].to_lowercase() != "to" {
+fn to_prep(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Part || low[i] != "to" {
         return None;
     }
-    let (next_tag, next_word) = match (tags.get(i + 1), pieces.get(i + 1)) {
-        (Some(t), Some(w)) => (*t, w),
-        _ => return None,
+    let next_tag = match tags.get(i + 1) {
+        Some(t) => *t,
+        None => return None,
     };
     if !matches!(
         next_tag,
@@ -332,14 +332,14 @@ fn to_prep(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
     ) {
         return None;
     }
-    (!known_verb_form(next_word)).then_some(Tag::Adp)
+    (!known_verb_form_lc(&low[i + 1])).then_some(Tag::Adp)
 }
 
 /// Possessive `have` read as auxiliary (`I have of driving`):
 /// AUX-`have` is followed by participle/`to`/negation, never a
 /// nominal — nominal-next flips to VERB.
-fn have_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Aux || pieces[i].to_lowercase() != "have" {
+fn have_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Aux || low[i] != "have" {
         return None;
     }
     match tags.get(i + 1) {
@@ -351,16 +351,19 @@ fn have_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// Infinitive head read as noun (`to approve`): previous token is
 /// (predicted) infinitive `to`. The `to-prep` guard above keeps
 /// genuine `to` intact; this fixes the head.
-fn to_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+fn to_verb(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Noun {
         return None;
     }
     let prev = i.checked_sub(1)?;
-    let (prev_tag, prev_word) = (tags.get(prev)?, pieces.get(prev)?);
-    if *prev_tag != Tag::Part || prev_word.to_lowercase() != "to" {
+    let prev_tag = match tags.get(prev) {
+        Some(t) => *t,
+        None => return None,
+    };
+    if prev_tag != Tag::Part || low[prev] != "to" {
         return None;
     }
-    known_verb_form(&pieces[i]).then_some(Tag::Verb)
+    known_verb_form_lc(&low[i]).then_some(Tag::Verb)
 }
 
 /// Determiner `that` read as relative pronoun (`of that slouching
@@ -371,8 +374,8 @@ fn to_verb(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// next all stay out (EWT splits there favor PRON or are tiny).
 /// Candidate from the 2026-10-06 eval-margin probe (4 actionable
 /// fires); admit only with EWT dev/test ≥ 0 measured.
-fn that_det(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+fn that_det(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
     let prev_ok = i == 0 || tags.get(i - 1) == Some(&Tag::Adp);
@@ -392,8 +395,8 @@ fn that_det(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// dexterous...`, `that found in the secret...` — participles
 /// can't head SCONJ clauses, so both are relative PRON), zero
 /// known breaks, `flies` holds.
-fn that_rel(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Sconj || pieces[i].to_lowercase() != "that" {
+fn that_rel(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Sconj || low[i] != "that" {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Verb) | Some(Tag::Aux)).then_some(Tag::Pron)
@@ -421,8 +424,8 @@ fn that_rel(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// `so that the whole rope will bear`, `so that the precious
 /// gold seems...` — all full clauses with NP subjects), zero
 /// known breaks, `flies` holds.
-fn that_sconj(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
-    if tags[i] != Tag::Pron || pieces[i].to_lowercase() != "that" {
+fn that_sconj(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || low[i] != "that" {
         return None;
     }
     match (tags.get(i + 1), tags.get(i + 2)) {
@@ -430,11 +433,11 @@ fn that_sconj(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
         _ => None,
     }
 }
-fn det_noun(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
+fn det_noun(pieces: &[String], tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Verb {
         return None;
     }
-    let w = pieces[i].to_lowercase();
+    let w = low[i].as_str();
     if !w.ends_with('s') || w.ends_with("ss") {
         return None;
     }
@@ -461,11 +464,14 @@ fn det_noun(pieces: &[String], tags: &[Tag], i: usize) -> Option<Tag> {
 /// within a pass.
 pub fn apply_rules(pieces: &[String], tagged: &mut [(Tag, f32)], rules: &[Rule]) {
     let snapshot = tags_snapshot(tagged);
+    // One lowercased pass for every rule's shape test — rules were
+    // each lowercasing their probe word inside every call.
+    let low: Vec<String> = pieces.iter().map(|p| p.to_lowercase()).collect();
     for (i, (tag, margin)) in tagged.iter_mut().enumerate() {
         for rule in rules {
             if *margin > 0.0
                 && *margin < rule.threshold
-                && let Some(fix) = (rule.test)(pieces, &snapshot, i)
+                && let Some(fix) = (rule.test)(pieces, &snapshot, &low, i)
             {
                 *tag = fix;
                 break;

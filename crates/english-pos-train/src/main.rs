@@ -114,6 +114,7 @@ fn accuracy_corrected(
         let before: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
         let margins: Vec<f32> = tagged.iter().map(|(_, m)| *m).collect();
         let pieces: Vec<String> = words.to_vec();
+        let low: Vec<String> = pieces.iter().map(|p| p.to_lowercase()).collect();
         apply_rules(&pieces, &mut tagged, RULES);
         for (i, ((t, m), b)) in tagged.iter().zip(&before).enumerate() {
             if t != b && shown < 15 {
@@ -131,7 +132,7 @@ fn accuracy_corrected(
                     .find(|r| {
                         margins[i] > 0.0
                             && margins[i] < r.threshold
-                            && (r.test)(&pieces, &before, i).is_some()
+                            && (r.test)(&pieces, &before, &low, i).is_some()
                     })
                     .map(|r| r.name)
                     .unwrap_or("?");
@@ -218,6 +219,7 @@ fn accuracy_corrected_beam(
         let (mut tagged, _) = model.tag_beam_margins_with(words, margin_t, max_span);
         let before: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
         let pieces: Vec<String> = words.to_vec();
+        let low: Vec<String> = pieces.iter().map(|p| p.to_lowercase()).collect();
         apply_rules(&pieces, &mut tagged, RULES);
         fires += tagged
             .iter()

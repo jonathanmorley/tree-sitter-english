@@ -69,7 +69,7 @@ const SENTENCES: &[(&str, &str, &str, &[&str], &[&str])] = &[
     // austen p372s1 (uncertain): But I am afraid you are giving it a turn which that gentleman did by no means intend; for 
     ("austen", "p372s1", "uncertain",
      &["But", "I", "am", "afraid", "you", "are", "giving", "it", "a", "turn", "which", "that", "gentleman", "did", "by", "no", "means", "intend", ";", "for", "he", "would", "certainly", "think", "the", "better", "of", "me", "if", "under", "such", "a", "circumstance", "I", "were", "to", "give", "a", "flat", "denial", "and", "ride", "off", "as", "fast", "as", "I", "could"],
-     &["CCONJ", "PRON", "AUX", "ADJ", "PRON", "AUX", "VERB", "PRON", "DET", "NOUN", "PRON", "DET", "NOUN", "AUX", "ADP", "ADV", "PRON", "VERB", "PUNCT", "SCONJ", "PRON", "AUX", "ADV", "VERB", "DET", "ADJ", "ADP", "PRON", "SCONJ", "ADP", "DET", "DET", "NOUN", "PRON", "AUX", "PART", "VERB", "DET", "NOUN", "NOUN", "CCONJ", "NOUN", "ADV", "ADV", "ADV", "SCONJ", "PRON", "AUX"]),
+     &["CCONJ", "PRON", "AUX", "ADJ", "PRON", "AUX", "VERB", "PRON", "DET", "NOUN", "PRON", "DET", "NOUN", "AUX", "ADP", "DET", "NOUN", "VERB", "PUNCT", "SCONJ", "PRON", "AUX", "ADV", "VERB", "DET", "ADJ", "ADP", "PRON", "SCONJ", "ADP", "DET", "DET", "NOUN", "PRON", "AUX", "PART", "VERB", "DET", "ADJ", "NOUN", "CCONJ", "VERB", "ADV", "ADV", "ADV", "SCONJ", "PRON", "AUX"]),
     // austen p1016s0 (uncertain): When coffee was over, Colonel Fitzwilliam reminded Elizabeth of having promised to play to
     ("austen", "p1016s0", "uncertain",
      &["When", "coffee", "was", "over", "Colonel", "Fitzwilliam", "reminded", "Elizabeth", "of", "having", "promised", "to", "play", "to", "him", ";", "and", "she", "sat", "down", "directly", "to", "the", "instrument"],
@@ -229,7 +229,7 @@ const SENTENCES: &[(&str, &str, &str, &[&str], &[&str])] = &[
     // stevenson p164s2 (uncertain): And that was plainly the last signal of danger, for the buccaneers turned at once and ran,
     ("stevenson", "p164s2", "uncertain",
      &["And", "that", "was", "plainly", "the", "last", "signal", "of", "danger", "for", "the", "buccaneers", "turned", "at", "once", "and", "ran", "separating", "in", "every", "direction", "one", "seaward", "along", "the", "cove", "one", "slant", "across", "the", "hill", "and", "so", "on", "so", "that", "in", "half", "a", "minute", "not", "a", "sign", "of", "them", "remained", "but", "Pew"],
-     &["CCONJ", "PRON", "AUX", "ADV", "DET", "ADJ", "NOUN", "ADP", "NOUN", "SCONJ", "DET", "NOUN", "VERB", "ADP", "ADV", "CCONJ", "VERB", "VERB", "ADP", "DET", "NOUN", "NUM", "ADV", "ADP", "DET", "NOUN", "NUM", "ADV", "ADP", "DET", "NOUN", "CCONJ", "ADV", "ADV", "ADV", "SCONJ", "ADP", "DET", "DET", "NOUN", "PART", "DET", "NOUN", "ADP", "PRON", "VERB", "ADP", "PROPN"]),
+     &["CCONJ", "PRON", "AUX", "ADV", "DET", "ADJ", "NOUN", "ADP", "NOUN", "SCONJ", "DET", "NOUN", "VERB", "ADP", "ADV", "CCONJ", "VERB", "VERB", "ADP", "DET", "NOUN", "NUM", "ADV", "ADP", "DET", "NOUN", "NUM", "NOUN", "ADP", "DET", "NOUN", "CCONJ", "ADV", "ADV", "ADV", "SCONJ", "ADP", "DET", "DET", "NOUN", "PART", "DET", "NOUN", "ADP", "PRON", "VERB", "ADP", "PROPN"]),
     // stevenson p209s2 (uncertain): One was the same as the tattoo mark, “Billy Bones his fancy”; then there was “Mr. W. Bones
     ("stevenson", "p209s2", "uncertain",
      &["One", "was", "the", "same", "as", "the", "tattoo", "mark", "“", "Billy", "Bones", "his", "fancy", "”", ";", "then", "there", "was", "“", "Mr.", "W.", "Bones", "mate", "”", "“", "No", "more", "rum", "”", "“", "Off", "Palm", "Key", "he", "got", "itt", "”", "and", "some", "other", "snatches", "mostly", "single", "words", "and", "unintelligible"],
@@ -274,9 +274,10 @@ fn prod_tags(model: &Model, words: &[String]) -> Vec<(Tag, f32)> {
 
 fn firing_rule(words: &[String], beam: &[(Tag, f32)], i: usize) -> Option<&'static str> {
     let snap: Vec<Tag> = beam.iter().map(|(t, _)| *t).collect();
+    let low: Vec<String> = words.iter().map(|w| w.to_lowercase()).collect();
     RULES.iter().find_map(|r| {
         let (_, m) = beam[i];
-        if m > 0.0 && m < r.threshold && (r.test)(words, &snap, i).is_some() {
+        if m > 0.0 && m < r.threshold && (r.test)(words, &snap, &low, i).is_some() {
             Some(r.name)
         } else {
             None
@@ -295,7 +296,11 @@ fn sweep_greedy_meets_bar() {
             if t.upos() == *g {
                 ok += 1;
             } else {
-                eprintln!("sweep greedy miss {book} {id}: {} got={} gold={g}", words[i], t.upos());
+                eprintln!(
+                    "sweep greedy miss {book} {id}: {} got={} gold={g}",
+                    words[i],
+                    t.upos()
+                );
             }
         }
     }
@@ -338,8 +343,13 @@ fn sweep_production_meets_bar() {
         }
     }
     let acc = ok as f64 / total as f64;
-    eprintln!("sweep production: {ok}/{total} = {acc:.4} (beam fixes {beam_fix}, rule fixes {rule_fix})");
+    eprintln!(
+        "sweep production: {ok}/{total} = {acc:.4} (beam fixes {beam_fix}, rule fixes {rule_fix})"
+    );
     eprintln!("sweep RULE BREAKS (greedy- and beam-right, rules broke): {rule_break:?}");
-    assert!(rule_break.is_empty(), "shipped rules broke gold sentences: {rule_break:?}");
+    assert!(
+        rule_break.is_empty(),
+        "shipped rules broke gold sentences: {rule_break:?}"
+    );
     assert!(acc >= 0.87, "sweep production accuracy {acc:.3} below bar");
 }

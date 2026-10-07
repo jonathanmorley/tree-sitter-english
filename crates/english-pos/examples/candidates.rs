@@ -86,7 +86,8 @@ fn main() {
                         // Attribute by re-testing rules (offline only).
                         for r in RULES {
                             let snap: Vec<Tag> = greedy.iter().map(|(x, _)| *x).collect();
-                            if (r.test)(&owned, &snap, i).is_some() {
+                            let low: Vec<String> = owned.iter().map(|p| p.to_lowercase()).collect();
+                            if (r.test)(&owned, &snap, &low, i).is_some() {
                                 fires.push(r.name);
                                 break;
                             }

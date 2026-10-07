@@ -12,11 +12,8 @@ use english_pos::{RULES, Rule, Tag, apply_rules};
 const POS0: Rule = Rule {
     name: "pos0-toy",
     threshold: 2.0,
-    test: |pieces, tags, i| {
-        let alpha = pieces[i]
-            .to_lowercase()
-            .chars()
-            .all(|c| c.is_ascii_lowercase());
+    test: |_pieces, tags, low, i| {
+        let alpha = low[i].chars().all(|c| c.is_ascii_lowercase());
         if i == 0 && tags[i] == Tag::Noun && alpha {
             match tags.get(1).copied() {
                 Some(Tag::Det) | Some(Tag::Adj) | Some(Tag::Adp) | Some(Tag::Pron) => {
@@ -34,7 +31,7 @@ const POS0: Rule = Rule {
 const TOY: Rule = Rule {
     name: "toy",
     threshold: 2.0,
-    test: |pieces, tags, i| {
+    test: |pieces, tags, _low, i| {
         if tags[i] == Tag::Noun && pieces[i] == "glitters" {
             Some(Tag::Verb)
         } else {
@@ -100,7 +97,7 @@ fn first_matching_rule_wins() {
     let other = Rule {
         name: "other",
         threshold: 2.0,
-        test: |_, tags, i| {
+        test: |_, tags, _low, i| {
             if tags[i] == Tag::Noun {
                 Some(Tag::Adj)
             } else {
