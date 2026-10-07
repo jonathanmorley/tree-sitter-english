@@ -1455,6 +1455,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   prototype). Reverse direction (VERB→AUX on PRON+VERB/`do`+VERB)
   unneeded: no motivating miss, tagger already 99% there.
 
+## Correction rule refused: color-adj (REJECTED 2026-10-07)
+
 - The queued attr-adj trigger, measured: Berlin-Kay colors with
   DET-prev + nominal-next, EWT train gold ADJ 26:1 (break: `Any
   white light`). Built with unit fire/abstains; dev fired ONCE and
