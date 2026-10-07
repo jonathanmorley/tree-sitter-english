@@ -939,6 +939,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (S13/S14); the harness caught my own bookkeeping error, which
   is exactly what the generated-arrays discipline is for.
 
+- Sweep-margin probe (DONE, no code): production-path margins on
+  all sweep misses — 19 actionable of ~240. Five are the rejected
+  attr-adj shape (only `flat` fits the old guard; blue-box stands);
+  three touch `subconj-adp` edges (one wants a which-barrier, one
+  is `as to`, one is garbage-in from a mistagged neighbor — all
+  thin); the `that`+PRON-subject+VERB shape goes SCONJ only
+  111:50 (relatives with pronominal subjects like `outcomes that
+  they had __` need gap detection — unseparable locally).
+  Nothing admissible; probes deleted.
+
 - Eval-margin probe round 2 (DONE, no code): production-path margins
   on all 269 eval misses — 17 actionable, 244 confident, 8 ties.
   The 17 split into standing rejections (4 attr-adj blue-box class,
