@@ -34,11 +34,13 @@ elaborations. This is the native parser (grammar + Rust scanner) compiled to
 WebAssembly — abbreviations, times, and interruptions split exactly as the
 command-line tool splits them. Pick a showcase sentence or type your own.</p>
 <div id="examples" class="picker" aria-live="polite"></div>
-<textarea id="pinput" rows="3">Mr. Smith arrived at 10:30, and Mrs. Jones left because the meeting ended.</textarea>
+<div class="editor">
+<pre id="pback" aria-hidden="true"><span class="dim">Loading parser…</span></pre>
+<textarea id="pinput" rows="4" spellcheck="false">Mr. Smith arrived at 10:30, and Mrs. Jones left because the meeting ended.</textarea>
+</div>
 <br>
 <button id="prun">Parse</button>
 <span id="pstatus"></span>
-<div id="ptree" class="sent"><span class="dim">Loading parser…</span></div>
 <div id="treeview"></div>
 <ul class="legend">
 <li><span class="sw k-sub"></span>subordinator</li>
