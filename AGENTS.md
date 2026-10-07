@@ -1388,6 +1388,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   not special-cased). Deferred with reasons: `-ing` gerunds,
   `-age`/`-edge` (each needs its own measurement).
 
+## Vale alternative, rule 2 v1.1: -ing nominals (DONE 2026-10-07)
+
+- EWT web-review scan first: light + `-ing`-NOUN + obj/obl ≈ 12
+  true vs ~9 FP, FP classes structurally separable (temporal
+  `obl:tmod`, verbal-gerund tags, generic `thing`) → all three
+  guards shipped with the suffix: dependent must read NOUN
+  (inceptive `get going` reads VERB — UD-convention separator,
+  not fitting), `obl:tmod` never counts as government
+  (temporals are adjuncts), `thing(s)` carved out (indefinite
+  pro-forms). Other suffixes need no guards (unambiguous form).
+- Eval grows 60 → 66 (6 composed `-ing` positives: soaking /
+  seating / baking / ordering / training / rating). Measured
+  precision 0.929→0.912 / recall 0.963→0.939 — bars clear.
+  5 misses arbitrated, gold stands: 2× documented `-ment`
+  costs, 1× deferred `-ing` (`give warning`), 2× light-`do`
+  mistagged AUX (`did violence`, `does the baking` — do-support
+  overfire on light uses, a tagger gap worth its own note).
+- `-age`/`-edge` stays deferred (`did damage` tripwire stands).
+
 ## Correction rule 13: pass-by (ADMITTED 2026-10-07)
 
 - From the lint pilot's participle misses: predicted ADJ after a

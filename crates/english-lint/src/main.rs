@@ -5,7 +5,9 @@
 
 use std::process::ExitCode;
 
-use english_lint::{ClauseComplexity, Models, Nominalization, Passive, Rule, SentenceLength, line_col, lint};
+use english_lint::{
+    ClauseComplexity, Models, Nominalization, Passive, Rule, SentenceLength, line_col, lint,
+};
 
 fn main() -> ExitCode {
     let files: Vec<String> = std::env::args().skip(1).collect();

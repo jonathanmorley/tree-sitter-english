@@ -107,7 +107,12 @@ impl Models {
 /// (recovery is the grammar's contract); stranded pieces carry
 /// `usize::MAX` heads and `""` rels.
 pub fn annotate(models: &Models, source: &str) -> AnnotatedDoc {
-    annotate_impl(&models.tagger, Some(&models.parser), Some(&models.labeler), source)
+    annotate_impl(
+        &models.tagger,
+        Some(&models.parser),
+        Some(&models.labeler),
+        source,
+    )
 }
 
 /// POS-and-grammar annotation only (no parser/labeler weights needed):
@@ -145,7 +150,10 @@ fn annotate_impl(
                     (heads, rels)
                 }
                 // Shallow: root heads, empty rels (see doc comment).
-                _ => (vec![0usize; pieces.len() + 1], vec![String::new(); pieces.len() + 1]),
+                _ => (
+                    vec![0usize; pieces.len() + 1],
+                    vec![String::new(); pieces.len() + 1],
+                ),
             };
             let clauses = sent.clauses();
             let subords = clauses.iter().filter(|c| c.is_subordinate()).count();
@@ -340,7 +348,10 @@ pub struct ClauseComplexity {
 
 impl Default for ClauseComplexity {
     fn default() -> Self {
-        ClauseComplexity { max_clauses: 4, max_sub: 2 }
+        ClauseComplexity {
+            max_clauses: 4,
+            max_sub: 2,
+        }
     }
 }
 
@@ -412,14 +423,25 @@ const LIGHT_VERBS: &[&str] = &[
 /// so `dance`/`chance`-shaped words stay out). Latin `-tion`/`-sion`/
 /// `-ment`/`-ance`/`-ence` plus Greek `-sis` (`analysis`, `thesis`
 /// — closed class, near-zero FP surface with light-verb government).
-/// Deliberately NOT here: `-ing` gerunds (`give warning` stays
-/// silent — the `get going`/`get moving` inceptive class would cost
-/// more than the nominal readings gain; needs its own measurement)
-/// and `-age`/`-edge` (`damage`, `knowledge` — mixed deverbial
-/// density, same deal).
-const NOMINAL_SUFFIXES: &[&str] = &["tion", "sion", "ment", "ance", "ence", "sis"];
+/// `-ing` gerunds (`give warning`, `do the baking`) joined 2026-10-07:
+/// EWT web-review shapes show light+`-ing` is nominal far more often
+/// than inceptive — WITH three guards (below): dependent must read
+/// NOUN (verbal gerunds like inceptive `get going` read VERB),
+/// temporal `obl:tmod` never counts as government, and the generic
+/// nouns `thing`/`things` stay out (indefinite pro-forms, never
+/// deverbial). Deliberately NOT here: `-age`/`-edge` (`damage`,
+/// `knowledge` — mixed deverbial density, same deal).
+const NOMINAL_SUFFIXES: &[&str] = &["tion", "sion", "ment", "ance", "ence", "sis", "ing"];
 
-fn is_nominalization(word: &str) -> bool {
+/// Generic-noun carve-out for the `-ing` branch only (`do things`,
+/// `take a moment`-class shapes are not nominalizations; the other
+/// suffixes are unambiguous by form and need no list).
+const GENERIC_NOUNS: &[&str] = &["thing", "things"];
+
+/// Which suffix matched (None = no nominal shape). Split out so the
+/// `-ing` branch can carry its extra guards (below) without touching
+/// the unambiguous Latin/Greek suffixes.
+fn nominal_suffix(word: &str) -> Option<&'static str> {
     let w = word.to_lowercase();
     // Plurals by stem (`arrangements` ends in `ments`, not `ment`):
     // match the full word (Greek `-sis`: `analysis`) or the
@@ -427,8 +449,14 @@ fn is_nominalization(word: &str) -> bool {
     // `glas` matches no suffix); words genuinely ending in `ss`
     // lose one `s` and still match nothing new.
     let stem = w.strip_suffix('s').unwrap_or(&w);
-    NOMINAL_SUFFIXES.iter().any(|s| {
-        (w.len() > s.len() + 1 && w.ends_with(s)) || (stem.len() > s.len() + 1 && stem.ends_with(s))
+    NOMINAL_SUFFIXES.iter().find_map(|s| {
+        if (w.len() > s.len() + 1 && w.ends_with(s))
+            || (stem.len() > s.len() + 1 && stem.ends_with(s))
+        {
+            Some(*s)
+        } else {
+            None
+        }
     })
 }
 
@@ -443,15 +471,31 @@ impl Rule for Nominalization {
             // One finding per sentence (first offending pair in order).
             let mut hit: Option<(String, String)> = None;
             for (k, rel) in sent.rels.iter().enumerate().skip(1) {
-                if rel != "obj" && !rel.starts_with("obl") {
+                // Government only: temporal `obl:tmod` (`in the
+                // morning`) is adjunct, never a nominalization object.
+                if rel != "obj" && !(rel.starts_with("obl") && rel != "obl:tmod") {
                     continue;
                 }
                 if k > sent.pieces.len() {
                     continue;
                 }
                 let dep = &sent.pieces[k - 1];
-                if !is_nominalization(dep) {
-                    continue;
+                let suffix = match nominal_suffix(dep) {
+                    Some(s) => s,
+                    None => continue,
+                };
+                // `-ing` guards (EWT-measured): the dependent must read
+                // as a noun (verbal gerunds like inceptive `get going`
+                // read VERB), and generic `thing(s)` stays out
+                // (indefinite pro-forms, never deverbial). Other
+                // suffixes are unambiguous by form and need no list.
+                if suffix == "ing" {
+                    if sent.tags.get(k - 1) != Some(&Tag::Noun) {
+                        continue;
+                    }
+                    if GENERIC_NOUNS.contains(&dep.to_lowercase().as_str()) {
+                        continue;
+                    }
                 }
                 if k >= sent.heads.len() {
                     continue;
@@ -656,7 +700,11 @@ mod tests {
         let got = rule.check(&doc(vec![long_sent(31, 1, 0)]));
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].rule, "syntax.sentence-length");
-        assert!(got[0].message.contains("31 words"), "names the count: {}", got[0].message);
+        assert!(
+            got[0].message.contains("31 words"),
+            "names the count: {}",
+            got[0].message
+        );
     }
 
     #[test]
@@ -666,11 +714,60 @@ mod tests {
         assert_eq!(rule.check(&doc(vec![long_sent(10, 4, 1)])).len(), 1);
         assert_eq!(rule.check(&doc(vec![long_sent(10, 2, 2)])).len(), 1);
         let got = rule.check(&doc(vec![long_sent(10, 5, 3)]));
-        assert!(got[0].message.contains("5 clauses (3 subordinate)"), "{}", got[0].message);
+        assert!(
+            got[0].message.contains("5 clauses (3 subordinate)"),
+            "{}",
+            got[0].message
+        );
     }
 
     #[test]
-    fn nominalization_handles_plurals_and_greek_sis() {        // Plurals match by stem (`arrangements` ends in `ments`).
+    fn nominalization_ing_branch_guards() {
+        // `-ing` nominal object fires (`doing the baking`).
+        let d = doc(vec![sent(
+            &["she", "does", "the", "baking"],
+            &[Tag::Pron, Tag::Verb, Tag::Det, Tag::Noun],
+            &[0, 2, 0, 4, 2],
+            &["", "nsubj", "root", "det", "obj"],
+            1,
+            0,
+        )]);
+        assert_eq!(Nominalization.check(&d).len(), 1);
+        // Verbal gerund stays silent (`get going`: going reads VERB).
+        let d = doc(vec![sent(
+            &["they", "get", "going"],
+            &[Tag::Pron, Tag::Verb, Tag::Verb],
+            &[0, 2, 0, 2],
+            &["", "nsubj", "root", "xcomp"],
+            1,
+            0,
+        )]);
+        assert!(Nominalization.check(&d).is_empty());
+        // Generic `thing` stays silent even as a NOUN object.
+        let d = doc(vec![sent(
+            &["they", "do", "things"],
+            &[Tag::Pron, Tag::Verb, Tag::Noun],
+            &[0, 2, 0, 2],
+            &["", "nsubj", "root", "obj"],
+            1,
+            0,
+        )]);
+        assert!(Nominalization.check(&d).is_empty());
+        // Temporal `obl:tmod` is adjunct, never government.
+        let d = doc(vec![sent(
+            &["they", "met", "mornings"],
+            &[Tag::Pron, Tag::Verb, Tag::Noun],
+            &[0, 2, 0, 2],
+            &["", "nsubj", "root", "obl:tmod"],
+            1,
+            0,
+        )]);
+        assert!(Nominalization.check(&d).is_empty());
+    }
+
+    #[test]
+    fn nominalization_handles_plurals_and_greek_sis() {
+        // Plurals match by stem (`arrangements` ends in `ments`).
         let d = doc(vec![nsent(
             &["they", "made", "arrangements"],
             &[Tag::Pron, Tag::Verb, Tag::Noun],

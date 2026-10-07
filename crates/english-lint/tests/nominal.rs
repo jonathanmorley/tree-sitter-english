@@ -20,6 +20,12 @@
 //! Bars (pre-registered tripwires, lower than passive — lexical
 //! heuristic, stated upfront): precision >= 0.75, recall >= 0.50.
 //! Needs trained weights (Tier-1 lazy assets); skips loudly when absent.
+//!
+//! Miss arbitration 2026-10-07 (gold stands throughout): 2×
+//! documented `-ment` costs (`take a moment`); 1× deferred `-ing`
+//! (`give warning`); 2× light-`do` mistagged AUX by the tagger
+//! (`did violence`, `does the baking` — do-support reading
+//! overfires on light uses; a tagger gap, not a rule bug).
 
 use english_lint::{Models, Nominalization, Rule, lint};
 
@@ -57,6 +63,15 @@ const SENTENCES: &[(&str, bool)] = &[
     ("She got permission to leave early.", true),
     ("They made an appearance at noon.", true),
     ("She made a difference in their lives.", true),
+    // Composed -ing positives (gerund-nominal coverage for the -ing
+    // branch; book-review shapes: soaking/seating/baking/ordering/
+    // training/rating).
+    ("They got a soaking in the rain.", true),
+    ("We liked getting the late seating.", true),
+    ("She does the baking twice weekly.", true),
+    ("He took the ordering over the phone.", true),
+    ("Billing takes training.", true),
+    ("I gave the movie a glowing rating.", true),
     ("He has an appreciation of music.", true),
     // Negatives: suffix gaps (rule-silent by construction).
     ("And men take care that they should.", false),
@@ -97,7 +112,7 @@ const SENTENCES: &[(&str, bool)] = &[
 
 #[test]
 fn nominalization_precision_recall() {
-    assert_eq!(SENTENCES.len(), 60);
+    assert_eq!(SENTENCES.len(), 66);
     let models = match Models::load_workspace() {
         Ok(m) => m,
         Err(e) => {
