@@ -36,6 +36,9 @@
         "docs/*.css" # Pages site, no CSS formatter configured
         "docs/*.js" # Pages demo glue, no JS formatter configured
         "docs/pkg/*" # wasm-bindgen output, generated
+        "docs/pkg/wt/*" # vendored web-tree-sitter runtime, byte-stable
+        "docs/queries/*" # served query copy of queries/highlights.scm
+        "queries/*" # tree-sitter queries, no SCM formatter configured
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

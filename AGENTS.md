@@ -1623,3 +1623,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   clang+lld added to devShell. Parity verified wasm-vs-native on all
   showcase shapes. Earlier fear ("rlib archives unchecked host objects")
   stands but is now handled: the objects are real wasm.
+
+## web-tree-sitter bundle (OPTION B SPIKE PROVEN 2026-10-07)
+
+- Standard library path works: wasi-sdk clang (CLI-cached,
+  `--target=wasm32-wasip1`, exact flags read from loader 0.27 source)
+  links `parser.c` + PIC Rust scanner staticlib
+  (`wasm32-wasip1`, `-Zbuild-std` under RUSTC_BOOTSTRAP — prebuilt std
+  is non-PIC) + `wasm/wasi_shim.c` (`errno`, `_CLOCK_*`), producing a
+  `Language.load`-able bundle with the REAL scanner (proven: `Mr.`
+  + `10:30` one sentence, em-dash join). Recipe in `wasm/build.sh`.
+- web-tree-sitter@0.27.0 vendored (`docs/pkg/wt/`), queries in
+  `queries/highlights.scm` (served copy `docs/queries/`); structure
+  demo renders query captures + clause walk with byte→char mapping
+  (tree-sitter spans are bytes, JS slices UTF-16 — em-dash drifts
+  without it). Stub-scanner recipe capture + build-std notes in entry.
