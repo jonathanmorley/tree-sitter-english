@@ -1712,3 +1712,85 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   /tmp/opencode/foreign-index.patch, re-applied after commit —
   their work rides uncommitted as before, this commit carries
   only the table.
+
+## Honnibal 2013 averaged-perceptron harvest (QUEUED 2026-10-07)
+
+- Source: `https://explosion.ai/blog/part-of-speech-pos-tagger-in-python`
+  (averaging rationale, tagdict fast-path, case-frequency advice,
+  greedy-suffices 0.1% line, train-with-guessed-history caveat).
+  Three queued probes, three validations, one do-not-reopen —
+  all below. Nothing here changes a shipped decision by itself.
+- (a) PROBE — training-history exposure (REAL FIND, not started):
+  `english-pos/src/lib.rs:827` advances `prev1/prev2` with the GOLD
+  tag; Honnibal: history must come from the guesses, "otherwise it
+  will be way over-reliant on the tag-history features" — exactly
+  the failure our trainer is exposed to, never measured here.
+  Variant: advance history from predicted `best` (updates still
+  toward gold), else identical. Bars: EWT dev/test ≥ 0, all evals
+  neutral-or-better, `flies` holds on all paths. Orthogonal to
+  the averaging rejection (history modeling vs weight
+  averaging — different axis, no interaction assumed).
+- (b) PROBE — tagdict inference fast-path (not started): blog's
+  "~50% of words unambiguous, output the tag and skip" with the
+  literal `tagdict.get` short-circuit. Our tagdict-behavior-change
+  rejection STANDS (training/locking); this is the already-open
+  "fast-path-only optional" door with the strongest external
+  precedent. Bar: byte-identical tags on every eval + speed delta
+  on `bench` (tag pass is 104 ms; skip rate decides the win).
+- (c) PROBE — external case-frequency backoff (not started):
+  Honnibal's actual case advice is NOT in-model case features
+  (our Titlecase×position, measured dev −130 with PROPN→NOUN
+  +94 — exactly the domain-convention overfit he predicts) but
+  "how frequently is this word title-cased in a large sample",
+  train corpus lowercased. Unmeasured direction: offline
+  titlecase-rate table (books100 bodies as the large sample —
+  in-domain, no license exposure) consulted only below τ like
+  every other rule. Standard gates (EWT-majority on the
+  PREDICTED tag per the color-adj lesson, dev/test ≥ 0).
+- Validations, no action: greedy-suffices ("can't do without an
+  extra 0.1%") matches beam-2 at +0.05/+0.10 admitted as
+  strictly-non-negative; perceptron "rubbish at multi-tagging,
+  wants a distribution" validates `tag_margins` + tie
+  abstention (ties carry no signal); WSJ/ABC/Web order-stability
+  validates the sweep gate; the averaging rationale
+  (late iterations mutate the model around hard examples) is
+  the mechanism language for our 33%-vs-88% falsification —
+  same discipline already recorded the opposite parser
+  verdict (+7.1).
+- Do NOT reopen: Brown clusters (0-for-1 stands — blog's
+  clusters ride WITH averaging, which tagging rejects; no new
+  mechanism, no new trial).
+- Method note 2026-10-07: this section was wiped from the working
+  tree three times by concurrent uncommitted-tree churn ( hardened
+  by committing code first, docs appended+committed atomically).
+  Standing rule: AGENTS entries land in the same commit as the
+  work they record, never left uncommitted across round trips.
+
+## Shootout 2026-10-07: full five-leg numbers (DONE 2026-10-07)
+
+- `bench-taggers.py` full run on pinned EWT test (25,094 words) +
+  Moby body (212,791 words), TSV at `/tmp/opencode/shootout4.tsv`
+  (out-of-repo like all training data): ours exact 92.05
+  (per-sentence decode — reproduces the trainer gate exactly;
+  the flat-stream 91.57 is a methodology error, fenced by
+  `tag_tokens --sentences`), coarse 94.40; NLTK coarse 87.24;
+  spaCy exact 93.15 / coarse 95.43 on the aligned 85.3%
+  (21,401 words — drifted sentences excluded, NOT comparable
+  head-to-head); TreeTagger coarse 89.52 (Penn/CLAWS mix mapped
+  from the observed inventory). Speeds: ours 425k tok/s
+  spawn-included (page keeps the 2.1M in-process tag-pass
+  number), NLTK 21.7k. RDR still skipped (no UPOS-EWT model
+  file in env).
+- Attribution for the coarse deltas vs the 2026-10-06 probe
+  (+0.16 ours, +0.11 NLTK): projection, not model. The harness
+  follows Petrov Table 1 literally (SYM→., PUNCT→. —
+  exactly the 41 confused tokens); the deleted probe kept them
+  split. NLTK 87.03→87.14 across runs is the TT_EXTRA paren
+  literals (`(`/`)` newly mapped). Rerunnable-documented now
+  supersedes the deleted probe; standing numbers live on the
+  front page until the next rerun.
+- Env notes: spaCy 3.8.16 + en_core_web_sm in a pip venv needs
+  nix gcc/zlib libs on LD_LIBRARY_PATH (compiled wheels);
+  TreeTagger installed at `/tmp/opencode/treetagger` under its
+  research license (evaluation use confirmed); `english.par`
+  emits Penn/CLAWS mix, mapped empirically.
