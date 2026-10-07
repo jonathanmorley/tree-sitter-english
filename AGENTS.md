@@ -1228,6 +1228,28 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Revisit triggers (nothing else): constructs erroring as a
   class, or a consumer needing entities/relations beyond LAS.
 
+## Joint tag-parse (STOPPED at Stage 0, 2026-10-07)
+
+- Stage-0 probes ran (temporary example, since deleted; scope
+  `docs/joint-tag-parse.md` §3): (i) margin separability —
+  P(margin<2.0 | tag error) = 0.139 on dev (2813 errors), i.e.
+  tagger mistakes are overwhelmingly CONFIDENT; option A
+  (uncertainty features) dead at its pre-registered 0.5 gate.
+  (ii) feedback headroom — oracle-correcting low-margin errors
+  only, reparse beam4: 77.81 → 78.64 = +0.83pt, below the +1.0
+  STOP bar (oracle-all sanity reproduces banked 83.90 exactly,
+  machinery verified). Program STOPS per its own pre-registered
+  rule — including option B, whose retag pass is bounded by the
+  same headroom and would do worse than oracle corrections.
+- Third independent confirmation that remaining tagger errors
+  are confident (chunk-confidence 22/22, eval-margin 244
+  confident, now capture 0.139): the addressable cascade via
+  uncertainty is ~0.8pt, not worth a stage. The cascade stands
+  as the pipeline's structural tax; joint work resumes only on
+  a non-margin coupling idea (none queued) or a consumer that
+  pays for full joint beam regardless.
+- Banked pipeline numbers stand: UAS 77.8, LAS 71.1 (+tagger).
+
 ## Sweep-chunk eval + MWE-boundary fix (DONE 2026-10-07)
 
 - Chunk half of the sweep gate (`english-chunk/tests/sweep.rs`,
