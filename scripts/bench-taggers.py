@@ -204,11 +204,18 @@ def leg_rdr(sents, model, repo=None):
         return None, f"skip (RDR lexicon missing: {lex})"
     if repo not in sys.path:
         sys.path.insert(0, repo)
+    # The module chdir()s ("../" then "./pSCRDRtagger") assuming it
+    # runs from inside pSCRDRtagger/: CWD must start there (restored
+    # afterwards). Absolute imports ride sys.path (repo root).
+    keep = os.getcwd()
+    os.chdir(os.path.join(repo, "pSCRDRtagger"))
     try:
         from pSCRDRtagger.RDRPOSTagger import RDRPOSTagger
         from Utility.Utils import readDictionary
     except ImportError as e:
         return None, f"skip (RDRPOSTagger import failed: {e})"
+    finally:
+        os.chdir(keep)
     try:
         r = RDRPOSTagger()
         r.constructSCRDRtreeFromRDRfile(model)
