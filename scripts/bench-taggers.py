@@ -15,7 +15,9 @@ scripts/fetch-ud.sh and scripts/sent-diff.py).
            leaks cross-sentence history and scores ~0.5 worse).
   nltk   : NLTK averaged perceptron (WSJ-trained, Penn tags) —
            coarse universal-12 only (out-of-domain by construction).
-  rdr    : RDRPOSTagger with a UPOS-EWT .rdr model — exact UPOS.
+  rdr    : RDRPOSTagger with a UPOS-EWT .rdr model — exact UPOS
+           (needs --rdr-model plus --rdr-repo pointing at an
+           RDRPOSTagger checkout for its absolute imports).
   spacy  : en_core_web_sm (token.pos_) — exact UPOS; sentences
            whose tokenization drifts from gold are excluded and
            the coverage is reported.
@@ -184,24 +186,42 @@ def leg_nltk(sents):
     return (pred, dt), None
 
 
-def leg_rdr(sents, model):
+def leg_rdr(sents, model, repo=None):
+    """UPOS-exact via the RDRPOSTagger tree (in-process; needs the repo
+    root on sys.path for its absolute imports). DICT is the sibling
+    of the .RDR model (same stem, .DICT suffix)."""
     if model is None:
         return None, "skip (--rdr-model not given)"
+    if repo is None:
+        return None, "skip (--rdr-repo not given: path to RDRPOSTagger checkout)"
+    import os
+    import sys
+    if not os.path.isfile(model):
+        return None, f"skip (RDR model missing: {model})"
+    stem = model[:-len(".RDR")] if model.endswith(".RDR") else model
+    lex = stem + ".DICT"
+    if not os.path.isfile(lex):
+        return None, f"skip (RDR lexicon missing: {lex})"
+    if repo not in sys.path:
+        sys.path.insert(0, repo)
     try:
-        from RDRPOSTagger.pSCRDRtagger import RDRPOSTagger
-    except ImportError:
-        return None, "skip (no rdrpostagger package)"
-    r = RDRPOSTagger()
+        from pSCRDRtagger.RDRPOSTagger import RDRPOSTagger
+        from Utility.Utils import readDictionary
+    except ImportError as e:
+        return None, f"skip (RDRPOSTagger import failed: {e})"
     try:
-        r.loadFromFile(model)
+        r = RDRPOSTagger()
+        r.constructSCRDRtreeFromRDRfile(model)
+        dictionary = readDictionary(lex)
     except Exception as e:  # noqa: BLE001 - path/parse errors surface as-is
         return None, f"skip (RDR model load failed: {e})"
     pred, t = [], time.perf_counter()
     for words, _ in sents:
-        tagged = r.tagRawSentence(" ".join(words))
-        pred.extend(tok.rsplit("/", 1)[1]
-                    for tok in tagged.split(" "))
+        tagged = r.tagRawSentence(dictionary, " ".join(words))
+        pred.extend(tok.rsplit("/", 1)[1] for tok in tagged.split(" "))
     dt = time.perf_counter() - t
+    if len(pred) != sum(len(w) for w, _ in sents):
+        return None, "skip (RDR token count drifted)"
     return (pred, dt), None
 
 
@@ -267,6 +287,7 @@ def main(argv):
     ap.add_argument("--conllu", required=True)
     ap.add_argument("--moby", required=True)
     ap.add_argument("--rdr-model", default=None)
+    ap.add_argument("--rdr-repo", default=None)
     ap.add_argument("--treetagger", default=None)
     ap.add_argument("--tt-params", default=None)
     ap.add_argument("--tsv", default=None)
@@ -327,7 +348,7 @@ def main(argv):
                      "WSJ Penn tags; domain gap conflated"))
 
     # RDRPOSTagger (exact UPOS).
-    (res, err) = leg_rdr(sents, a.rdr_model)
+    (res, err) = leg_rdr(sents, a.rdr_model, a.rdr_repo)
     if err:
         rows.append(("rdr", None, 0, None, 0, None, err))
     else:
