@@ -492,7 +492,12 @@ fn pass_by_fixes_agented_participle() {
     assert_eq!(
         run(
             &["was", "broken", "by", "them"],
-            &[(Tag::Aux, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            &[
+                (Tag::Aux, 9.0),
+                (Tag::Adj, 1.0),
+                (Tag::Adp, 9.0),
+                (Tag::Pron, 9.0)
+            ],
             "pass-by",
         )[1],
         Tag::Verb
@@ -511,7 +516,12 @@ fn pass_by_fixes_agented_participle() {
     assert_eq!(
         run(
             &["was", "glad", "by", "them"],
-            &[(Tag::Aux, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            &[
+                (Tag::Aux, 9.0),
+                (Tag::Adj, 1.0),
+                (Tag::Adp, 9.0),
+                (Tag::Pron, 9.0)
+            ],
             "pass-by",
         )[1],
         Tag::Adj
@@ -535,7 +545,12 @@ fn pass_by_fixes_agented_participle() {
     assert_eq!(
         run(
             &["seemed", "broken", "by", "them"],
-            &[(Tag::Verb, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Adj, 1.0),
+                (Tag::Adp, 9.0),
+                (Tag::Pron, 9.0)
+            ],
             "pass-by",
         )[1],
         Tag::Adj

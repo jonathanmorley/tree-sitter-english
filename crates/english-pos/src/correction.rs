@@ -44,7 +44,21 @@
 //! `apos-part` (gate-zone autopsy), `to-part` (gate-zone autopsy) —
 //! 12-for-24 total. A thirteenth joined later from the lint pilot's
 //! participle misses: `pass-by` (be-participle + by-agent barrier,
-//! EWT 110:0) — 13-for-25.
+//! EWT 110:0) — 13-for-25, then 13-for-26 after `color-adj` below
+//! was measured and refused.
+//!
+//! REJECTED (2026-10-07, removed from `RULES`): `color-adj`
+//! (NOUN→ADJ on Berlin-Kay colors with DET-prev + nominal-next).
+//! EWT train gold 26:1 justified building; dev fired once and broke
+//! it (`a blue box`, USPS-box noun adjunct — net -1, gate fails, no
+//! test run un-fails it). Deeper lesson, bank it: EWT-majority was
+//! measured on the GOLD shape, but fires happen conditioned on the
+//! model saying NOUN — and the tagger predicts NOUN in this shape
+//! exactly where noun-adjunct evidence is strongest (`blue box`,
+//! `white light`). Shape-majority ≠ fire-precision whenever the
+//! base model's errors concentrate on the minority reading; future
+//! EWT checks must condition on the predicted tag, not just gold.
+//! Same class that killed unguarded attr-adj, twice confirmed.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;

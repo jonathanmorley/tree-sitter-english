@@ -1407,3 +1407,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   but green; recorded, not acted on).
 - Residuals: irregulars without -ed/-en (`set`, `torn` — v1.1 with
   lexicon measurement), non-adjacent be (`was rudely broken`).
+
+## Correction rule refused: color-adj (REJECTED 2026-10-07)
+
+- The queued attr-adj trigger, measured: Berlin-Kay colors with
+  DET-prev + nominal-next, EWT train gold ADJ 26:1 (break: `Any
+  white light`). Built with unit fire/abstains; dev fired ONCE and
+  broke it (`a blue box`, USPS-box noun adjunct — net -1, gate
+  fails; no test run un-fails a dev gate).
+- Lesson banked (load-bearing for all future rules): EWT-majority
+  was measured on the GOLD shape, but fires happen conditioned on
+  the model saying NOUN — and the tagger predicts NOUN exactly
+  where noun-adjunct evidence is strongest. Shape-majority ≠
+  fire-precision whenever base-model errors concentrate on the
+  minority reading. Future EWT checks condition on the PREDICTED
+  tag (run the tagger over train, or gate on --correct fires),
+  never gold alone. Same noun-adjunct class that killed unguarded
+  attr-adj — twice confirmed, 13-for-26.
+- Fully reverted (RULES entry, fn, const, shape tests removed;
+  rejection note in module docs). fmt reflow of long test tuples
+  kept (committed unformatted — gate hygiene).
