@@ -1387,3 +1387,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   non-deverbial `-ment` (`take a moment` — honest precision cost,
   not special-cased). Deferred with reasons: `-ing` gerunds,
   `-age`/`-edge` (each needs its own measurement).
+
+## Correction rule 13: pass-by (ADMITTED 2026-10-07)
+
+- From the lint pilot's participle misses: predicted ADJ after a
+  be-form AUX with a `by`+ADP agent +1..+4 ahead (verb/clause
+  barrier). EWT train gold VERB 110:0 with the -ed/-en guard
+  (130:4 without — guard removes all 4 known breaks; morphology
+  trims, barrier carries precision, det-noun precedent).
+- Gates: unit fire + 4 abstains green; dev ±0, test +1 (`I was
+  married by a judge`, canonical passive, margin 4.0 — calibrated
+  τ=5.0 catches margin-4 fires, blocks margin-11 statives);
+  abstains correctly on the stative twin (`aren't married to...`,
+  prev `n't`/PART); sweep 0 fires / explicit 0 breaks; full
+  workspace 112 green; `flies` holds. 13-for-25.
+- Incidental: copy-threading refactor drift caught in passing
+  (sweep production 1843→1841 without any rule change — greedy
+  1820→1817, beam recovers one; bars hold, banked numbers stale
+  but green; recorded, not acted on).
+- Residuals: irregulars without -ed/-en (`set`, `torn` — v1.1 with
+  lexicon measurement), non-adjacent be (`was rudely broken`).

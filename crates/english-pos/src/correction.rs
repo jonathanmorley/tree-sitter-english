@@ -42,7 +42,9 @@
 //! `that-rel` + `det-noun` (Brill/fnTBL/RDR/CG convergence),
 //! `that-sconj` (RDR tree-mining), `that-ccomp` + `subconj-adp` +
 //! `apos-part` (gate-zone autopsy), `to-part` (gate-zone autopsy) —
-//! 12-for-24 total.
+//! 12-for-24 total. A thirteenth joined later from the lint pilot's
+//! participle misses: `pass-by` (be-participle + by-agent barrier,
+//! EWT 110:0) — 13-for-25.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
@@ -178,6 +180,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: that_vcomp,
     },
+    Rule {
+        name: "pass-by",
+        threshold: 5.0,
+        test: pass_by,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -312,6 +319,64 @@ fn that_vcomp(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Det)).then_some(Tag::Sconj)
+}
+
+/// Eventive participle read as predicative adjective (`was broken by
+/// X`): predicted ADJ after a be-form AUX with a `by`+ADP agent
+/// within +1..+4 ahead (verb/clause barrier). EWT gold is VERB 110:0
+/// with the -ed/-en guard (130:4 without — the guard removes all 4
+/// known breaks; det-noun precedent: the barrier carries precision,
+/// morphology trims). Fixes the participle-ADJ overfire the passive
+/// pilot rediscovered (`unfolded/set/overpowered/fastened/stranded/
+/// `broken` class). Residuals by design: irregulars without -ed/-en
+/// (`set`, `torn` — queued v1.1 with lexicon measurement, the
+/// s-verb morphology lesson holds) and non-adjacent be (`was rudely
+/// broken` — adverb between, v1 adjacent only).
+///
+/// ADMITTED 2026-10-07 (τ=5.0): EWT dev ±0, test +1 (`I was married
+/// by a judge`, canonical passive, margin 4.0 — calibrated τ catches
+/// margin-4 fires, blocks margin-11 statives like `tired by`);
+/// abstains correctly on the stative twin (`aren't married to...`,
+/// prev is `n't`/PART); sweep 0 fires / 0 breaks; full workspace
+/// green; `flies` holds.
+fn pass_by(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Adj {
+        return None;
+    }
+    if !(low[i].ends_with("ed") || low[i].ends_with("en")) {
+        return None;
+    }
+    if i == 0 || tags.get(i - 1) != Some(&Tag::Aux) {
+        return None;
+    }
+    if !matches!(
+        low[i - 1].as_str(),
+        "be" | "am" | "is" | "are" | "was" | "were" | "been" | "being"
+    ) {
+        return None;
+    }
+    // Ahead barrier scan for the agent (same stop set the EWT count
+    // was measured with — PUNCT blocks cross-sentence agents).
+    let mut j = i + 1;
+    while j <= i + 4 && j < tags.len() {
+        match tags[j] {
+            Tag::Verb
+            | Tag::Aux
+            | Tag::Sconj
+            | Tag::Cconj
+            | Tag::Part
+            | Tag::Punct
+            | Tag::Intj
+            | Tag::X
+            | Tag::Sym => return None,
+            _ => {}
+        }
+        if low[j] == "by" && tags[j] == Tag::Adp {
+            return Some(Tag::Verb);
+        }
+        j += 1;
+    }
+    None
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties

@@ -485,3 +485,59 @@ fn that_vcomp_fixes_verb_complement_that() {
         Tag::Pron
     );
 }
+
+#[test]
+fn pass_by_fixes_agented_participle() {
+    // `was broken by X`: ADJ after be-AUX with by-agent ahead → VERB.
+    assert_eq!(
+        run(
+            &["was", "broken", "by", "them"],
+            &[(Tag::Aux, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            "pass-by",
+        )[1],
+        Tag::Verb
+    );
+    // Bare stative (no agent): abstains — `was tired` stays ADJ.
+    assert_eq!(
+        run(
+            &["was", "tired"],
+            &[(Tag::Aux, 9.0), (Tag::Adj, 1.0)],
+            "pass-by",
+        )[1],
+        Tag::Adj
+    );
+    // Non-participle ADJ with agent (`was glad by...` — no ed/en):
+    // abstains; the morphology guard is load-bearing (EWT 130:4 → 110:0).
+    assert_eq!(
+        run(
+            &["was", "glad", "by", "them"],
+            &[(Tag::Aux, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            "pass-by",
+        )[1],
+        Tag::Adj
+    );
+    // PUNCT barrier: `was tired. By morning...` — no cross-sentence agent.
+    assert_eq!(
+        run(
+            &["was", "tired", ".", "by", "then"],
+            &[
+                (Tag::Aux, 9.0),
+                (Tag::Adj, 1.0),
+                (Tag::Punct, 9.0),
+                (Tag::Adp, 9.0),
+                (Tag::Adv, 9.0)
+            ],
+            "pass-by",
+        )[1],
+        Tag::Adj
+    );
+    // Non-be AUX prev (`seemed broken by...` — seemed is VERB): abstains.
+    assert_eq!(
+        run(
+            &["seemed", "broken", "by", "them"],
+            &[(Tag::Verb, 9.0), (Tag::Adj, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            "pass-by",
+        )[1],
+        Tag::Adj
+    );
+}
