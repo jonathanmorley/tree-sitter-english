@@ -113,10 +113,14 @@ button#run:hover, button#prun:hover { background: #6d28d9; }
 .bars { width: 100%; height: auto; }
 .bars text { font-size: 13px; fill: #1e293b; }
 .bars .t2 { font-size: 11px; fill: #64748b; }
-.bars rect { fill: #2563eb; }
+.bars rect { fill: var(--accent); }
+.bars rect.soft { fill: #93c5fd; }
+.bars rect.dim { fill: #94a3b8; }
 .bars rect.alt { fill: #8b5cf6; }
+.bars rect:hover { opacity: 0.85; }
 table { border-collapse: collapse; margin-top: 1rem; font-size: 0.92rem; }
 th, td { border: 1px solid var(--line); padding: 0.35rem 0.8rem; text-align: left; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 th { background: #f1f5f9; }
 .fine { font-size: 0.85rem; color: var(--muted); }
 footer { padding: 1rem 0 3rem; }

@@ -117,38 +117,38 @@ with forensics.</p>
 <div class="charts">
 <div>
 <h4>EWT test UPOS, exact (%)</h4>
-<svg viewBox="0 0 440 130" class="bars">
-<text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="245" height="18"/>
-<text x="0" y="52">ours prod 92.13</text><rect x="150" y="39" width="227" height="18"/>
-<text x="0" y="86">ours greedy 92.05</text><rect x="150" y="73" width="219" height="18"/>
-<text x="150" y="116" class="t2">axis 90–93 · same tagset+domain</text>
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Exact UPOS on EWT test: RDRPOSTagger 92.30, ours production 92.13, ours greedy 92.05">
+<text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="245" height="18" rx="3" class="dim"><title>RDRPOSTagger 92.30% exact UPOS (23,163 / 25,094)</title></rect>
+<text x="0" y="52">ours prod 92.13</text><rect x="150" y="39" width="227" height="18" rx="3"><title>ours production 92.13% (beam-2 + 14 rules)</title></rect>
+<text x="0" y="86">ours greedy 92.05</text><rect x="150" y="73" width="219" height="18" rx="3" class="soft"><title>ours greedy 92.05%</title></rect>
+<text x="150" y="116" class="t2">axis 90–93 · same tagset+domain · blue ours</text>
 </svg>
 </div>
 <div>
 <h4>Tag throughput, log tok/s</h4>
-<svg viewBox="0 0 440 130" class="bars">
-<text x="0" y="18">ours 2.1M</text><rect x="150" y="5" width="241" height="18"/>
-<text x="0" y="52">RDR 51k</text><rect x="150" y="39" width="74" height="18"/>
-<text x="0" y="86">NLTK 24k</text><rect x="150" y="73" width="40" height="18"/>
-<text x="150" y="116" class="t2">log scale, axis 10⁴–10⁶·⁵ · 41× / 90× gaps</text>
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Tag throughput, log tokens per second: ours 2.1M, RDR 51k, NLTK 24k">
+<text x="0" y="18">ours 2.1M</text><rect x="150" y="5" width="241" height="18" rx="3"><title>ours ~2.1M tokens/sec tag pass</title></rect>
+<text x="0" y="52">RDR 51k</text><rect x="150" y="39" width="74" height="18" rx="3" class="dim"><title>RDRPOSTagger ~51k tokens/sec (41x slower)</title></rect>
+<text x="0" y="86">NLTK 24k</text><rect x="150" y="73" width="40" height="18" rx="3" class="dim"><title>NLTK perceptron ~24k tokens/sec (90x slower)</title></rect>
+<text x="150" y="116" class="t2">log scale, axis 10⁴–10⁶·⁵ · 41× / 90× gaps · blue ours</text>
 </svg>
 </div>
 <div>
 <h4>Weights size (MB)</h4>
-<svg viewBox="0 0 440 130" class="bars">
-<text x="0" y="18">ours 1.76</text><rect x="150" y="5" width="247" height="18"/>
-<text x="0" y="52">RDR 0.38</text><rect x="150" y="39" width="53" height="18"/>
-<text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="211" height="18"/>
-<text x="150" y="116" class="t2">RDR wins on size — exception trees share structure</text>
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Weights size in megabytes: ours 1.76, RDR 0.38, NLTK 1.5">
+<text x="0" y="18">ours 1.76</text><rect x="150" y="5" width="247" height="18" rx="3"><title>ours 1.76 MB weights JSON</title></rect>
+<text x="0" y="52">RDR 0.38</text><rect x="150" y="39" width="53" height="18" rx="3" class="dim"><title>RDRPOSTagger 0.38 MB — exception trees share structure</title></rect>
+<text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="211" height="18" rx="3" class="dim"><title>NLTK perceptron 1.5 MB</title></rect>
+<text x="150" y="116" class="t2">RDR wins on size — exception trees share structure · blue ours</text>
 </svg>
 </div>
 <div>
 <h4>Dependencies: gold vs pipeline</h4>
-<svg viewBox="0 0 440 160" class="bars">
-<text x="0" y="18">UAS gold 83.9</text><rect x="150" y="5" width="265" height="18"/>
-<text x="0" y="48">UAS pipe 77.8</text><rect x="150" y="35" width="179" height="18"/>
-<text x="0" y="78">LAS gold 80.2</text><rect x="150" y="65" width="213" height="18" class="alt"/>
-<text x="0" y="108">LAS pipe 71.3</text><rect x="150" y="95" width="88" height="18" class="alt"/>
+<svg viewBox="0 0 440 160" class="bars" role="img" aria-label="Dependencies: UAS gold 83.9, UAS pipeline 77.8, LAS gold 80.2, LAS pipeline 71.3">
+<text x="0" y="18">UAS gold 83.9</text><rect x="150" y="5" width="265" height="18" rx="3"><title>UAS with gold tags 83.9</title></rect>
+<text x="0" y="48">UAS pipe 77.8</text><rect x="150" y="35" width="179" height="18" rx="3" class="soft"><title>UAS with tagger tags 77.8 — the cascade tax</title></rect>
+<text x="0" y="78">LAS gold 80.2</text><rect x="150" y="65" width="213" height="18" rx="3" class="alt"><title>LAS with gold tags 80.2</title></rect>
+<text x="0" y="108">LAS pipe 71.3</text><rect x="150" y="95" width="88" height="18" rx="3" class="alt"><title>LAS with tagger tags 71.3</title></rect>
 <text x="150" y="146" class="t2">axis 65–85 · cascade is structural (joint program stopped)</text>
 </svg>
 </div>
@@ -159,10 +159,25 @@ with forensics.</p>
 <tr><td>DistilBERT int8 (estimated)</td><td>~10–30 s</td><td>~60 MB</td><td>~300 MB</td></tr>
 <tr><td>BERT-base fp32 (estimated)</td><td>~3–10 min</td><td>~440 MB</td><td>~1 GB</td></tr>
 </table>
+<h4>Competitor shootout <span class="sub">EWT test · same hardware+data</span></h4>
+<table>
+<tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th></tr>
+<tr><td>Ours, production</td><td class="num">92.15</td><td class="num">94.24</td><td class="num">2.1M</td><td class="num">1.76 MB</td></tr>
+<tr><td>Ours, greedy</td><td class="num">92.05</td><td class="num">—</td><td class="num">2.1M</td><td class="num">1.76 MB</td></tr>
+<tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">—</td><td class="num">51k</td><td class="num">0.38 MB</td></tr>
+<tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.03</td><td class="num">24k</td><td class="num">1.5 MB</td></tr>
+<tr><td>spaCy en_core_web_sm</td><td colspan="3">not yet run — see rerun line below</td><td></td></tr>
+<tr><td>TreeTagger + english.par</td><td colspan="3">not yet run — see rerun line below</td><td></td></tr>
+</table>
+<p class="fine">Rerun it: <code>python3 scripts/bench-taggers.py --conllu
+/tmp/ud/ewt/en_ewt-ud-test.conllu --moby /tmp/moby.txt</code> for accuracy,
+<code>scripts/bench-commands.sh --moby /tmp/moby.txt</code> for hyperfine wall
+clock. Every absent competitor is skipped with an install hint; the standing
+record above is the 2026-10-06 run until a rerun replaces it.</p>
 <p class="fine">Transformer rows are single-thread CPU estimates for context, not
 measurements — they buy ~5 points of UPOS (97–98 vs 92.1) at 100–1000× the
 cost, which is why they stay offline-only oracles here. NLTK's perceptron is
-WSJ-trained (out of domain); its coarse-12 score is 87.0 vs ours 94.2.</p>
+WSJ-trained (out of domain); detail is in the shootout table above.</p>
 </section>
 
 </main>

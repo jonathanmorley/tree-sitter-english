@@ -1700,3 +1700,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   as documented) incl. the nltk leg; fixed a real quoting bug
   along the way (newline-split fragments become separate argv
   elements — single strings only).
+- (e) Shootout on the front page (DONE 2026-10-07): the page had
+  summary charts but no full table, no rerun pointer, and no
+  TreeTagger/spaCy rows. `docs/index.html` gains a competitor
+  table (exact UPOS + coarse-12 + tok/s + size; spaCy/TreeTagger
+  rows read "not yet run", nothing invented) plus the two
+  rerun commands; the old coarse-12 footnote folds into the
+  table. Verified: diff shows only the new hunks, table tags
+  balance-checked. Built on a clean checkout of the page: a
+  foreign uncommitted legend rework in the tree was parked to
+  /tmp/opencode/foreign-index.patch, re-applied after commit —
+  their work rides uncommitted as before, this commit carries
+  only the table.
