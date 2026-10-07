@@ -82,7 +82,7 @@ async function run(force) {
   const t0 = performance.now();
   const tree = parser.parse(pinput.value);
   const ms = (performance.now() - t0).toFixed(1);
-  const errors = tree.rootNode.hasError();
+  const errors = tree.rootNode.hasError;
   pstatus.textContent = `parsed in ${ms} ms · live${errors ? " · has ERROR nodes" : ""}`;
   show(pinput.value, tree);
 }
