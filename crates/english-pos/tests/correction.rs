@@ -556,3 +556,34 @@ fn pass_by_fixes_agented_participle() {
         Tag::Adj
     );
 }
+
+#[test]
+fn quite_adv_fixes_determiner_quite() {
+    // `quite sure`: DET before ADJ → ADV (EWT 27:0 in this shape).
+    assert_eq!(
+        run(
+            &["quite", "sure"],
+            &[(Tag::Det, 1.0), (Tag::Adj, 9.0)],
+            "quite-adv",
+        )[0],
+        Tag::Adv
+    );
+    // Determiner use (`quite a few`) abstains: DET next, not ADJ/ADV.
+    assert_eq!(
+        run(
+            &["quite", "a", "few"],
+            &[(Tag::Det, 1.0), (Tag::Det, 9.0), (Tag::Adj, 9.0)],
+            "quite-adv",
+        )[0],
+        Tag::Det
+    );
+    // Already ADV: nothing to do.
+    assert_eq!(
+        run(
+            &["quite", "sure"],
+            &[(Tag::Adv, 1.0), (Tag::Adj, 9.0)],
+            "quite-adv",
+        )[0],
+        Tag::Adv
+    );
+}

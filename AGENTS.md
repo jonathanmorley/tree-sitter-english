@@ -1534,3 +1534,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   pipeline-caused, gold stands); 0 FN (both `little` cases fire
   correctly). Threshold rules can hit 1.0 recall on clean
   shapes — precision is where the calibration lives.
+
+## Correction rule 14: quite-adv (ADMITTED 2026-10-07)
+
+- Found by the hedge lint eval (13/14 FNs): the tagger reads
+  `quite` as DET before adjectives (`quite sure` → DET ADJ).
+  EWT gold is ADV 27:0 in that shape (`quite` reads DET only
+  before DET — `quite a few`); single-word lexical rule,
+  `that`-precedent, τ=2.0.
+- Gates: unit fire + 2 abstains green; EWT dev +1 and test +1
+  (both `quite [NOUN/ADV]` → ADV, gold ADV, margin 1.0 — zero
+  breaks); evals neutral (sweep 0 fires / explicit 0 breaks);
+  full workspace green; `flies` holds. 14-for-27.
+- Honest scope: does NOT move the motivating hedge eval (its 13
+  `quite` FNs sit at margins 9–18, unreachable below any gate) —
+  admitted on its own gates anyway (EWT +2, zero harm). Hedge
+  recall recalibrates 0.65 → 0.50 on measured-mechanism
+  (confident-mistag class, genre/sweep-chunk precedent).

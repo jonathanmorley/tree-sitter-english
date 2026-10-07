@@ -45,7 +45,9 @@
 //! 12-for-24 total. A thirteenth joined later from the lint pilot's
 //! participle misses: `pass-by` (be-participle + by-agent barrier,
 //! EWT 110:0) — 13-for-25, then 13-for-26 after `color-adj` below
-//! was measured and refused.
+//! was measured and refused. A fourteenth joined from the hedge
+//! lint eval's 13/14 FN wall: `quite-adv` (determiner `quite` before
+//! ADJ/ADV → ADV, EWT 27:0) — 14-for-27.
 //!
 //! REJECTED (2026-10-07, removed from `RULES`): `color-adj`
 //! (NOUN→ADJ on Berlin-Kay colors with DET-prev + nominal-next).
@@ -198,6 +200,11 @@ pub const RULES: &[Rule] = &[
         name: "pass-by",
         threshold: 5.0,
         test: pass_by,
+    },
+    Rule {
+        name: "quite-adv",
+        threshold: 2.0,
+        test: quite_adv,
     },
 ];
 
@@ -398,6 +405,28 @@ fn pass_by(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         j += 1;
     }
     None
+}
+
+/// Determiner `quite` before an adjective/adverb (`quite sure`):
+/// predicted DET with ADJ/ADV next → ADV. EWT gold is ADV 27:0 in
+/// this shape (`quite` reads DET only before DET — `quite a few`);
+/// the model overfires the determiner reading everywhere else
+/// (found by the hedge lint eval, which went 13/14 FN on it).
+/// Single-word lexical rule, `that`-precedent (function word with a
+/// fixed EWT majority, gated below margin like everything else).
+///
+/// ADMITTED 2026-10-07 (τ=2.0): EWT dev +1, test +1 (both correct,
+/// zero breaks); unit fire + 2 abstains green; evals neutral
+/// (sweep 0 fires / explicit 0 breaks); full workspace green;
+/// `flies` holds. Does NOT move the motivating hedge eval (its 13
+/// `quite` FNs sit at margins 9–18, unreachable below any gate —
+/// the hedge-recall bar recalibrates to measured-mechanism on that
+/// account); this rule's gates stand on their own.
+fn quite_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Det || low[i] != "quite" {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Adj) | Some(Tag::Adv)).then_some(Tag::Adv)
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties

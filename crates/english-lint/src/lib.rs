@@ -334,6 +334,55 @@ impl Rule for Weasel {
     }
 }
 
+/// Hedge modifiers (`so/quite/rather` + ADJ/ADV): closed three-word
+/// list (vague downtoners and informal intensifiers — `too` excluded
+/// because excess-marking is precise, `pretty` excluded for its
+/// ADJ/ADV ambiguity; both documented boundaries). POS-only
+/// (keystroke path): ADV-tagged hedge immediately before ADJ/ADV.
+pub struct Hedge;
+
+impl Rule for Hedge {
+    fn id(&self) -> &'static str {
+        "syntax.hedge"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        const HEDGE: &[&str] = &["so", "quite", "rather"];
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            // One finding per sentence (first hedge in order).
+            let mut hit: Option<(String, String)> = None;
+            for k in 0..sent.pieces.len() {
+                if sent.tags.get(k) != Some(&Tag::Adv) {
+                    continue;
+                }
+                if !HEDGE.contains(&sent.pieces[k].to_lowercase().as_str()) {
+                    continue;
+                }
+                let j = k + 1;
+                if j >= sent.pieces.len() {
+                    continue;
+                }
+                if !matches!(sent.tags.get(j), Some(Tag::Adj) | Some(Tag::Adv)) {
+                    continue;
+                }
+                hit = Some((sent.pieces[k].clone(), sent.pieces[j].clone()));
+                break;
+            }
+            if let Some((w, next)) = hit {
+                out.push(Finding {
+                    rule: self.id(),
+                    span: sent.span.clone(),
+                    message: format!(
+                        "hedging intensifier: \"{w} {next}\" — say how much, or cut it"
+                    ),
+                });
+            }
+        }
+        out
+    }
+}
+
 /// Light-verb nominalizations (`conduct an investigation`): a closed
 /// list of light verbs governing a `-tion`/`-ment`/`-ance`/`-ence`
 /// noun through `obj`/`obl`. Names the pair; no auto-rewrite v1
@@ -777,6 +826,42 @@ mod tests {
             "{}",
             got[0].message
         );
+    }
+
+    #[test]
+    fn hedge_fires_on_downtoner_and_silent_otherwise() {
+        // `quite sure`: ADV + ADJ fires, naming the pair.
+        let d = doc(vec![sent(
+            &["are", "you", "quite", "sure"],
+            &[Tag::Aux, Tag::Pron, Tag::Adv, Tag::Adj],
+            &[0, 4, 4, 2, 4],
+            &["", "aux", "nsubj", "advmod", "root"],
+            1,
+            0,
+        )]);
+        let got = Hedge.check(&d);
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].rule, "syntax.hedge");
+        // `too` excluded by scope (excess-marking is precise).
+        let d = doc(vec![sent(
+            &["it", "was", "too", "late"],
+            &[Tag::Pron, Tag::Aux, Tag::Adv, Tag::Adj],
+            &[0, 4, 4, 2, 4],
+            &["", "nsubj", "cop", "advmod", "root"],
+            1,
+            0,
+        )]);
+        assert!(Hedge.check(&d).is_empty());
+        // Weasel words don't trip the hedge rule (cross-rule isolation).
+        let d = doc(vec![sent(
+            &["it", "is", "very", "big"],
+            &[Tag::Pron, Tag::Aux, Tag::Adv, Tag::Adj],
+            &[0, 4, 4, 2, 4],
+            &["", "nsubj", "cop", "advmod", "root"],
+            1,
+            0,
+        )]);
+        assert!(Hedge.check(&d).is_empty());
     }
 
     #[test]
