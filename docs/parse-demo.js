@@ -1,8 +1,12 @@
 // Structure demo: the real grammar in the browser via web-tree-sitter
 // (own dynamic imports, so this section is independent of the lint
-// module's load state). Highlighting comes from queries/highlights.scm
-// through standard captures; clause bands from a direct tree walk.
+// module's load state). Words take POS colors from the tagger
+// (wasm-bindgen build of the exact native pipeline); structural roles
+// that POS can't see (joins, quotes, ellipsis) come from
+// queries/highlights.scm; clause bands from a direct tree walk.
 import { Parser, Language, Query } from "./pkg/wt/web-tree-sitter.js";
+import githubLight from "./pkg/th/theme-github-light.js";
+import githubDark from "./pkg/th/theme-github-dark.js";
 
 const pinput = document.getElementById("pinput");
 const prun = document.getElementById("prun");
@@ -20,19 +24,41 @@ const SHOWCASE = [
   ["Colon elaboration", "He had one goal: to win."],
 ];
 
-// Standard captures -> demo palette (same classes as the query file's
-// intent; clause bands come from the tree walk below).
-const CAP_CLASS = {
-  keyword: "k-Conjunction",
-  "punctuation.delimiter": "k-Semicolon",
-  number: "k-Number",
-  string: "k-Quote",
-  "punctuation.special": "k-Ellipsis",
-  punctuation: "k-Period",
+// UPOS tag -> palette class (grouped; see legend).
+const TAG_CLASS = {
+  NOUN: "t-noun", PROPN: "t-noun", VERB: "t-verb", AUX: "t-verb",
+  ADJ: "t-adj", ADV: "t-adv", ADP: "t-adp", DET: "t-det", PRON: "t-pron",
+  CCONJ: "t-conj", SCONJ: "t-sconj", NUM: "t-num", PART: "t-part",
+  INTJ: "t-intj", PUNCT: "t-punct", SYM: "t-x", X: "t-x",
 };
+
+// Query captures that ADD information POS lacks (join roles, quote and
+// ellipsis classes). Conjunction/subordinator keywords already read
+// distinctly from CCONJ/SCONJ tags, so keyword captures stay unused.
+const STRUCT_CAPTURES = new Set([
+  "punctuation.delimiter",
+  "string",
+  "punctuation.special",
+  "punctuation",
+]);
+
+// Active treelight theme; resolved per capture with the standard
+// dotted-name fallback (punctuation.delimiter -> punctuation).
+let theme = githubLight;
+function resolveStyle(name) {
+  let t = name;
+  while (t) {
+    if (theme.styles[t]) return theme.styles[t];
+    const i = t.lastIndexOf(".");
+    if (i < 0) break;
+    t = t.slice(0, i);
+  }
+  return null;
+}
 
 let parser = null;
 let query = null;
+let analyzeFn = null;
 
 async function ensure() {
   if (!parser) {
@@ -42,6 +68,11 @@ async function ensure() {
     parser.setLanguage(lang);
     const src = await (await fetch("./queries/highlights.scm")).text();
     query = new Query(lang, src);
+  }
+  if (!analyzeFn) {
+    const mod = await import("./pkg/english_web.js");
+    await mod.default();
+    analyzeFn = mod.analyze;
   }
 }
 
@@ -58,20 +89,35 @@ SHOWCASE.forEach(([label, text], i) => {
   picker.appendChild(b);
 });
 
-let ptimer = null;
+// Two speeds: highlight follows typing fast; the tree view (expensive
+// DOM) refreshes only on pause or explicit Parse.
+let fastTimer = null;
+let slowTimer = null;
 pinput.addEventListener("input", () => {
-  clearTimeout(ptimer);
-  ptimer = setTimeout(() => run(false), 250);
+  clearTimeout(fastTimer);
+  clearTimeout(slowTimer);
+  fastTimer = setTimeout(() => run(false, true), 150);
+  slowTimer = setTimeout(() => run(false, false), 800);
 });
 pinput.addEventListener("scroll", () => {
   pback.scrollTop = pinput.scrollTop;
   pback.scrollLeft = pinput.scrollLeft;
 });
-prun.addEventListener("click", () => run(true));
+prun.addEventListener("click", () => run(true, false));
+
+for (const [id, th] of [["theme-light", githubLight], ["theme-dark", githubDark]]) {
+  document.getElementById(id).addEventListener("click", (ev) => {
+    document.querySelectorAll(".theme-picker button").forEach((x) => x.classList.remove("on"));
+    ev.target.classList.add("on");
+    theme = th;
+    run(true, true);
+  });
+}
 
 let lastP = null;
-async function run(force) {
-  if (!force && pinput.value === lastP) return;
+let lastOut = null;
+async function run(force, highlightOnly) {
+  if (!force && pinput.value === lastP && (highlightOnly || lastOut?.treed)) return;
   try {
     await ensure();
   } catch (e) {
@@ -81,15 +127,37 @@ async function run(force) {
   lastP = pinput.value;
   const t0 = performance.now();
   const tree = parser.parse(pinput.value);
+  const pos = JSON.parse(analyzeFn(pinput.value));
   const ms = (performance.now() - t0).toFixed(1);
-  const errors = tree.rootNode.hasError;
-  pstatus.textContent = `parsed in ${ms} ms · live${errors ? " · has ERROR nodes" : ""}`;
-  show(pinput.value, tree);
+  showHighlight(pinput.value, tree, pos);
+  // ERROR honesty: a trailing fragment without an end mark is
+  // incomplete input (normal mid-keystroke state), not a grammar
+  // failure. Flag ERROR only when it appears in completed text.
+  const errs = [];
+  const findErr = (node, sentIdx) => {
+    if (node.type === "ERROR") errs.push(sentIdx);
+    for (let i = 0; i < node.childCount; i++) findErr(node.child(i), sentIdx);
+  };
+  const topSents = [];
+  const collectS = (node) => {
+    if (node.type === "sentence") topSents.push(node);
+    else for (let i = 0; i < node.childCount; i++) collectS(node.child(i));
+  };
+  collectS(tree.rootNode);
+  topSents.forEach((s, i) => findErr(s, i));
+  const terminated = /[.?!…]\s*$/.test(pinput.value);
+  const realErr = errs.some((i) => terminated || i < topSents.length - 1);
+  pstatus.textContent = `parsed in ${ms} ms · live${realErr ? " · has ERROR nodes" : ""}`;
+  if (!highlightOnly) {
+    showTree(pinput.value, tree);
+    lastOut = { treed: true };
+  } else {
+    lastOut = { treed: false };
+  }
 }
 
-function show(full, tree) {
+function showHighlight(full, tree, pos) {
   pback.innerHTML = "";
-  treeview.innerHTML = "";
   // tree-sitter spans are BYTE offsets; JS slices UTF-16 units. Map
   // once so multibyte punctuation (em-dashes, quotes) can't drift.
   const enc = new TextEncoder();
@@ -105,17 +173,34 @@ function show(full, tree) {
     b2c[nbytes] = ci;
   }
   const B = (x) => b2c[Math.min(Math.max(x, 0), nbytes)];
-  // Token colors from query captures (char space via B); earliest
-  // start wins on overlaps.
-  const seen = new Set();
+  // POS colors (char space).
   const cols = [];
-  for (const c of query.captures(tree.rootNode)) {
-    const s = c.node.startIndex;
-    if (seen.has(s) || !CAP_CLASS[c.name]) continue;
-    seen.add(s);
-    cols.push({ s: B(s), e: B(c.node.endIndex), cls: CAP_CLASS[c.name], kind: c.node.type });
+  for (const s of pos.sentences) {
+    for (const p of s.pieces) {
+      const cls = TAG_CLASS[p.tag];
+      if (cls) cols.push({ s: B(p.s), e: B(p.e), cls, kind: `${p.tag} · ${p.chunk}` });
+    }
   }
-  // Clause bands from a direct walk (subordinate wins over enclosing).
+  // Structural overrides (char space); earliest start wins. Colors
+  // come from the active treelight theme, not the local palette.
+  const seen = new Set();
+  for (const c of query.captures(tree.rootNode)) {
+    const key = c.node.startIndex;
+    if (seen.has(key) || !STRUCT_CAPTURES.has(c.name)) continue;
+    seen.add(key);
+    const st = resolveStyle(c.name);
+    if (!st || !st.fg) continue;
+    cols.push({
+      s: B(c.node.startIndex),
+      e: B(c.node.endIndex),
+      fg: st.fg,
+      bold: !!st.bold,
+      italic: !!st.italic,
+      kind: c.node.type,
+      struct: true,
+    });
+  }
+  // Clause bands from a direct walk.
   const bands = [];
   const walk = (node) => {
     if (node.type === "subordinate_clause" || node.type === "clause") {
@@ -125,8 +210,9 @@ function show(full, tree) {
   };
   walk(tree.rootNode);
 
-  // Linear sweep: split input at every band/token boundary, then
-  // render each segment once (token span nested in band span).
+  // Linear sweep: split input at every boundary, render each segment
+  // once (token span nested in band span). Structural spans win over
+  // POS spans on overlap.
   const cuts = new Set([0, full.length]);
   for (const b of bands) { cuts.add(b.s); cuts.add(b.e); }
   for (const c of cols) { cuts.add(c.s); cuts.add(c.e); }
@@ -143,7 +229,7 @@ function show(full, tree) {
     }
     let col = null;
     for (const c of cols) {
-      if (c.s <= s && s < c.e && (!col || c.s > col.s)) col = c;
+      if (c.s <= s && s < c.e && (!col || c.s > col.s || (c.struct && !col.struct))) col = c;
     }
     if (band !== curBand) {
       curBand = band;
@@ -158,7 +244,14 @@ function show(full, tree) {
     const parent = curBandEl || frag;
     if (col) {
       const el = document.createElement("span");
-      el.className = "tok " + col.cls;
+      if (col.fg) {
+        el.className = "tok st";
+        el.style.color = col.fg;
+        if (col.bold) el.style.fontWeight = "700";
+        if (col.italic) el.style.fontStyle = "italic";
+      } else {
+        el.className = "tok " + col.cls;
+      }
       el.textContent = full.slice(s, e);
       el.title = col.kind;
       parent.appendChild(el);
@@ -168,8 +261,10 @@ function show(full, tree) {
   }
   frag.appendChild(document.createTextNode("\n"));
   pback.appendChild(frag);
+}
 
-  // Tree view: sentences -> clauses -> tokens from the same parse.
+function showTree(full, tree) {
+  treeview.innerHTML = "";
   const sents = [];
   const collect = (node) => {
     if (node.type === "sentence") sents.push(node);
@@ -214,6 +309,6 @@ function show(full, tree) {
   }
 }
 
-run(true).catch((e) => {
+run(true, false).catch((e) => {
   pback.innerHTML = '<span class="dim">Structure demo failed to load: ' + e.message + "</span>";
 });

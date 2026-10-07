@@ -41,12 +41,22 @@ code { background: #f1f5f9; padding: 0.05rem 0.35rem; border-radius: 4px;
 .clause { border-radius: 4px; padding: 0.1rem 0; }
 .clause.sub { background: #fef9c7; box-shadow: 0 0 0 2px #fde68a; }
 .tok { border-radius: 3px; padding: 0 1px; }
-.tok.k-Subordinator { background: #fde68a; font-weight: 600; }
-.tok.k-Conjunction { background: #bfdbfe; font-weight: 600; }
-.tok.k-Semicolon, .tok.k-Colon, .tok.k-EmDash { background: #ddd6fe; font-weight: 600; }
-.tok.k-Dotted, .tok.k-Number, .tok.k-Currency { background: #bbf7d0; }
-.tok.k-Quote, .tok.k-Ellipsis { color: #64748b; font-style: italic; }
-.tok.k-Period { color: #94a3b8; }
+.tok.st { font-weight: 600; }
+/* UPOS word colors (structure demo): every word reads its tag. */
+.tok.t-noun { background: #dbeafe; }
+.tok.t-verb { background: #fee2e2; font-weight: 600; }
+.tok.t-adj { background: #dcfce7; }
+.tok.t-adv { background: #ede9fe; }
+.tok.t-adp { background: #fef3c7; }
+.tok.t-det { background: #f1f5f9; color: #475569; }
+.tok.t-pron { background: #ccfbf1; }
+.tok.t-conj { background: #bfdbfe; font-weight: 600; }
+.tok.t-sconj { background: #fde68a; font-weight: 600; }
+.tok.t-num { background: #bbf7d0; }
+.tok.t-part { background: #f3e8ff; }
+.tok.t-intj { background: #fce7f3; }
+.tok.t-punct { color: #94a3b8; }
+.tok.t-x { background: #f3f4f6; color: #64748b; }
 .legend { list-style: none; display: flex; gap: 1rem; flex-wrap: wrap;
   padding: 0; font-size: 0.85rem; color: var(--muted); }
 .sw { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 3px;
@@ -54,6 +64,9 @@ code { background: #f1f5f9; padding: 0.05rem 0.35rem; border-radius: 4px;
 .sw.k-sub { background: #fde68a; } .sw.k-conj { background: #bfdbfe; }
 .sw.k-join { background: #ddd6fe; } .sw.k-term { background: #bbf7d0; }
 .sw.k-quote { background: #e2e8f0; } .sw.c-sub { background: #fef9c3; }
+.sw.t-noun { background: #dbeafe; } .sw.t-verb { background: #fee2e2; }
+.sw.t-adj { background: #dcfce7; } .sw.t-adv { background: #ede9fe; }
+.sw.t-adp { background: #fef3c7; } .sw.t-conj { background: #bfdbfe; }
 #treeview details { font-size: 0.88rem; }
 #treeview summary { cursor: pointer; }
 #treeview code { margin: 0 0.15rem; }

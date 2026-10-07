@@ -35,6 +35,11 @@ a standard web-tree-sitter bundle, highlighted through
 <code>queries/highlights.scm</code> — the same library and query mechanism
 every tree-sitter editor uses. Pick a showcase sentence or type your own.</p>
 <div id="examples" class="picker" aria-live="polite"></div>
+<div class="picker theme-picker" aria-label="Theme">
+<span class="dim">Theme:</span>
+<button id="theme-light" class="on">GitHub Light</button>
+<button id="theme-dark">GitHub Dark</button>
+</div>
 <div class="editor">
 <pre id="pback" aria-hidden="true"><span class="dim">Loading parser…</span></pre>
 <textarea id="pinput" rows="4" spellcheck="false">Mr. Smith arrived at 10:30, and Mrs. Jones left because the meeting ended.</textarea>
@@ -44,11 +49,16 @@ every tree-sitter editor uses. Pick a showcase sentence or type your own.</p>
 <span id="pstatus"></span>
 <div id="treeview"></div>
 <ul class="legend">
-<li><span class="sw k-conj"></span>@keyword (conjunctions, subordinators)</li>
-<li><span class="sw k-join"></span>@punctuation.delimiter (<code>;</code> <code>:</code> <code>—</code>)</li>
-<li><span class="sw k-term"></span>@number</li>
-<li><span class="sw k-quote"></span>@string, @punctuation.special, @punctuation</li>
+<li><span class="sw t-noun"></span>nouns</li>
+<li><span class="sw t-verb"></span>verbs</li>
+<li><span class="sw t-adj"></span>adjectives</li>
+<li><span class="sw t-adv"></span>adverbs</li>
+<li><span class="sw t-adp"></span>adpositions etc.</li>
+<li><span class="sw t-conj"></span>conjunctions</li>
+<li><span class="sw k-join"></span>joins <code>;</code> <code>:</code> <code>—</code></li>
+<li><span class="sw k-term"></span>numbers</li>
 <li><span class="sw c-sub"></span>subordinate clause</li>
+<li class="dim">words read POS colors; joins, quotes &amp; numbers follow the theme</li>
 </ul>
 </section>
 
