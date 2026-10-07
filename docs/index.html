@@ -36,8 +36,8 @@ external scanner, which no browser toolchain here can link — so these trees we
 produced by the native binary at build time (<code>cargo run -p english
 --example sitegen</code>). Zero fidelity gap, honestly labeled. Custom text
 would silently misparse, so the live box is offered only for lint, below.</p>
-<div id="examples" class="picker"></div>
-<div id="ptree" class="sent"></div>
+<div id="examples" class="picker" aria-live="polite"></div>
+<div id="ptree" class="sent"><span class="dim">Loading examples…</span></div>
 <div id="treeview"></div>
 <ul class="legend">
 <li><span class="sw k-sub"></span>subordinator</li>
@@ -50,8 +50,9 @@ would silently misparse, so the live box is offered only for lint, below.</p>
 </section>
 
 <section id="lint" class="card">
-<h2>2 · Lint <span class="sub">live in WebAssembly</span></h2>
-<p>Type or paste prose. The tagger, chunker, and lint rules are the exact native
+<h2>2 · Lint <span class="sub">live in WebAssembly, on every keystroke</span></h2>
+<p>Type or paste prose — findings update as you type (debounced 250 ms).
+The tagger, chunker, and lint rules are the exact native
 code and weights, running locally — nothing leaves the page. Sentence splits
 are naive here (<code>Mr.</code> may mis-split); everything else is exact.</p>
 <textarea id="input" rows="5">Time flies like an arrow. It was really very good, because the plan that we made worked.</textarea>
@@ -74,13 +75,13 @@ reading, so that knowledge lives in later statistical layers.</p>
 <path id="flow" d="M 20 60 H 720" fill="none"/>
 </defs>
 <g class="stages" font-size="12" text-anchor="middle">
-<g><rect x="8" y="38" width="88" height="44" rx="8"/><text x="52" y="55">text</text><text class="t2" x="52" y="70">1.2 MB book</text></g>
-<g><rect x="112" y="38" width="88" height="44" rx="8"/><text x="156" y="55">grammar</text><text class="t2" x="156" y="70">+ scanner</text></g>
-<g><rect x="216" y="38" width="88" height="44" rx="8"/><text x="260" y="55">words</text><text class="t2" x="260" y="70">typed AST</text></g>
-<g><rect x="320" y="38" width="88" height="44" rx="8"/><text x="364" y="55">tag</text><text class="t2" x="364" y="70">92.1% UPOS</text></g>
-<g><rect x="424" y="38" width="88" height="44" rx="8"/><text x="468" y="55">chunk</text><text class="t2" x="468" y="70">phrases</text></g>
-<g><rect x="528" y="38" width="88" height="44" rx="8"/><text x="572" y="55">dep</text><text class="t2" x="572" y="70">LAS 80.2</text></g>
-<g><rect x="632" y="38" width="88" height="44" rx="8"/><text x="676" y="55">lint</text><text class="t2" x="676" y="70">findings</text></g>
+<g><rect x="8" y="38" width="88" height="44" rx="8" fill="#fef3c7" stroke="#b45309"/><text x="52" y="55">text</text><text class="t2" x="52" y="70">1.2 MB book</text></g>
+<g><rect x="112" y="38" width="88" height="44" rx="8" fill="#dbeafe" stroke="#1d4ed8"/><text x="156" y="55">grammar</text><text class="t2" x="156" y="70">+ scanner</text></g>
+<g><rect x="216" y="38" width="88" height="44" rx="8" fill="#e0e7ff" stroke="#4338ca"/><text x="260" y="55">words</text><text class="t2" x="260" y="70">typed AST</text></g>
+<g><rect x="320" y="38" width="88" height="44" rx="8" fill="#ede9fe" stroke="#7c3aed"/><text x="364" y="55">tag</text><text class="t2" x="364" y="70">92.1% UPOS</text></g>
+<g><rect x="424" y="38" width="88" height="44" rx="8" fill="#dcfce7" stroke="#15803d"/><text x="468" y="55">chunk</text><text class="t2" x="468" y="70">phrases</text></g>
+<g><rect x="528" y="38" width="88" height="44" rx="8" fill="#ffedd5" stroke="#c2410c"/><text x="572" y="55">dep</text><text class="t2" x="572" y="70">LAS 80.2</text></g>
+<g><rect x="632" y="38" width="88" height="44" rx="8" fill="#fee2e2" stroke="#b91c1c"/><text x="676" y="55">lint</text><text class="t2" x="676" y="70">findings</text></g>
 </g>
 <g fill="#2563eb">
 <circle r="5"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#flow"/></animateMotion></circle>
@@ -165,6 +166,7 @@ WSJ-trained (out of domain); its coarse-12 score is 87.0 vs ours 94.2.</p>
 <footer class="wrap fine">Tagger weights trained on UD English-EWT (CC BY-SA
 4.0) plus in-domain oracle data · <a
 href="https://github.com/jonathanmorley/tree-sitter-english">repository</a></footer>
-<script type="module" src="demo.js"></script>
+<script src="parse-demo.js"></script>
+<script type="module" src="lint-demo.js"></script>
 </body>
 </html>
