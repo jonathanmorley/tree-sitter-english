@@ -1062,8 +1062,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   71.4/71.5 (67.4/67.3) → Collins averaging 78.7/78.6
   (72.8/73.5) → v3 head/sibling/bigram 79.1/79.3 (73.7/74.3)
   → LaSO-2 + beam2 81.4/81.1 (75.8/75.3) → LaSO-4 + beam4
-  82.3/82.1 (76.2/76.7). Mini-memorization (60 sents) 94.4 →
-  97.3 across v1→v2 pinned underfit, not a loop bug.
+  82.3/82.1 (76.2/76.7) → +v4 neighbors (MaltOptimizer step 4:
+  s0−1/s0+1/b0−1 word+tag, 0x53–0x58) 83.9/83.5 (77.8/77.8).
+  Screen-then-license held: greedy screen +2.1, LaSO-4 verdict
+  +1.6. Curve still short of the unverified 87, but climbing
+  ~+1.6/step with the harvest, not flattening. Mini-probe
+  (60 sentences) 94.4 → 97.3 across v1→v2 pinned underfit,
+  not a loop bug.
   Train fit at v3: 92.9 vs dev 79.1 (overfit); min-count 2/3
   flat (78.8/79.3, 11.5/9.3 MB — pruning buys size, not UAS);
   iters-40 flat (78.7/79.0 — converged). Width gains halve
@@ -1136,6 +1141,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Measured: ceiling (gold heads) 94.2/94.1 — the classifier is
   strong, label error only ~6%; beam4+gold 78.7/78.8 (bar 77
   PASS +1.7); beam4+tagger 69.7/70.3 (bar 71 MISSED by ~1).
+  With v4 heads: 80.2/80.1 +gold, 71.1/71.3 +tagger — bar 71
+  CLEARS (+0.1/+0.3). Labeler untouched (v1); heads did it.
   51 labels (subtypes kept — `nmod:poss` 3688× earns its
   class); labeler 3.8 MB (Tier-1-vendorable size, but ships
   only with parser weights — both gitignored as a pair).
@@ -1171,7 +1178,8 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   b0+1 rides lookahead) → v4 arc templates 0x53–0x58, under
   greedy screen; QUEUED: pseudo-projective lifting for the
   2.3% (+0.2–0.4 est).
-- Standing: pipeline LAS 70.3 (bar 71, −0.7); parser-on-pred-
-  tags LaSO retrain is the named lever for heads-under-noise
-  (expensive — sequenced after the v4 screen, one variable at
-  a time); s1-form ablation queued behind it.
+- Standing: pipeline LAS 71.1/71.3 (bar 71 CLEARED by heads,
+  labeler untouched); UAS 83.9 (bar 87, −3.1 — curve climbing,
+  next levers below). Parser-on-pred-tags LaSO retrain is the
+  named lever for heads-under-noise (expensive — one variable
+  at a time); s1-form ablation queued behind it.
