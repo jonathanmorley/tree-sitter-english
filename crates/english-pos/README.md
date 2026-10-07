@@ -12,7 +12,9 @@ trivial `u64`-keyed map — no SipHash re-hashing of pre-hashed ids), so
 tagging runs ~2.1M tokens/sec on the tag pass (~550k end-to-end with
 parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT plus
-in-domain oracle data: dev 91.84%, test 92.05% greedy (1.76 MB,
+in-domain oracle data (EWT: UD_English-EWT contributors, CC BY-SA
+4.0, <https://github.com/UniversalDependencies/UD_English-EWT>):
+dev 91.84%, test 92.05% greedy (1.76 MB,
 whole-number weights serialize as integers). Production decodes
 through a width-2 beam re-decode plus fourteen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
