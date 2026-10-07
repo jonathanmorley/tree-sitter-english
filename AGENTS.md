@@ -1492,3 +1492,28 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Fully reverted (RULES entry, fn, const, shape tests removed;
   rejection note in module docs). fmt reflow of long test tuples
   kept (committed unformatted — gate hygiene).
+
+## Dogfood: english-lint on repo docs (DONE 2026-10-07)
+
+- README.md: 6 findings, all readable (2 long-sentences, 2
+  clause-complexity, 1 correct passive `is written in Rust`).
+  AGENTS.md (1400 lines): 359 findings in 2.4 s, no crashes/panics
+  (exit 1 = findings, the only non-clean signal). Self-reference
+  amusement: the tool flags the doc EXAMPLES of passives (`was
+  broken by X`, `was measured`) — correct behavior, they ARE
+  passives; and fires on the stative-twin discussion (`aren't
+  married`) exactly as the eval predicts.
+- Scoping decision (no code): markdown structure is not prose —
+  table rows (`| Full parse | 131 ms |...`) and colon-introduced
+  lists (one 18-clause monster) produce structural findings.
+  Same philosophy as the transcription bucket (markup encodes
+  typography, not prose). Code fences produced nothing (short
+  fragments stay silent under every rule — verified by absence
+  across both docs). Documented as prose-scope; a markdown-aware
+  input filter (fences/tables/lists) is queued, not started —
+  needs its own FP-rate measurement before it touches the
+  pipeline, and docs-linting is not the product's first market
+  (book prose is).
+- Fragments add noise (expected — rules assume sentences; ERROR
+  recovery still annotates, findings follow garbage-in). Not
+  acted on: same contract as the grammar (recover, never refuse).
