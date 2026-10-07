@@ -1228,6 +1228,10 @@ pub fn label_features(
 
 /// Sparse labeler rows: feature hash -> per-label weights.
 type LabelRows = U64Map<Vec<f32>>;
+/// Accumulator rows for Collins averaging (f64 survival totals).
+type LabelTotals = U64Map<Vec<f64>>;
+/// Gold labeled-arc sentence: words, tags, heads, rels (index 0 dummy).
+pub type LabeledSentence = (Vec<String>, Vec<String>, Vec<usize>, Vec<String>);
 
 /// UD relation classifier over decoded (or gold) arcs: averaged
 /// perceptron, same weight-row/JSON discipline as [`Model`]
@@ -1328,11 +1332,7 @@ impl LabelModel {
     /// named fallback, not an assumed alternative. Instances are
     /// gold arcs; non-projective sentences train fine (no oracle
     /// involved — classification, not search).
-    pub fn train(
-        data: &[(Vec<String>, Vec<String>, Vec<usize>, Vec<String>)],
-        iters: usize,
-        min_count: usize,
-    ) -> Self {
+    pub fn train(data: &[LabeledSentence], iters: usize, min_count: usize) -> Self {
         let mut set = std::collections::BTreeSet::new();
         for (_, _, _, rels) in data {
             for r in rels.iter().skip(1) {
@@ -1353,7 +1353,7 @@ impl LabelModel {
             }
         }
         let mut weights: LabelRows = LabelRows::default();
-        let mut totals: U64Map<Vec<f64>> = U64Map::default();
+        let mut totals: LabelTotals = LabelTotals::default();
         let mut stamp: U64Map<usize> = U64Map::default();
         let mut step = 0usize;
         for _ in 0..iters {

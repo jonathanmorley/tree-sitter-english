@@ -31,6 +31,7 @@
         "CMakeLists.txt" # generated
         "scripts/harmonize-ud.mjs" # node transform, no JS formatter configured
         "scripts/*.py" # dev-time oracle scripts, no Python formatter configured
+        "scripts/*.txt" # pinned book-ID list + md5 manifest, must stay byte-stable
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

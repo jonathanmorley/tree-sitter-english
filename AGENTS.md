@@ -13,6 +13,11 @@ Working notes for this repo. Unsigned commits until just before pushing
   covers the root package.
 - Lint/format: `cargo fmt --check`, `cargo clippy --workspace --all-targets`,
   `nix fmt`, `nix flake check` — all must be clean.
+- NOTE 2026-10-07: `nix fmt` (mdformat) wants to unwrap prose repo-wide
+  while committed markdown is wrapped 80-col, and `nix flake check` fatals
+  on `scripts/gutenberg-100.txt` (fixed: `scripts/*.txt` now excluded as
+  byte-stable). The prose-style war is UNRESOLVED — do not blanket-apply
+  mdformat (churn + marker normalization across 5+ docs); owner's call.
 
 ## The CLI cannot test this grammar
 
@@ -1195,3 +1200,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   lever; s1-form ablation MEASURED FLAT 2026-10-07 (greedy
   screen dev −0.04 / test +0.18 — noise; 0x32 stays per the
   min-count precedent, note in-code).
+
+## Dependency post-pass (BANKED 2026-10-07)
+
+- Final: UAS 83.9/83.5 +gold (77.8/77.8 +tagger), LAS 80.2/80.1
+  +gold (71.1/71.3 +tagger). Set bars: LAS-77 PASS, LAS-71
+  PASS; UAS-87 missed −3.1 against an unverified number.
+  Artifacts: `english-dep` + `english-dep-train` committed and
+  pushed (weights gitignored Tier-1 pair: 32 MB parser +
+  3.8 MB labeler, regeneration in trainer docs).
+- Backlog (queued, in ROI order — none changes a shipped
+  decision, all need fresh bars before work):
+  (a) joint tag-parse (NEW STAGE): the only addressed-to-cause
+  cascade lever (5.5-pt structural loss, twice confirmed
+  untrainable-around); needs decoder/features/evals/budgets
+  scope like this stage had;
+  (b) pseudo-projective lifting (Nivre & Nilsson 2005) for the
+  2.3% non-projective training sentences: +0.2–0.4 est,
+  moderate build (head-marking + lift + decode-time unlift);
+  (c) UAS-87 adjudication: needs the published linear-parser
+  predicted-tag EWT-UAS number (CoNLL UDPipe-baseline EWT
+  row) before another accuracy euro is spent against it.
+- Revisit triggers (nothing else): constructs erroring as a
+  class, or a consumer needing entities/relations beyond LAS.
