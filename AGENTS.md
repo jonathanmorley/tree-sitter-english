@@ -1319,3 +1319,27 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   batch (beam4 ~4 s/book; greedy-decode tradeoff per rule,
   unmeasured). Next rules queued, not started: nominalization,
   sentence complexity (both need their own 60-sent evals).
+
+## Vale alternative, rule 2: nominalization (DONE 2026-10-07)
+
+- `syntax.nominalization`: closed light-verb table (explicit surface
+  forms, no stemmer) governing `-tion`/`-sion`/`-sis`/`-ment`/
+  `-ance`/`-ence` nouns via `obj`/`obl`, head must read VERB; names
+  the pair, no auto-rewrite v1. Scope: light-verb government ONLY
+  (bare nominalizations silent by design); suffix-boundary shapes
+  (`notice/promise/attempt/effort/care/inquiry/choice`, non-light
+  `pay attention`) count ACTIVE.
+- Eval `tests/nominal.rs`: 60 (11 book + 19 composed canonicals —
+  books underuse bureaucratic shapes; 30 negatives incl.
+  list-boundary and suffix lookalikes). Measured precision 0.929 /
+  recall 0.963 — both pre-registered bars clear (0.75/0.50).
+  Round 1 arbitrated: 3 golds flipped where the rule's own scope
+  excludes them (`care` no-suffix, `-ing`/`-edge` deferred with
+  named risks: `get going` class, `did damage` tripwire); rule
+  extended twice on principled classes (plurals by stem —
+  `arrangements` ends in `ments`; Greek `-sis` — full+stem match
+  after strip-order bug `analysis`→`analysi`); remaining misses:
+  1× tagger `did`/AUX mistag (gold stands), 2× documented
+  non-deverbial `-ment` (`take a moment` — honest precision cost,
+  not special-cased). Deferred with reasons: `-ing` gerunds,
+  `-age`/`-edge` (each needs its own measurement).
