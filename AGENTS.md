@@ -1584,3 +1584,19 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   use with `RUSTUP_TOOLCHAIN=stable` inside `nix develop` so nix's
   `cc` is visible); `wasm-bindgen-cli` compiled from source (~10 min,
   needs nix `cc`); release wasm 2.1 MB (1.76 MB weights embedded).
+
+## Site v2 + main-branch PR rule (DONE 2026-10-07)
+
+- Site rewritten: separate structure demo (6 pre-parsed showcase
+  examples via `crates/english/examples/sitegen.rs` →
+  `docs/parse-examples.json`, all zero-ERROR; token-kind highlight +
+  collapsible tree) vs live WASM lint demo; dark-hero visual overhaul;
+  method section dropped for architecture (SMIL-animated SVG pipeline +
+  layer cards); 4 hand-scaled SVG charts (EWT accuracy, log throughput,
+  weights size, dep gold-vs-pipeline) + transformer-estimate table.
+- Privacy: 7 crate manifests expose a gmail author address (pre-existing,
+  owner's call 2026-10-07: keep as-is); EWT CC BY-SA 4.0 attribution
+  added to `english-pos/README.md`.
+- PROCESS: `main` now requires pull requests (GH013 on direct push).
+  New routine: branch → push branch → API-create PR → API-merge →
+  sync local main → delete branch. PR #5 (site-v2) merged this way.
