@@ -1408,6 +1408,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Residuals: irregulars without -ed/-en (`set`, `torn` — v1.1 with
   lexicon measurement), non-adjacent be (`was rudely broken`).
 
+## pass-by v1.1 (MEASURED AND REVERTED 2026-10-07)
+
+- Adverb gap (`was rudely broken`, EWT 14:0) + closed irregular
+  list (attested core 19:0 + no-change-verb completion; `-orn`
+  and gap+irreg excluded for zero evidence) — both EWT-majority,
+  both ZERO fires on dev, test, sweep, and hand-built shapes (the
+  tagger tags these shapes VERB or better than the gate).
+  Unmeasurable code doesn't ship (11-removed precedent); numbers
+  stand as the residual record in the rule docs. The `try again`
+  was correct process (test split found v1.0's fire the same
+  way) — negative result, still a result.
+
 ## Correction rule refused: color-adj (REJECTED 2026-10-07)
 
 - The queued attr-adj trigger, measured: Berlin-Kay colors with

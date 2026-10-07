@@ -342,10 +342,17 @@ fn that_vcomp(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
 /// known breaks; det-noun precedent: the barrier carries precision,
 /// morphology trims). Fixes the participle-ADJ overfire the passive
 /// pilot rediscovered (`unfolded/set/overpowered/fastened/stranded/
-/// `broken` class). Residuals by design: irregulars without -ed/-en
-/// (`set`, `torn` — queued v1.1 with lexicon measurement, the
-/// s-verb morphology lesson holds) and non-adjacent be (`was rudely
-/// broken` — adverb between, v1 adjacent only).
+/// `broken` class).
+///
+/// v1.1 MEASURED AND REVERTED 2026-10-07: adverb gap (`was rudely
+/// broken`, EWT 14:0) and closed irregular list (EWT-attested core
+/// 19:0 + no-change-verb completion; `-orn` and gap+irreg excluded
+/// for zero evidence) — both with EWT-majority, both with ZERO fires
+/// on dev, test, sweep, and hand-built shapes (the tagger either
+/// tags these shapes VERB or better than the gate). Unmeasurable
+/// code doesn't ship (same standard that removed 11 candidates);
+/// the numbers stand as the residual record. Residuals: `-orn`
+/// participles, non-ADV gaps (no EWT evidence either way).
 ///
 /// ADMITTED 2026-10-07 (τ=5.0): EWT dev ±0, test +1 (`I was married
 /// by a judge`, canonical passive, margin 4.0 — calibrated τ catches
