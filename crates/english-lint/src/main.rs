@@ -6,7 +6,7 @@
 use std::process::ExitCode;
 
 use english_lint::{
-    ClauseComplexity, Models, Nominalization, Passive, Rule, SentenceLength, line_col, lint,
+    ClauseComplexity, Models, Nominalization, Passive, Rule, SentenceLength, Weasel, line_col, lint,
 };
 
 fn main() -> ExitCode {
@@ -26,7 +26,8 @@ fn main() -> ExitCode {
     };
     let length = SentenceLength::default();
     let complexity = ClauseComplexity::default();
-    let rules: Vec<&dyn Rule> = vec![&Passive, &Nominalization, &length, &complexity];
+    let weasel = Weasel;
+    let rules: Vec<&dyn Rule> = vec![&Passive, &Nominalization, &length, &complexity, &weasel];
     let mut total = 0usize;
     for path in &files {
         let source = match std::fs::read_to_string(path) {

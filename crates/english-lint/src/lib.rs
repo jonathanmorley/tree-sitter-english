@@ -283,6 +283,57 @@ impl Rule for Passive {
     }
 }
 
+/// Weasel intensifiers (`very/really/extremely` + ADJ/ADV): closed
+/// three-word list (the canonical weasels — `so`/`too`/`quite`/
+/// `rather`/`pretty` have distinct semantics and stay out,
+/// documented boundary like the suffix lists). POS-only (keystroke
+/// path): ADV-tagged weasel immediately before ADJ/ADV. `really`
+/// fires in both readings (intensifier dominates; assertive
+/// `really, ...` breaks adjacency via comma and stays silent).
+/// Attributive `very` (`the very idea`, tagged ADJ) never matches
+/// (ADV required).
+pub struct Weasel;
+
+impl Rule for Weasel {
+    fn id(&self) -> &'static str {
+        "syntax.weasel"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        const WEASEL: &[&str] = &["very", "really", "extremely"];
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            // One finding per sentence (first weasel in order).
+            let mut hit: Option<(String, String)> = None;
+            for k in 0..sent.pieces.len() {
+                if sent.tags.get(k) != Some(&Tag::Adv) {
+                    continue;
+                }
+                if !WEASEL.contains(&sent.pieces[k].to_lowercase().as_str()) {
+                    continue;
+                }
+                let j = k + 1;
+                if j >= sent.pieces.len() {
+                    continue;
+                }
+                if !matches!(sent.tags.get(j), Some(Tag::Adj) | Some(Tag::Adv)) {
+                    continue;
+                }
+                hit = Some((sent.pieces[k].clone(), sent.pieces[j].clone()));
+                break;
+            }
+            if let Some((w, next)) = hit {
+                out.push(Finding {
+                    rule: self.id(),
+                    span: sent.span.clone(),
+                    message: format!("weasel intensifier: \"{w} {next}\" — cut it or say how much"),
+                });
+            }
+        }
+        out
+    }
+}
+
 /// Light-verb nominalizations (`conduct an investigation`): a closed
 /// list of light verbs governing a `-tion`/`-ment`/`-ance`/`-ence`
 /// noun through `obj`/`obl`. Names the pair; no auto-rewrite v1
@@ -726,6 +777,42 @@ mod tests {
             "{}",
             got[0].message
         );
+    }
+
+    #[test]
+    fn weasel_fires_on_intensifier_and_silent_otherwise() {
+        // `very big`: ADV + ADJ fires, naming the pair.
+        let d = doc(vec![sent(
+            &["it", "is", "very", "big"],
+            &[Tag::Pron, Tag::Aux, Tag::Adv, Tag::Adj],
+            &[0, 3, 3, 3, 3],
+            &["", "nsubj", "cop", "advmod", "root"],
+            1,
+            0,
+        )]);
+        let got = Weasel.check(&d);
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].rule, "syntax.weasel");
+        // Attributive `very` (`the very idea`, ADJ) never matches.
+        let d = doc(vec![sent(
+            &["the", "very", "idea"],
+            &[Tag::Det, Tag::Adj, Tag::Noun],
+            &[0, 3, 3, 0],
+            &["", "det", "amod", "root"],
+            1,
+            0,
+        )]);
+        assert!(Weasel.check(&d).is_empty());
+        // Other intensifiers stay out (`so big` — documented boundary).
+        let d = doc(vec![sent(
+            &["it", "is", "so", "big"],
+            &[Tag::Pron, Tag::Aux, Tag::Adv, Tag::Adj],
+            &[0, 3, 3, 3, 3],
+            &["", "nsubj", "cop", "advmod", "root"],
+            1,
+            0,
+        )]);
+        assert!(Weasel.check(&d).is_empty());
     }
 
     #[test]

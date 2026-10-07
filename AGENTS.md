@@ -1517,3 +1517,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Fragments add noise (expected — rules assume sentences; ERROR
   recovery still annotates, findings follow garbage-in). Not
   acted on: same contract as the grammar (recover, never refuse).
+
+## Vale alternative, rule 5: weasel modifiers (DONE 2026-10-07,
+  P 0.968 / R 1.000)
+
+- `syntax.weasel`: closed big-three intensifiers (`very/really/
+  extremely`) + adjacent ADJ/ADV, POS-only (shallow path —
+  keystroke-capable). `so/too/quite/rather/pretty` stay out
+  (distinct semantics — hedges vs intensifiers need their own
+  rule); assertive `really,` breaks adjacency via hidden comma;
+  attributive `very` never matches (ADV required).
+- Eval `tests/weasel.rs`: 60 (30 book positives incl. `little`-
+  edge and repetition shapes; 30 negatives: verb-scope,
+  attributive, other-intensifier, plain). 1 FP arbitrated
+  (double-mistag `very/first`→ADV/ADV on `the very first dart`;
+  pipeline-caused, gold stands); 0 FN (both `little` cases fire
+  correctly). Threshold rules can hit 1.0 recall on clean
+  shapes — precision is where the calibration lives.
