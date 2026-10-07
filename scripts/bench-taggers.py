@@ -128,22 +128,32 @@ def run_ours(sents):
             "w", suffix=".txt", delete=False) as f:
         f.write("\n\n".join("\n".join(w) for w, _ in sents) + "\n")
         tokfile = f.name
-    t = time.perf_counter()
-    try:
-        out = subprocess.run(
-            ["cargo", "run", "--quiet", "--release",
-             "-p", "english-pos", "--example", "tag_tokens",
-             "--", tokfile, "--sentences"],
-            capture_output=True, text=True, check=True).stdout
-    except subprocess.CalledProcessError as e:
-        return None, f"skip (tag_tokens failed: {e.stderr[-200:]})"
-    dt = time.perf_counter() - t
-    pred = [ln.split("\t")[1] for ln in out.splitlines() if "\t" in ln]
+
+    def run(extra):
+        try:
+            out = subprocess.run(
+                ["cargo", "run", "--quiet", "--release",
+                 "-p", "english-pos", "--example", "tag_tokens",
+                 "--", tokfile, "--sentences"] + extra,
+                capture_output=True, text=True, check=True).stdout
+        except subprocess.CalledProcessError as e:
+            return None, f"skip (tag_tokens failed: {e.stderr[-200:]})"
+        pred = [ln.split("\t")[1] for ln in out.splitlines() if "\t" in ln]
+        if len(pred) != n:
+            return None, (f"skip (tag count {len(pred)} != "
+                           f"word count {n})")
+        return pred, None
+
     n = sum(len(w) for w, _ in sents)
-    if len(pred) != n:
-        return None, (f"skip (tag count {len(pred)} != "
-                       f"word count {n})")
-    return (pred, dt), None
+    t = time.perf_counter()
+    (greedy, err) = run([])
+    if err:
+        return None, err
+    (prod, err) = run(["--production"])
+    dt = time.perf_counter() - t
+    if err:
+        return None, err
+    return ((greedy, prod), dt), None
 
 
 def score_exact(pred, gold):
@@ -271,15 +281,16 @@ def main(argv):
 
     rows = []  # (system, exact, exact_n, coarse, coarse_d, tok/s, note)
 
-    # Ours (exact UPOS).
+    # Ours: greedy + production (exact UPOS + coarse).
     (res, err) = run_ours(sents)
     if err:
-        rows.append(("ours", None, 0, None, 0, None, err))
+        rows.append(("ours-greedy", None, 0, None, 0, None, err))
+        rows.append(("ours-prod", None, 0, None, 0, None, err))
     else:
-        pred, dt = res
-        ex = score_exact(pred, gold)
-        cn, cd = score_coarse(pred, gold, coarse_upos)
-        # Tagger-only speed on the shared Moby word list.
+        (greedy, prod), dt = res
+        ex = score_exact(greedy, gold)
+        cn, cd = score_coarse(greedy, gold, coarse_upos)
+        # Tagger-only speed on the shared Moby word list (greedy path).
         with tempfile.NamedTemporaryFile(
                 "w", suffix=".txt", delete=False) as f:
             f.write("\n".join(mwords) + "\n")
@@ -291,8 +302,13 @@ def main(argv):
              "--", mf],
             capture_output=True, text=True, check=True)
         sdt = time.perf_counter() - t
-        rows.append(("ours", ex / len(gold), len(gold),
-                     cn / cd, cd, len(mwords) / sdt, "per-sentence decode"))
+        rows.append(("ours-greedy", ex / len(gold), len(gold),
+                     cn / cd, cd, len(mwords) / sdt,
+                     "per-sentence decode"))
+        ex = score_exact(prod, gold)
+        cn, cd = score_coarse(prod, gold, coarse_upos)
+        rows.append(("ours-prod", ex / len(gold), len(gold),
+                     cn / cd, cd, None, "beam-2 + 14 rules"))
 
     # NLTK perceptron (coarse only).
     (res, err) = leg_nltk(sents)
