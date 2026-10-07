@@ -1228,6 +1228,34 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - Revisit triggers (nothing else): constructs erroring as a
   class, or a consumer needing entities/relations beyond LAS.
 
+## Vale alternative pilot: passive voice (DONE 2026-10-07)
+
+- New crate `english-lint` (Tier-1): Vale-class output
+  (`path:line:col [rule] message`, exit 1 on findings), pipeline
+  runs once per document (parse → tag → beam4 parse → label),
+  all rules share one [`AnnotatedDoc`]. Pilot rule
+  `syntax.passive`: finite be/get-passives via `nsubj:pass` /
+  `aux:pass`, names the verb, sentence-level spans (piece→byte
+  word spans queued, not this pilot). Rule logic unit-tested on
+  mock annotations (no weights); spelling/vocab explicitly out
+  (not a spellchecker — syntax differentiation is the point).
+- Eval `tests/passive.rs`: 60 book sentences (30/30 with
+  adjectival lookalikes), EWT-convention gold (stative-capable
+  participles count ACTIVE; reduced relatives out of scope —
+  needs gap detection). Measured: precision 0.917 / recall
+  0.733 — both pre-registered bars clear (0.85/0.60). All 10
+  misses arbitrated pipeline-caused, gold stands: 6× tagger
+  participle→ADJ overfire on eventives (the deferred participle
+  gap, rediscovered independently — a tagger fix lifts recall
+  directly), 1× labeler miss verified on gold tags (`are
+  wanted`), 1× parse garble (verbless apposition), 2× tagger
+  mistags the rule follows correctly. Weights-gated skip when
+  Tier-1 assets absent (documented Tier-1 consequence).
+- Latency tiers stand: POS/chunk rules keystroke-fast; dep rules
+  batch (beam4 ~4 s/book; greedy-decode tradeoff per rule,
+  unmeasured). Next rules queued, not started: nominalization,
+  sentence complexity (both need their own 60-sent evals).
+
 ## Joint tag-parse (STOPPED at Stage 0, 2026-10-07)
 
 - Stage-0 probes ran (temporary example, since deleted; scope

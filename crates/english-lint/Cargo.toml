@@ -1,0 +1,16 @@
+[package]
+name = "english-lint"
+version = "0.1.0"
+edition = "2024"
+authors = ["Jonathan Morley <morley.jonathan@gmail.com>"]
+license = "MIT"
+description = "Syntax-aware prose linting over the english pipeline (Vale-class output, grammar-backed rules)"
+
+[[bin]]
+name = "english-lint"
+path = "src/main.rs"
+
+[dependencies]
+english = { version = "0.1.0", path = "../english" }
+english-pos = { version = "0.1.0", path = "../english-pos" }
+english-dep = { version = "0.1.0", path = "../english-dep" }
