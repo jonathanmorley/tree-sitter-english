@@ -1,0 +1,409 @@
+[
+  {
+    "errors": 0,
+    "label": "Simple sentence",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 24,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 4,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 10,
+                "k": "Word",
+                "s": 5
+              },
+              {
+                "e": 15,
+                "k": "Word",
+                "s": 11
+              },
+              {
+                "e": 18,
+                "k": "Word",
+                "s": 16
+              },
+              {
+                "e": 24,
+                "k": "Word",
+                "s": 19
+              }
+            ]
+          }
+        ],
+        "e": 25,
+        "s": 0
+      }
+    ],
+    "text": "Time flies like an arrow."
+  },
+  {
+    "errors": 0,
+    "label": "Abbreviations, time, coordination",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 27,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 2,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 3,
+                "k": "Period",
+                "s": 2
+              },
+              {
+                "e": 9,
+                "k": "Word",
+                "s": 4
+              },
+              {
+                "e": 17,
+                "k": "Word",
+                "s": 10
+              },
+              {
+                "e": 20,
+                "k": "Word",
+                "s": 18
+              },
+              {
+                "e": 26,
+                "k": "Number",
+                "s": 21
+              }
+            ]
+          },
+          {
+            "e": 47,
+            "s": 32,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 35,
+                "k": "Word",
+                "s": 32
+              },
+              {
+                "e": 36,
+                "k": "Period",
+                "s": 35
+              },
+              {
+                "e": 42,
+                "k": "Word",
+                "s": 37
+              },
+              {
+                "e": 47,
+                "k": "Word",
+                "s": 43
+              }
+            ]
+          },
+          {
+            "e": 73,
+            "s": 48,
+            "sub": true,
+            "tokens": [
+              {
+                "e": 55,
+                "k": "Subordinator",
+                "s": 48
+              },
+              {
+                "e": 59,
+                "k": "Word",
+                "s": 56
+              },
+              {
+                "e": 67,
+                "k": "Word",
+                "s": 60
+              },
+              {
+                "e": 73,
+                "k": "Word",
+                "s": 68
+              }
+            ]
+          }
+        ],
+        "e": 74,
+        "s": 0
+      }
+    ],
+    "text": "Mr. Smith arrived at 10:30, and Mrs. Jones left because the meeting ended."
+  },
+  {
+    "errors": 0,
+    "label": "Em-dash join",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 11,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 3,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 11,
+                "k": "Word",
+                "s": 4
+              }
+            ]
+          },
+          {
+            "e": 34,
+            "s": 16,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 19,
+                "k": "Word",
+                "s": 16
+              },
+              {
+                "e": 24,
+                "k": "Word",
+                "s": 20
+              },
+              {
+                "e": 28,
+                "k": "Word",
+                "s": 25
+              },
+              {
+                "e": 34,
+                "k": "Word",
+                "s": 29
+              }
+            ]
+          }
+        ],
+        "e": 35,
+        "s": 0
+      }
+    ],
+    "text": "She laughed — and then she cried."
+  },
+  {
+    "errors": 0,
+    "label": "Subordinator, semicolon, currency",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 8,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 3,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 8,
+                "k": "Word",
+                "s": 4
+              }
+            ]
+          },
+          {
+            "e": 29,
+            "s": 9,
+            "sub": true,
+            "tokens": [
+              {
+                "e": 13,
+                "k": "Subordinator",
+                "s": 9
+              },
+              {
+                "e": 15,
+                "k": "Word",
+                "s": 14
+              },
+              {
+                "e": 20,
+                "k": "Word",
+                "s": 16
+              },
+              {
+                "e": 24,
+                "k": "Word",
+                "s": 21
+              },
+              {
+                "e": 29,
+                "k": "Word",
+                "s": 25
+              }
+            ]
+          },
+          {
+            "e": 41,
+            "s": 31,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 33,
+                "k": "Word",
+                "s": 31
+              },
+              {
+                "e": 38,
+                "k": "Word",
+                "s": 34
+              },
+              {
+                "e": 40,
+                "k": "Currency",
+                "s": 39
+              },
+              {
+                "e": 41,
+                "k": "Number",
+                "s": 40
+              }
+            ]
+          }
+        ],
+        "e": 42,
+        "s": 0
+      }
+    ],
+    "text": "The book that I read was good; it cost $5."
+  },
+  {
+    "errors": 0,
+    "label": "Parenthetical",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 32,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 3,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 9,
+                "k": "Word",
+                "s": 4
+              },
+              {
+                "e": 12,
+                "k": "Word",
+                "s": 11
+              },
+              {
+                "e": 17,
+                "k": "Word",
+                "s": 13
+              },
+              {
+                "e": 23,
+                "k": "Word",
+                "s": 18
+              },
+              {
+                "e": 29,
+                "k": "Word",
+                "s": 25
+              },
+              {
+                "e": 32,
+                "k": "Word",
+                "s": 30
+              }
+            ]
+          }
+        ],
+        "e": 33,
+        "s": 0
+      }
+    ],
+    "text": "The whale (a huge beast) swam on."
+  },
+  {
+    "errors": 0,
+    "label": "Colon elaboration",
+    "sentences": [
+      {
+        "clauses": [
+          {
+            "e": 15,
+            "s": 0,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 2,
+                "k": "Word",
+                "s": 0
+              },
+              {
+                "e": 6,
+                "k": "Word",
+                "s": 3
+              },
+              {
+                "e": 10,
+                "k": "Word",
+                "s": 7
+              },
+              {
+                "e": 15,
+                "k": "Word",
+                "s": 11
+              }
+            ]
+          },
+          {
+            "e": 23,
+            "s": 17,
+            "sub": false,
+            "tokens": [
+              {
+                "e": 19,
+                "k": "Word",
+                "s": 17
+              },
+              {
+                "e": 23,
+                "k": "Word",
+                "s": 20
+              }
+            ]
+          }
+        ],
+        "e": 24,
+        "s": 0
+      }
+    ],
+    "text": "He had one goal: to win."
+  }
+]
