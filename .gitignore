@@ -38,6 +38,7 @@ zig-out/
 
 # Grammar volatiles
 *.wasm
+!docs/pkg/*.wasm # Pages demo bundle, deliberately vendored
 *.obj
 *.o
 

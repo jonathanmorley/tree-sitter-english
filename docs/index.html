@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tree-sitter-english — prose structure, tags, and lint in the browser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>tree-sitter-english</h1>
+<p class="tagline">Block structure, part-of-speech tags, phrase chunks, and
+syntax-aware lint — running live in your browser via WebAssembly.</p>
+<p><a href="https://github.com/jonathanmorley/tree-sitter-english">Repository</a></p>
+</header>
+
+<main>
+<section id="demo">
+<h2>Live demo</h2>
+<p>Type or paste English prose. Analysis runs locally — nothing leaves the page.</p>
+<textarea id="input" rows="6">Time flies like an arrow. It was really very good, because the plan that we made worked.</textarea>
+<br>
+<button id="run">Analyze</button>
+<span id="status"></span>
+<h3>Findings</h3>
+<ul id="findings"><li class="dim">Press Analyze.</li></ul>
+<h3>Sentences</h3>
+<div id="sentences"></div>
+<details>
+<summary>What is exact here, and what is approximate?</summary>
+<ul>
+<li><b>Exact:</b> the tagger (EWT test 92.1%), chunker, and lint rules are the
+same Rust code and weights as the native pipeline, including beam re-decode and
+all correction rules.</li>
+<li><b>Approximate:</b> sentence splits (naive <code>.?!</code> runs — <code>Mr.</code>
+mis-splits) and word tokens (whitespace/punctuation). The native grammar owns
+segmentation; the browser does not ship the C parser.</li>
+<li><b>Native-only:</b> clause-complexity, passive voice, and nominalization
+rules need grammar counts or parser weights.</li>
+</ul>
+</details>
+</section>
+
+<section id="what">
+<h2>What it is</h2>
+<p>A pipeline of narrow layers over English prose. Text flows one way:</p>
+<pre>text → grammar+scanner → tree → typed AST → words
+     → POS tagger → (word, tag) → chunker → phrases
+     → dependency parser → heads+labels → lint → findings</pre>
+<ul>
+<li><b>Grammar</b> marks block structure only: paragraphs, sentences, flat
+clauses. No word classes, no phrases — a context-free grammar must commit to one
+reading, so that knowledge lives in later statistical layers.</li>
+<li><b>POS tagger:</b> greedy perceptron, 17 UPOS tags — EWT dev 91.9%, test
+92.1% through beam re-decode plus fourteen gated correction rules.</li>
+<li><b>Chunker:</b> greedy phrase grouping over tags, with a fixed-phrase trie
+(<code>as if</code>, <code>in spite of</code>, <code>because of</code>).</li>
+<li><b>Dependency parser:</b> arc-eager + labels — UAS 83.9, LAS 80.2
+(batch pass, not keystroke).</li>
+<li><b>Lint:</b> Vale-class findings from syntax (<code>syntax.weasel</code>,
+<code>syntax.hedge</code>, <code>syntax.passive</code>,
+<code>syntax.nominalization</code>, …), each with a 60-sentence eval.</li>
+</ul>
+</section>
+
+<section id="perf">
+<h2>Performance (native)</h2>
+<table>
+<tr><th>Measure</th><th>Result</th></tr>
+<tr><td>Full parse (Moby-Dick body, 1.2 MB)</td><td>~210 ms</td></tr>
+<tr><td>One-word-edit keystroke path</td><td>~40 ms</td></tr>
+<tr><td>Tagger weights</td><td>1.76 MB, zero-dependency pure Rust</td></tr>
+<tr><td>Peak memory</td><td>~58 MB</td></tr>
+</table>
+</section>
+
+<section id="method">
+<h2>Method</h2>
+<p>Bars before work. TDD corpus tests. EWT-majority oracle discipline.
+Rejections committed with forensics — distillation 0-for-5, char features 0-for-2,
+Brown clusters 0-for-1. See <code>docs/workflow.md</code> and
+<code>ARCHITECTURE.md</code> in the repo.</p>
+</section>
+</main>
+
+<script type="module" src="demo.js"></script>
+</body>
+</html>

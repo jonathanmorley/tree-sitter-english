@@ -42,4 +42,5 @@ members = [
   "crates/english-dep",
   "crates/english-dep-train",
   "crates/english-lint",
+  "crates/english-web",
 ]

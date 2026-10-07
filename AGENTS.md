@@ -1551,3 +1551,36 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   admitted on its own gates anyway (EWT +2, zero harm). Hedge
   recall recalibrates 0.65 → 0.50 on measured-mechanism
   (confident-mistag class, genre/sweep-chunk precedent).
+
+## Docs sweep + Pages WASM demo (DONE 2026-10-07)
+
+- Docs sweep pushed (`61d7bcf`): pinned-CLI command, 16 abbreviations,
+  14 rules + production numbers (dev 91.94/test 92.13), body-cut Moby
+  perf (211/17 ms, 4 prose errors), dep/lint READMEs + pipeline stages.
+- `docs/index.html` + `style.css` + `demo.js` (marketing + live demo)
+  served as GitHub Pages root (`docs/`); `treefmt.nix` gains
+  `docs/*.{html,css,js}` + `docs/pkg/*` excludes (`on-unmatched=fatal`
+  would reject them otherwise).
+- New crate `crates/english-web` (wasm-bindgen 0.2.129, lib+CLI pinned
+  equal): `analyze(text) -> JSON` with production decode
+  (`tag_beam_margins_lowered` + all 14 rules) over naive sentences /
+  whitespace tokens + native `split_contraction`; chunks via
+  `chunk_tagged`; lint constructs `AnnotatedDoc` by hand (clauses 0)
+  and runs length/weasel/hedge only. 3 native tests green (incl.
+  canonical flies-VERB on the demo path); node smoke test of the
+  nodejs-target bundle confirms tags + weasel end-to-end.
+- Full-fidelity browser parsing REJECTED with measurement: release
+  link fails — `parser.o`/`lib.o` compile for host (cc has no wasm
+  target here) and `ts_parser_parse_with_options` is undefined
+  (wasm32-unknown-unknown has no libc for tree-sitter's `lib.c`;
+  sanctioned path is emscripten, which can't link the Rust scanner).
+  Earlier `cargo build --target wasm32 -p english-pos` "success" was
+  misleading (rlib archives unchecked host objects; only the cdylib
+  link exposes it). Fidelity contract documented in-crate and on-page:
+  tagger/chunker/rules exact, sentences/words naive, complexity /
+  passive / nominalization native-only. Revisit only with a wasm C
+  toolchain (emscripten/wasi sysroot) in the flake.
+- Toolchain notes: rustup stable 1.99 installed ($HOME/.cargo;
+  use with `RUSTUP_TOOLCHAIN=stable` inside `nix develop` so nix's
+  `cc` is visible); `wasm-bindgen-cli` compiled from source (~10 min,
+  needs nix `cc`); release wasm 2.1 MB (1.76 MB weights embedded).

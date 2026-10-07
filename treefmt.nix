@@ -32,6 +32,10 @@
         "scripts/harmonize-ud.mjs" # node transform, no JS formatter configured
         "scripts/*.py" # dev-time oracle scripts, no Python formatter configured
         "scripts/*.txt" # pinned book-ID list + md5 manifest, must stay byte-stable
+        "docs/*.html" # Pages site, no HTML formatter configured
+        "docs/*.css" # Pages site, no CSS formatter configured
+        "docs/*.js" # Pages demo glue, no JS formatter configured
+        "docs/pkg/*" # wasm-bindgen output, generated
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

@@ -6,6 +6,10 @@ prose. It marks the block structure of text. It is not a syntactic parser.
 Architecture overview (layers, budgets, rules of the road):
 `ARCHITECTURE.md`. Working notes and backlog: `AGENTS.md`.
 
+Live browser demo (tag, chunk, and lint in WebAssembly):
+<https://jonathanmorley.github.io/tree-sitter-english/> — source in
+`docs/`, Rust glue in `crates/english-web`.
+
 ## What the grammar does
 
 The grammar marks three levels of structure.
