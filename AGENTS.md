@@ -1180,6 +1180,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   2.3% (+0.2–0.4 est).
 - Standing: pipeline LAS 71.1/71.3 (bar 71 CLEARED by heads,
   labeler untouched); UAS 83.9 (bar 87, −3.1 — curve climbing,
-  next levers below). Parser-on-pred-tags LaSO retrain is the
-  named lever for heads-under-noise (expensive — one variable
-  at a time); s1-form ablation queued behind it.
+  next levers below). REJECTED parser-on-pred-tags 2026-10-07
+  (LaSO-4, v4 features, gold heads kept): pipeline +1.1
+  consistently (77.8→78.9/77.8→79.1) but gold −0.8
+  consistently on both splits (83.9→83.2/83.5→82.6) — same
+  signature as the pred-tags labeler, same verdict under the
+  same bar (pipeline-moves AND gold-holds). Banked gold-tags
+  parser restored (verified by re-measure, not by hash).
+  Lesson, twice confirmed: noise-robustness training trades
+  clean-input quality at roughly 1.5:1 against pipeline gains
+  at this data scale — the cascade is structural (tagger
+  misses destroy head evidence), not trainable around from
+  below. Joint tag-parse remains the only addressed-to-cause
+  lever; s1-form ablation queued next (cheap).

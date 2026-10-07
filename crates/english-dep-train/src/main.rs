@@ -255,6 +255,28 @@ fn pct(ok: usize, total: usize) -> f64 {
     100.0 * ok as f64 / total.max(1) as f64
 }
 
+/// Retag training words with the committed tagger (gold heads kept
+/// by the caller shape): cascade-robustness treatment shared by
+/// label and parser training.
+fn retag_labeled(tagger: &english_pos::Model, train: &mut [LabSent]) {
+    for (words, tags, _, _) in train.iter_mut() {
+        let got = tagger.tag(words);
+        for (t, g) in tags.iter_mut().zip(got.iter()) {
+            *t = g.upos().to_string();
+        }
+    }
+}
+
+/// Same for the arc trainer's `(words, tags, heads)` sentences.
+fn retag(tagger: &english_pos::Model, train: &mut [Sent]) {
+    for (words, tags, _) in train.iter_mut() {
+        let got = tagger.tag(words);
+        for (t, g) in tags.iter_mut().zip(got.iter()) {
+            *t = g.upos().to_string();
+        }
+    }
+}
+
 /// Split parsed sentences into projective training material.
 /// Non-projective sentences are skipped for *training* (the static
 /// oracle is complete only on projective trees) but kept for eval:
@@ -470,15 +492,11 @@ fn main() {
         // tagger-noise shapes instead of gold-tag shapes it will
         // never see in the pipeline. Textbook parser-training
         // practice; admitted iff pipeline LAS moves and gold LAS
-        // holds.
+        // holds (REJECTED 2026-10-07 for the labeler: +0.5 pipe /
+        // -0.7 gold — the same bar applies to the parser below).
         if pred_tags {
             println!("retraining tags with committed tagger (gold heads/rels kept)");
-            for (words, tags, _, _) in train.iter_mut() {
-                let got = tagger.tag(words);
-                for (t, g) in tags.iter_mut().zip(got.iter()) {
-                    *t = g.upos().to_string();
-                }
-            }
+            retag_labeled(&tagger, &mut train);
         }
         println!(
             "label train sentences: {}, tokens: {}",
@@ -508,7 +526,14 @@ fn main() {
         return;
     }
 
-    let train = projective_only(parse_conllu(&split("train")));
+    let mut train = projective_only(parse_conllu(&split("train")));
+    // Parser-side cascade treatment (same admission bar as the
+    // labeler: pipeline +0.5 with gold holding): learn
+    // heads-under-tagger-noise instead of heads-under-gold.
+    if pred_tags {
+        println!("retraining tags with committed tagger (gold heads kept)");
+        retag(&tagger, &mut train);
+    }
     println!(
         "train sentences: {}, tokens: {}",
         train.len(),
