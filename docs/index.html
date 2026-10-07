@@ -27,17 +27,18 @@ measured, honest about error, and running live below.</p>
 <main class="wrap">
 
 <section id="parse" class="card">
-<h2>1 · Structure <span class="sub">the grammar, pre-parsed</span></h2>
+<h2>1 · Structure <span class="sub">the real grammar, live</span></h2>
 <p>The grammar marks paragraphs, sentences, and flat clauses — plus the joints:
 conjunctions, subordinators, and <code>;</code> <code>:</code> <code>—</code>
-elaborations. Pick a showcase sentence to see its tree.</p>
-<p class="honest"><b>Why pre-parsed?</b> The sentence splitter lives in a Rust
-external scanner, which no browser toolchain here can link — so these trees were
-produced by the native binary at build time (<code>cargo run -p english
---example sitegen</code>). Zero fidelity gap, honestly labeled. Custom text
-would silently misparse, so the live box is offered only for lint, below.</p>
+elaborations. This is the native parser (grammar + Rust scanner) compiled to
+WebAssembly — abbreviations, times, and interruptions split exactly as the
+command-line tool splits them. Pick a showcase sentence or type your own.</p>
 <div id="examples" class="picker" aria-live="polite"></div>
-<div id="ptree" class="sent"><span class="dim">Loading examples…</span></div>
+<textarea id="pinput" rows="3">Mr. Smith arrived at 10:30, and Mrs. Jones left because the meeting ended.</textarea>
+<br>
+<button id="prun">Parse</button>
+<span id="pstatus"></span>
+<div id="ptree" class="sent"><span class="dim">Loading parser…</span></div>
 <div id="treeview"></div>
 <ul class="legend">
 <li><span class="sw k-sub"></span>subordinator</li>
@@ -53,8 +54,8 @@ would silently misparse, so the live box is offered only for lint, below.</p>
 <h2>2 · Lint <span class="sub">live in WebAssembly, on every keystroke</span></h2>
 <p>Type or paste prose — findings update as you type (debounced 250 ms).
 The tagger, chunker, and lint rules are the exact native
-code and weights, running locally — nothing leaves the page. Sentence splits
-are naive here (<code>Mr.</code> may mis-split); everything else is exact.</p>
+code and weights, running locally — nothing leaves the page. Segmentation,
+tags, chunks, and findings all come from the real pipeline.</p>
 <textarea id="input" rows="5">Time flies like an arrow. It was really very good, because the plan that we made worked.</textarea>
 <br>
 <button id="run">Analyze</button>

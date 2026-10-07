@@ -36,7 +36,6 @@
         "docs/*.css" # Pages site, no CSS formatter configured
         "docs/*.js" # Pages demo glue, no JS formatter configured
         "docs/pkg/*" # wasm-bindgen output, generated
-        "docs/parse-examples.json" # sitegen output, generated
       ];
       programs.alejandra.enable = true; # nix
       programs.jsonfmt.enable = true; # json

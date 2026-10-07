@@ -36,6 +36,12 @@
             clippy
             # C compiler comes from Xcode CLT (/usr/bin/cc) on macOS.
             # Set CC if the tree-sitter CLI does not find it.
+            # wasm32 C toolchain for the Pages demo (tree-sitter 0.27
+            # ships wasm stdlib shims; only the compiler was missing):
+            # CC_wasm32_unknown_unknown=clang
+            # CFLAGS_wasm32_unknown_unknown="--target=wasm32-unknown-unknown -nostdlib"
+            clang
+            lld
           ];
         };
       };
