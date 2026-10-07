@@ -1814,3 +1814,18 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   local pastel backgrounds. `tree-sitter-highlight` and
   treelight-core stay offline-only references, same shelf as
   RDR/transformers. Dead `k-*` CSS removed.
+
+## Production numbers remeasured (DONE 2026-10-07)
+
+- The standing "production" records disagreed with each other
+  (chart 92.13 vs table 92.15) and both sat below a fresh
+  tag_sentence-identical probe: `tag_tokens --sentences
+  --production` (beam-2 + all 14 rules, per-sentence) over
+  pinned EWT test = 23141/25094 = 92.22 exact, 94.55 coarse.
+  `--correct` on test prints 23100 because it reports the
+  greedy headline (rules evaluated for fires only) — the old
+  production records evidently predate current code/rules and
+  the copy-threading drift note already declared banked numbers
+  stale. Adopted 92.22/94.55 (front page chart + table; this
+  also heals the 92.13-vs-92.15 split); greedy stays 92.05 /
+  94.40. Method is rerunnable: harness `ours-prod` row.
