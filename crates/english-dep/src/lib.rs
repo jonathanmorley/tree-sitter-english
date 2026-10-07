@@ -229,7 +229,10 @@ pub fn oracle(gold_heads: &[usize], cfg: &Config) -> Action {
 /// tag, `0x46` b0 word+s0 tag, `0x47` s1+s0 tag bigram,
 /// `0x49`-`0x4b` valency buckets, `0x4c` s2 word, `0x4d`/`0x4e`
 /// s0 head word/tag (when attached), `0x4f` s0 left-sibling tag,
-/// `0x50` s0+b0 word bigram.
+/// `0x50` s0+b0 word bigram, `0x53`-`0x58` sentence neighbors of
+/// the salient pair (MaltOptimizer step 4: predecessor/successor
+/// word+tag for s0 and b0 — b0+1 rides the existing lookahead,
+/// so the three added positions are s0−1, s0+1, b0−1).
 pub fn features(words: &[String], tags: &[String], cfg: &Config, feats: &mut Vec<u64>) {
     feats.clear();
     let n = words.len();
@@ -400,6 +403,17 @@ pub fn features(words: &[String], tags: &[String], cfg: &Config, feats: &mut Vec
         feats.push(hash_feature(0x4f, &[tag_at(k)]));
     }
     feats.push(hash_feature(0x50, &[word_at(s0), word_at(b0)]));
+    // v4 (MaltOptimizer step 4): sentence neighbors of the salient
+    // pair. s0±1 disambiguate the stack top's local context
+    // (e.g. determiner-before-noun vs bare noun); b0−1 sees what
+    // the buffer front follows. b0+1 already rides the lookahead
+    // (0x37/0x3e), so only three positions are added.
+    feats.push(hash_feature(0x53, &[word_at(s0.wrapping_sub(1))]));
+    feats.push(hash_feature(0x54, &[tag_at(s0.wrapping_sub(1))]));
+    feats.push(hash_feature(0x55, &[word_at(s0 + 1)]));
+    feats.push(hash_feature(0x56, &[tag_at(s0 + 1)]));
+    feats.push(hash_feature(0x57, &[word_at(b0.wrapping_sub(1))]));
+    feats.push(hash_feature(0x58, &[tag_at(b0.wrapping_sub(1))]));
 }
 
 fn action_index(a: Action) -> usize {
@@ -1110,5 +1124,364 @@ impl Model {
             })
             .collect();
         serde_json::to_string(&serde_json::json!({"weights": sorted}))
+    }
+}
+
+/// Arc-label features for dependent `d` (1-based) with head `h`.
+/// Words pre-lowered, tags UPOS; `heads` follows the crate
+/// convention (index 0 dummy, `usize::MAX` = stranded). Children
+/// come from the GIVEN tree (gold in training, decoded in
+/// inference) — the classifier never moves heads, so no
+/// oracle/projection machinery applies. Discriminants `0x60`
+/// d word, `0x61` d tag, `0x62` h word, `0x63` h tag, `0x64`/`0x65`
+/// d∓1 tags, `0x66`/`0x67` h∓1 tags, `0x68`/`0x69` d outer-dep
+/// tags, `0x6a`/`0x6b` h outer-dep tags, `0x6c` d+h tag bigram,
+/// `0x6d` d-word+h-tag, `0x6e` d-tag+h-word, `0x6f` direction,
+/// `0x70` distance bucket, `0x71`/`0x72` d∓1 words.
+pub fn label_features(
+    words: &[String],
+    tags: &[String],
+    heads: &[usize],
+    d: usize,
+    feats: &mut Vec<u64>,
+) {
+    feats.clear();
+    let n = words.len();
+    let h = if d < heads.len() {
+        heads[d]
+    } else {
+        usize::MAX
+    };
+    let word_at = |i: usize| -> &str {
+        if i >= 1 && i <= n {
+            words[i - 1].as_str()
+        } else if i == 0 {
+            "<ROOT>"
+        } else {
+            "<NULL>"
+        }
+    };
+    let tag_at = |i: usize| -> &str {
+        if i >= 1 && i <= n {
+            tags[i - 1].as_str()
+        } else if i == 0 {
+            "<ROOT>"
+        } else {
+            "<NULL>"
+        }
+    };
+    // Outermost dependent tag of token s on one side (NULL when
+    // childless there); linear scan, train loop pays it most.
+    let outer = |s: usize, left: bool| -> &str {
+        let mut best: Option<usize> = None;
+        for k in 1..=n {
+            if k >= heads.len() || heads[k] != s {
+                continue;
+            }
+            let take = if left { k < s } else { k > s };
+            if !take {
+                continue;
+            }
+            best = Some(match best {
+                None => k,
+                Some(b) if left => b.max(k),
+                Some(b) => b.min(k),
+            });
+        }
+        best.map(tag_at).unwrap_or("<NULL>")
+    };
+    feats.push(hash_feature(0x60, &[word_at(d)]));
+    feats.push(hash_feature(0x61, &[tag_at(d)]));
+    feats.push(hash_feature(0x62, &[word_at(h)]));
+    feats.push(hash_feature(0x63, &[tag_at(h)]));
+    feats.push(hash_feature(0x64, &[tag_at(d.wrapping_sub(1))]));
+    feats.push(hash_feature(0x65, &[tag_at(d + 1)]));
+    feats.push(hash_feature(0x66, &[tag_at(h.wrapping_sub(1))]));
+    feats.push(hash_feature(0x67, &[tag_at(h + 1)]));
+    feats.push(hash_feature(0x68, &[outer(d, true)]));
+    feats.push(hash_feature(0x69, &[outer(d, false)]));
+    feats.push(hash_feature(0x6a, &[outer(h, true)]));
+    feats.push(hash_feature(0x6b, &[outer(h, false)]));
+    feats.push(hash_feature(0x6c, &[tag_at(d), tag_at(h)]));
+    feats.push(hash_feature(0x6d, &[word_at(d), tag_at(h)]));
+    feats.push(hash_feature(0x6e, &[tag_at(d), word_at(h)]));
+    feats.push(hash_feature(0x6f, &[if h < d { "LEFT" } else { "RIGHT" }]));
+    let dist = d.abs_diff(h);
+    let bucket = match dist {
+        1 => "1",
+        2 => "2",
+        3 => "3",
+        4 => "4",
+        5 => "5",
+        6..=10 => "6-10",
+        _ => "11+",
+    };
+    feats.push(hash_feature(0x70, &[bucket]));
+    feats.push(hash_feature(0x71, &[word_at(d.wrapping_sub(1))]));
+    feats.push(hash_feature(0x72, &[word_at(d + 1)]));
+}
+
+/// Sparse labeler rows: feature hash -> per-label weights.
+type LabelRows = U64Map<Vec<f32>>;
+
+/// UD relation classifier over decoded (or gold) arcs: averaged
+/// perceptron, same weight-row/JSON discipline as [`Model`]
+/// (sorted label set for stable indices, integer-encoded wholes,
+/// zero rows omitted). The label set is CLOSED from training —
+/// prediction always lands in-set; stranded tokens (head
+/// `usize::MAX`) carry `""` (never gold — LAS counts them wrong
+/// via the head anyway, and the empty string falsifies silently
+/// passing them through).
+#[derive(Debug, Clone, Default)]
+pub struct LabelModel {
+    labels: Vec<String>,
+    weights: LabelRows,
+}
+
+impl LabelModel {
+    /// Closed label set, sorted (stable indices across runs).
+    pub fn labels(&self) -> &[String] {
+        &self.labels
+    }
+
+    /// Classify every arc `(d, heads[d])`; index 0 is `""`.
+    pub fn predict<S: AsRef<str>, T: AsRef<str>>(
+        &self,
+        words: &[S],
+        tags: &[T],
+        heads: &[usize],
+    ) -> Vec<String> {
+        self.decode(words, tags, heads).0
+    }
+
+    /// [`LabelModel::predict`] paired with per-token margins (best
+    /// minus runner-up label score; `""` tokens carry 0.0).
+    pub fn predict_margins<S: AsRef<str>, T: AsRef<str>>(
+        &self,
+        words: &[S],
+        tags: &[T],
+        heads: &[usize],
+    ) -> (Vec<String>, Vec<f32>) {
+        self.decode(words, tags, heads)
+    }
+
+    fn decode<S: AsRef<str>, T: AsRef<str>>(
+        &self,
+        words: &[S],
+        tags: &[T],
+        heads: &[usize],
+    ) -> (Vec<String>, Vec<f32>) {
+        let n = words.len();
+        let w: Vec<String> = words.iter().map(|x| x.as_ref().to_lowercase()).collect();
+        let t: Vec<String> = tags.iter().map(|x| x.as_ref().to_string()).collect();
+        let mut out = vec![String::new(); n + 1];
+        let mut margins = vec![0.0f32; n + 1];
+        if self.labels.is_empty() {
+            return (out, margins);
+        }
+        let mut feats = Vec::with_capacity(24);
+        for d in 1..=n {
+            let h = if d < heads.len() {
+                heads[d]
+            } else {
+                usize::MAX
+            };
+            if h == usize::MAX || h > n {
+                continue;
+            }
+            label_features(&w, &t, heads, d, &mut feats);
+            let mut best = 0usize;
+            let mut best_score = f32::NEG_INFINITY;
+            let mut second = f32::NEG_INFINITY;
+            for (li, _) in self.labels.iter().enumerate() {
+                let mut s = 0.0f32;
+                for f in feats.iter() {
+                    if let Some(row) = self.weights.get(f) {
+                        s += row[li];
+                    }
+                }
+                if s > best_score {
+                    second = best_score;
+                    best_score = s;
+                    best = li;
+                } else if s > second {
+                    second = s;
+                }
+            }
+            out[d] = self.labels[best].clone();
+            if second != f32::NEG_INFINITY {
+                margins[d] = best_score - second;
+            }
+        }
+        (out, margins)
+    }
+
+    /// Train on gold `(words, tags, heads, rels)` with the averaged
+    /// perceptron (`iters` passes, `min_count` floor). Averaged-only
+    /// by stage-1 evidence (averaging won +7.1 on arc decisions);
+    /// plain is unbuilt — if labels land far short, plain is the
+    /// named fallback, not an assumed alternative. Instances are
+    /// gold arcs; non-projective sentences train fine (no oracle
+    /// involved — classification, not search).
+    pub fn train(
+        data: &[(Vec<String>, Vec<String>, Vec<usize>, Vec<String>)],
+        iters: usize,
+        min_count: usize,
+    ) -> Self {
+        let mut set = std::collections::BTreeSet::new();
+        for (_, _, _, rels) in data {
+            for r in rels.iter().skip(1) {
+                set.insert(r.clone());
+            }
+        }
+        let labels: Vec<String> = set.into_iter().collect();
+        let index = |r: &str| labels.iter().position(|l| l == r);
+        let mut counts: U64Map<usize> = U64Map::default();
+        let mut feats = Vec::with_capacity(24);
+        for (raw, tags, heads, _) in data {
+            let lower: Vec<String> = raw.iter().map(|x| x.to_lowercase()).collect();
+            for d in 1..=raw.len() {
+                label_features(&lower, tags, heads, d, &mut feats);
+                for f in &feats {
+                    *counts.entry(*f).or_insert(0) += 1;
+                }
+            }
+        }
+        let mut weights: LabelRows = LabelRows::default();
+        let mut totals: U64Map<Vec<f64>> = U64Map::default();
+        let mut stamp: U64Map<usize> = U64Map::default();
+        let mut step = 0usize;
+        for _ in 0..iters {
+            for (raw, tags, heads, rels) in data {
+                step += 1;
+                let lower: Vec<String> = raw.iter().map(|x| x.to_lowercase()).collect();
+                for (d, want_rel) in rels.iter().enumerate().skip(1) {
+                    let want = match index(want_rel) {
+                        Some(li) => li,
+                        None => continue,
+                    };
+                    label_features(&lower, tags, heads, d, &mut feats);
+                    let kept: Vec<u64> = feats
+                        .iter()
+                        .filter(|f| counts.get(f).is_some_and(|&c| c >= min_count))
+                        .copied()
+                        .collect();
+                    let mut best = 0usize;
+                    let mut best_score = f32::NEG_INFINITY;
+                    for li in 0..labels.len() {
+                        let mut s = 0.0f32;
+                        for f in kept.iter() {
+                            if let Some(row) = weights.get(f) {
+                                s += row[li];
+                            }
+                        }
+                        if s > best_score {
+                            best_score = s;
+                            best = li;
+                        }
+                    }
+                    if best != want {
+                        for f in &kept {
+                            let last = stamp.insert(*f, step).unwrap_or(0);
+                            let tot = totals.entry(*f).or_insert_with(|| vec![0.0; labels.len()]);
+                            if let Some(cur) = weights.get(f) {
+                                for (t, c) in tot.iter_mut().zip(cur.iter()) {
+                                    *t += *c as f64 * (step - last) as f64;
+                                }
+                            }
+                            let row = weights.entry(*f).or_insert_with(|| vec![0.0; labels.len()]);
+                            row[want] += 1.0;
+                            row[best] -= 1.0;
+                        }
+                    }
+                }
+            }
+        }
+        let total_steps = step.max(1) as f64;
+        let mut averaged: LabelRows = LabelRows::default();
+        for (f, row) in &weights {
+            if !row.iter().any(|x| *x != 0.0) {
+                continue;
+            }
+            if !counts.get(f).is_some_and(|&c| c >= min_count) {
+                continue;
+            }
+            let last = stamp.get(f).copied().unwrap_or(0);
+            let mut acc = totals
+                .get(f)
+                .cloned()
+                .unwrap_or_else(|| vec![0.0; labels.len()]);
+            for (t, c) in acc.iter_mut().zip(row.iter()) {
+                *t += *c as f64 * (total_steps - last as f64);
+            }
+            let out: Vec<f32> = acc.iter().map(|t| (*t / total_steps) as f32).collect();
+            if out.iter().any(|x| *x != 0.0) {
+                averaged.insert(*f, out);
+            }
+        }
+        LabelModel { labels, weights }
+    }
+
+    /// Deserialize a labeler artifact. Unknown structure is an
+    /// error (fail loudly on a corrupt artifact, same as heads).
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        let v: serde_json::Value = serde_json::from_str(json)?;
+        let labels: Vec<String> = serde_json::from_value(v["labels"].clone()).map_err(|_| {
+            serde::de::Error::custom("labeler artifact missing string \"labels\" array")
+        })?;
+        let raw: std::collections::BTreeMap<u64, HashMap<String, f32>> =
+            serde_json::from_value(v["weights"].clone())?;
+        let mut weights: LabelRows = LabelRows::default();
+        for (f, per_label) in raw {
+            let mut row = vec![0.0f32; labels.len()];
+            for (code, wgt) in &per_label {
+                match labels.iter().position(|l| l == code) {
+                    Some(li) => row[li] = *wgt,
+                    None => {
+                        return Err(serde::de::Error::custom(format!(
+                            "unknown label code {code:?}"
+                        )));
+                    }
+                }
+            }
+            weights.insert(f, row);
+        }
+        Ok(LabelModel { labels, weights })
+    }
+
+    /// Serialize the labeler: sorted label set, sorted feature
+    /// keys, whole-number weights as integers, zero rows omitted —
+    /// same artifact discipline as the arc model.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        type SortedRows =
+            std::collections::BTreeMap<u64, std::collections::BTreeMap<String, serde_json::Value>>;
+        let sorted: SortedRows = self
+            .weights
+            .iter()
+            .map(|(f, row)| {
+                (
+                    *f,
+                    self.labels
+                        .iter()
+                        .enumerate()
+                        .filter(|(li, _)| row[*li] != 0.0)
+                        .map(|(li, code)| {
+                            let x = row[li];
+                            let v =
+                                if x.fract() == 0.0 && x >= i32::MIN as f32 && x <= i32::MAX as f32
+                                {
+                                    serde_json::Value::from(x as i32)
+                                } else {
+                                    serde_json::Number::from_f64(x as f64)
+                                        .map(serde_json::Value::Number)
+                                        .unwrap_or(serde_json::Value::Null)
+                                };
+                            (code.clone(), v)
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+        serde_json::to_string(&serde_json::json!({"labels": self.labels, "weights": sorted}))
     }
 }

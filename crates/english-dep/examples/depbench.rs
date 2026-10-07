@@ -45,6 +45,9 @@ fn main() {
             }
         }
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
-        println!("{name}: {ms:.1} ms total ({:.0} tok/s, attached={n_attached})", 1000.0 * toks as f64 / ms.max(1e-9));
+        println!(
+            "{name}: {ms:.1} ms total ({:.0} tok/s, attached={n_attached})",
+            1000.0 * toks as f64 / ms.max(1e-9)
+        );
     }
 }

@@ -1121,3 +1121,57 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   looping); (d) EWT-majority bar still needs a real linear
   comparator (CoNLL UDPipe-baseline EWT row) if the 87 bar is
   ever adjudicated.
+
+## Dependency post-pass (stage 2: relation labels — DONE 2026-10-07)
+
+- `LabelModel` in `english-dep` (averaged perceptron over arc
+  features, 0x60 namespace: dep/head word/tag, d∓1 + h∓1
+  neighbors, outer-dep tags both sides, tag/word conjunctions,
+  direction, distance) + `parse_labeled` / `--labels` in the
+  trainer (skip-whole on headless OR labelless tokens; label
+  training uses ALL headed sentences incl. non-projective —
+  classification, no oracle involved). Bars set before work:
+  LAS 77 (+gold), 71 (+tagger) — UAS−5 rule on the 82.1
+  foundation minus the measured cascade.
+- Measured: ceiling (gold heads) 94.2/94.1 — the classifier is
+  strong, label error only ~6%; beam4+gold 78.7/78.8 (bar 77
+  PASS +1.7); beam4+tagger 69.7/70.3 (bar 71 MISSED by ~1).
+  51 labels (subtypes kept — `nmod:poss` 3688× earns its
+  class); labeler 3.8 MB (Tier-1-vendorable size, but ships
+  only with parser weights — both gitignored as a pair).
+- REJECTED pred-tags labeler (textbook cascade treatment —
+  train on the tagger's own tags, gold heads kept): pipeline
+  +0.5 consistently (69.7→70.2/70.3→70.9) but gold −0.7
+  consistently on both splits (ceiling −1.1). Admission was
+  pipeline-moves AND gold-holds; gold fell, and 71 stays
+  missed either way — v1 (gold-tags) banked, v2 artifact in
+  /tmp only. Lesson: the classifier's core job (clean arcs)
+  outweighs noise-robustness at this data scale; the remaining
+  cascade lives in HEADS (76.2 vs 82.1), not labels.
+- Telemetry fix in the same pass: fully-headless batches push
+  zero tokens, so the old skip counter (partial sentences
+  only) never fired — 23 oracle-batch sentences were
+  telemetry-invisible (alignment-safe, counts cross-checked
+  vs EWT 12,543). `rows_seen` counter added; same property
+  noted in stage-1 `parse_conllu` (committed behavior
+  unchanged — counts matched, no action).
+- MaltParser-English harvest (audited, not assumed — from
+  MaltOptimizer LREC12 + Nivre06 model 7 + P09 English
+  settings): POSTAG-window-6 ✓ covered, FORM-window-3 ✓
+  covered (model 7 notably DROPS s1-form — candidate future
+  ablation, not action), DEP-tree-4 ✓ covered, conjunctions
+  ✓ covered, arc-eager ✓ matches the English choice
+  (arc-standard won Hindi — language-specificity in action,
+  not our language), LEMMA/FEATS BLOCKED (no inference-time
+  source — tagger predicts UPOS only), LIBLINEAR noted
+  (same family as averaged perceptron; no action), joint
+  tag-parse (NivreSPMRL: joint beats pipeline) supports the
+  cascade analysis as long-term work. ACTIONABLE: step 4
+  predecessor/successor features (s0−1, s0+1, b0−1 word+tag —
+  b0+1 rides lookahead) → v4 arc templates 0x53–0x58, under
+  greedy screen; QUEUED: pseudo-projective lifting for the
+  2.3% (+0.2–0.4 est).
+- Standing: pipeline LAS 70.3 (bar 71, −0.7); parser-on-pred-
+  tags LaSO retrain is the named lever for heads-under-noise
+  (expensive — sequenced after the v4 screen, one variable at
+  a time); s1-form ablation queued behind it.

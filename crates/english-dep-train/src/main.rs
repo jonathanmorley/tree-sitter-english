@@ -14,9 +14,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use english_dep::Model;
+use english_dep::{LabelModel, Model};
 
 type Sent = (Vec<String>, Vec<String>, Vec<usize>);
+type LabSent = (Vec<String>, Vec<String>, Vec<usize>, Vec<String>);
 
 /// Parse CoNLL-U sentences into `(lowered words, UPOS tags, heads)`
 /// with a dummy index 0 (`heads[0]` unused; oracle never reads it
@@ -82,6 +83,176 @@ fn parse_conllu(path: &Path) -> Vec<Sent> {
     }
     flush(&mut words, &mut tags, &mut heads, &mut headed);
     out
+}
+
+/// Parse CoNLL-U sentences into `(lowered words, UPOS tags, heads,
+/// rels)` with dummy index 0. Sentences with any headless OR
+/// labelless token are skipped whole (dropping single tokens would
+/// renumber every head after them); the skip count prints to
+/// stderr so corpus drift stays visible.
+fn parse_labeled(path: &Path) -> Vec<LabSent> {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+    let mut out = Vec::new();
+    let mut words = Vec::new();
+    let mut tags = Vec::new();
+    let mut heads = vec![0usize];
+    let mut rels = vec![String::new()];
+    let mut complete = true;
+    let mut skipped = 0usize;
+    // Rows seen in the current block: fully-headless batches push
+    // zero tokens (nothing to misalign), so a words-only counter
+    // would miss them entirely — count blocks with rows but no
+    // tokens as skips too.
+    let mut rows = 0usize;
+    let mut flush = |words: &mut Vec<String>,
+                     tags: &mut Vec<String>,
+                     heads: &mut Vec<usize>,
+                     rels: &mut Vec<String>,
+                     complete: &mut bool,
+                     rows: &mut usize| {
+        if !words.is_empty() && *complete {
+            out.push((
+                std::mem::take(words),
+                std::mem::take(tags),
+                std::mem::replace(heads, vec![0usize]),
+                std::mem::replace(rels, vec![String::new()]),
+            ));
+        } else {
+            if !words.is_empty() || *rows > 0 {
+                skipped += 1;
+            }
+            words.clear();
+            tags.clear();
+            *heads = vec![0usize];
+            *rels = vec![String::new()];
+        }
+        *complete = true;
+        *rows = 0;
+    };
+    for line in content.lines() {
+        let line = line.trim_end();
+        if line.is_empty() {
+            flush(
+                &mut words,
+                &mut tags,
+                &mut heads,
+                &mut rels,
+                &mut complete,
+                &mut rows,
+            );
+            continue;
+        }
+        if line.starts_with('#') {
+            continue;
+        }
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 8 {
+            continue;
+        }
+        if cols[0].contains('-') || cols[0].contains('.') {
+            continue;
+        }
+        if english_pos::Tag::from_upos(cols[3]).is_none() {
+            continue;
+        }
+        rows += 1;
+        let head: Option<usize> = cols[6].parse().ok();
+        let rel = cols[7];
+        if head.is_none() || rel.is_empty() || rel == "_" {
+            complete = false;
+            continue;
+        }
+        words.push(cols[1].to_lowercase());
+        tags.push(cols[3].to_string());
+        heads.push(head.unwrap_or(0));
+        rels.push(rel.to_string());
+    }
+    flush(
+        &mut words,
+        &mut tags,
+        &mut heads,
+        &mut rels,
+        &mut complete,
+        &mut rows,
+    );
+    if skipped > 0 {
+        eprintln!(
+            "skipped {skipped} headless/labelless sentences in {}",
+            path.display()
+        );
+    }
+    out
+}
+
+/// LAS (head AND label right) under three head/tag regimes: gold
+/// heads + gold tags (classifier ceiling), beam heads + gold tags
+/// (parser loss isolated), beam heads + tagger tags (full
+/// pipeline — the shipped number).
+fn las(
+    parser: &Model,
+    labeler: &LabelModel,
+    data: &[LabSent],
+    tagger: Option<&english_pos::Model>,
+    beam: usize,
+) -> (usize, usize) {
+    let mut ok = 0;
+    let mut total = 0;
+    for (words, tags, gold_heads, gold_rels) in data {
+        let tags: Vec<String> = match tagger {
+            Some(m) => m.tag(words).iter().map(|t| t.upos().to_string()).collect(),
+            None => tags.clone(),
+        };
+        let (heads, _) = parser.parse_beam(words, &tags, beam);
+        let rels = labeler.predict(words, &tags, &heads);
+        for i in 1..words.len() + 1 {
+            total += 1;
+            if i < gold_heads.len() && heads[i] == gold_heads[i] && rels[i] == gold_rels[i] {
+                ok += 1;
+            }
+        }
+    }
+    (ok, total)
+}
+
+fn report_las(
+    parser: &Model,
+    labeler: &LabelModel,
+    data: &[LabSent],
+    which: &str,
+    tagger: Option<&english_pos::Model>,
+    beam: usize,
+) {
+    // Ceiling: gold heads (classifier error only).
+    let mut ok = 0;
+    let mut total = 0;
+    for (words, tags, gold_heads, gold_rels) in data {
+        let tags: Vec<String> = match tagger {
+            Some(m) => m.tag(words).iter().map(|t| t.upos().to_string()).collect(),
+            None => tags.clone(),
+        };
+        let rels = labeler.predict(words, &tags, gold_heads);
+        for i in 1..words.len() + 1 {
+            total += 1;
+            if i < gold_rels.len() && rels[i] == gold_rels[i] {
+                ok += 1;
+            }
+        }
+    }
+    let via = if tagger.is_some() { "+tagger" } else { "+gold" };
+    println!(
+        "{which}{via} LAS/ceiling: {ok}/{total} = {:.2}%",
+        pct(ok, total)
+    );
+    let (bok, _) = las(parser, labeler, data, tagger, beam);
+    println!(
+        "{which}{via} LAS/beam{beam}: {bok}/{total} = {:.2}%",
+        pct(bok, total)
+    );
+}
+
+fn pct(ok: usize, total: usize) -> f64 {
+    100.0 * ok as f64 / total.max(1) as f64
 }
 
 /// Split parsed sentences into projective training material.
@@ -193,7 +364,7 @@ fn report(
 
 fn usage() -> ! {
     eprintln!(
-        "usage: english-dep-train --corpus <dir> [--iters N] [--min-count N] [--averaged] [--beam K] [--beam-train K] [--eval-only test|dev]"
+        "usage: english-dep-train --corpus <dir> [--iters N] [--min-count N] [--averaged] [--beam K] [--beam-train K] [--labels] [--pred-tags] [--eval-only test|dev]"
     );
     std::process::exit(2);
 }
@@ -206,6 +377,8 @@ fn main() {
     let mut eval_only: Option<String> = None;
     let mut beam: Option<usize> = None;
     let mut beam_train: Option<usize> = None;
+    let mut labels_only = false;
+    let mut pred_tags = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -244,6 +417,8 @@ fn main() {
                         .unwrap_or_else(|_| usage()),
                 )
             }
+            "--labels" => labels_only = true,
+            "--pred-tags" => pred_tags = true,
             _ => usage(),
         }
     }
@@ -255,6 +430,11 @@ fn main() {
         .join("english-dep")
         .join("weights")
         .join("dep.json");
+    let labels_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("english-dep")
+        .join("weights")
+        .join("labels.json");
 
     // The committed tagger for pipeline (+tagger) reporting.
     let tagger_json = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -272,6 +452,59 @@ fn main() {
         let model = Model::from_json(&json).expect("invalid weights JSON");
         report(&model, &data, &which, None, beam);
         report(&model, &data, &which, Some(&tagger), beam);
+        if labels_path.exists() {
+            let lab_json = fs::read_to_string(&labels_path).expect("read labeler weights");
+            let labeler = LabelModel::from_json(&lab_json).expect("invalid labeler JSON");
+            let lab_data = parse_labeled(&split(&which));
+            let bw = beam.unwrap_or(1);
+            report_las(&model, &labeler, &lab_data, &which, None, bw);
+            report_las(&model, &labeler, &lab_data, &which, Some(&tagger), bw);
+        }
+        return;
+    }
+
+    if labels_only {
+        let mut train = parse_labeled(&split("train"));
+        // Cascade-robustness treatment: train on the tagger's own
+        // tags (gold heads/rels kept) so the classifier learns
+        // tagger-noise shapes instead of gold-tag shapes it will
+        // never see in the pipeline. Textbook parser-training
+        // practice; admitted iff pipeline LAS moves and gold LAS
+        // holds.
+        if pred_tags {
+            println!("retraining tags with committed tagger (gold heads/rels kept)");
+            for (words, tags, _, _) in train.iter_mut() {
+                let got = tagger.tag(words);
+                for (t, g) in tags.iter_mut().zip(got.iter()) {
+                    *t = g.upos().to_string();
+                }
+            }
+        }
+        println!(
+            "label train sentences: {}, tokens: {}",
+            train.len(),
+            train.iter().map(|(w, _, _, _)| w.len()).sum::<usize>()
+        );
+        let labeler = LabelModel::train(&train, iters, min_count);
+        let json = labeler.to_json().expect("serialize labeler");
+        println!(
+            "label weights: {} bytes, {} labels",
+            json.len(),
+            labeler.labels().len()
+        );
+        fs::create_dir_all(labels_path.parent().unwrap()).expect("mkdir weights");
+        fs::write(&labels_path, &json).expect("write labeler");
+        let model = Model::from_json(
+            &fs::read_to_string(&weights_path)
+                .unwrap_or_else(|e| panic!("need parser weights for LAS report: {e}")),
+        )
+        .expect("invalid weights JSON");
+        let bw = beam.unwrap_or(4);
+        for which in ["dev", "test"] {
+            let data = parse_labeled(&split(which));
+            report_las(&model, &labeler, &data, which, None, bw);
+            report_las(&model, &labeler, &data, which, Some(&tagger), bw);
+        }
         return;
     }
 
