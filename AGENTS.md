@@ -1765,3 +1765,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   by committing code first, docs appended+committed atomically).
   Standing rule: AGENTS entries land in the same commit as the
   work they record, never left uncommitted across round trips.
+
+## Shootout 2026-10-07: full five-leg numbers (DONE 2026-10-07)
+
+- `bench-taggers.py` full run on pinned EWT test (25,094 words) +
+  Moby body (212,791 words), TSV at `/tmp/opencode/shootout4.tsv`
+  (out-of-repo like all training data): ours exact 92.05
+  (per-sentence decode — reproduces the trainer gate exactly;
+  the flat-stream 91.57 is a methodology error, fenced by
+  `tag_tokens --sentences`), coarse 94.40; NLTK coarse 87.24;
+  spaCy exact 93.15 / coarse 95.43 on the aligned 85.3%
+  (21,401 words — drifted sentences excluded, NOT comparable
+  head-to-head); TreeTagger coarse 89.52 (Penn/CLAWS mix mapped
+  from the observed inventory). Speeds: ours 425k tok/s
+  spawn-included (page keeps the 2.1M in-process tag-pass
+  number), NLTK 21.7k. RDR still skipped (no UPOS-EWT model
+  file in env).
+- Attribution for the coarse deltas vs the 2026-10-06 probe
+  (+0.16 ours, +0.11 NLTK): projection, not model. The harness
+  follows Petrov Table 1 literally (SYM→., PUNCT→. —
+  exactly the 41 confused tokens); the deleted probe kept them
+  split. NLTK 87.03→87.14 across runs is the TT_EXTRA paren
+  literals (`(`/`)` newly mapped). Rerunnable-documented now
+  supersedes the deleted probe; standing numbers live on the
+  front page until the next rerun.
+- Env notes: spaCy 3.8.16 + en_core_web_sm in a pip venv needs
+  nix gcc/zlib libs on LD_LIBRARY_PATH (compiled wheels);
+  TreeTagger installed at `/tmp/opencode/treetagger` under its
+  research license (evaluation use confirmed); `english.par`
+  emits Penn/CLAWS mix, mapped empirically.
