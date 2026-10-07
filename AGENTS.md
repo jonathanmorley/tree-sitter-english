@@ -1600,3 +1600,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 - PROCESS: `main` now requires pull requests (GH013 on direct push).
   New routine: branch → push branch → API-create PR → API-merge →
   sync local main → delete branch. PR #5 (site-v2) merged this way.
+
+## Full grammar in WASM (OPTION A SPIKE PROVEN 2026-10-07)
+
+- The site-v2 "full-fidelity rejected" verdict is OVERTURNED. Missing
+  piece was only a wasm-capable C compiler: clang 21.1.8 from locked
+  nixpkgs (`nixpkgs/0a3468a...`), raw (unwrapped) binary to dodge host
+  wrapper flags. tree-sitter 0.27 was DESIGNED for this: runtime
+  compiles `lib.c` with `TREE_SITTER_WASM_STDLIB` + shim headers
+  (from `tree-sitter-language`'s `DEP_..._WASM_HEADERS`), C allocation
+  forwards to Rust's global allocator (`wasm_allocator.rs`, auto on
+  wasm32-unknown), `wasm_language` (wasmtime) not needed for linked-in
+  languages. Root `build.rs` already handled the headers env.
+- Recipe: `CC_wasm32_unknown_unknown=clang` +
+  `CFLAGS_wasm32_unknown_unknown="--target=wasm32-unknown-unknown -nostdlib"`.
+  Proven: `parse_count("Mr. Smith arrived at 10:30.")` = 1 in node
+  (abbreviation + time via the real scanner), em-dash = 1, two-sent = 2.
+- Productized: `english-web::analyze` now runs parse → `annotate_shallow`
+  → chunk → length/complexity/weasel/hedge (complexity REAL now);
+  site structure demo is live on custom text (own dynamic import per
+  section); `sitegen` example + `parse-examples.json` deleted;
+  clang+lld added to devShell. Parity verified wasm-vs-native on all
+  showcase shapes. Earlier fear ("rlib archives unchecked host objects")
+  stands but is now handled: the objects are real wasm.

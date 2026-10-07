@@ -17,6 +17,25 @@ fn analyzes_plain_sentence() {
 }
 
 #[test]
+fn real_segmentation_not_naive() {
+    // Abbreviations + times split naive `.`-splitters into 3+ pieces;
+    // the wasm-linked scanner holds them inside one sentence.
+    let v: serde_json::Value =
+        serde_json::from_str(&analyze("Mr. Smith arrived at 10:30.")).unwrap();
+    let sents = v["sentences"].as_array().unwrap();
+    assert_eq!(sents.len(), 1);
+    // Tree carries real token kinds (abbreviation dots surface).
+    let kinds: Vec<&str> = sents[0]["tree"][0]["tokens"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["k"].as_str().unwrap())
+        .collect();
+    assert!(kinds.contains(&"Period"));
+    assert!(kinds.contains(&"Number"));
+}
+
+#[test]
 fn weasel_fires() {
     let v: serde_json::Value = serde_json::from_str(&analyze("It was very good.")).unwrap();
     let findings = v["findings"].as_array().unwrap();
@@ -25,12 +44,14 @@ fn weasel_fires() {
 }
 
 #[test]
-fn multisentence_spans() {
-    let v: serde_json::Value =
-        serde_json::from_str(&analyze("Hello world. It was really bad.")).unwrap();
+fn complexity_fires_with_real_clauses() {
+    let text = "She laughed and he cried and they left because it ended.";
+    let v: serde_json::Value = serde_json::from_str(&analyze(text)).unwrap();
     let sents = v["sentences"].as_array().unwrap();
-    assert_eq!(sents.len(), 2);
-    assert_eq!(sents[1]["text"], "It was really bad.");
+    assert_eq!(sents.len(), 1);
+    assert!(sents[0]["clauses"].as_u64().unwrap() >= 4);
     let findings = v["findings"].as_array().unwrap();
-    assert!(findings.iter().any(|f| f["rule"] == "syntax.weasel"));
+    assert!(findings
+        .iter()
+        .any(|f| f["rule"] == "syntax.clause-complexity"));
 }

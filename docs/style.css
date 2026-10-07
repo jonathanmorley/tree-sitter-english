@@ -60,10 +60,11 @@ code { background: #f1f5f9; padding: 0.05rem 0.35rem; border-radius: 4px;
 textarea { width: 100%; font: inherit; border: 1px solid var(--line);
   border-radius: 8px; padding: 0.6rem; }
 textarea:focus { outline: 2px solid #7c3aed; border-color: #7c3aed; }
-button#run { font: inherit; padding: 0.35rem 1.2rem; margin-top: 0.5rem;
+button#run, button#prun { font: inherit; padding: 0.35rem 1.2rem; margin-top: 0.5rem;
   background: #7c3aed; color: #fff; border: none; border-radius: 8px;
   cursor: pointer; }
-button#run:hover { background: #6d28d9; }
+button#run:hover, button#prun:hover { background: #6d28d9; }
+#pstatus { margin-left: 0.8rem; color: var(--muted); }
 #status { margin-left: 0.8rem; color: var(--muted); }
 .dim { color: var(--muted); }
 #findings { list-style: none; padding: 0; }
