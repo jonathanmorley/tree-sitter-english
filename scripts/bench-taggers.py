@@ -10,9 +10,9 @@ scripts/fetch-ud.sh and scripts/sent-diff.py).
 
   ours   : committed weights via
            cargo run --release -p english-pos --example tag_tokens
-           (flat token stream, matching the committed eval
-           discipline; see the cross-sentence-history caveat in
-           AGENTS.md "Accuracy by reading level").
+           --sentences (one decode per sentence, history resets as
+           production tag_sentence does; flat whole-file decoding
+           leaks cross-sentence history and scores ~0.5 worse).
   nltk   : NLTK averaged perceptron (WSJ-trained, Penn tags) —
            coarse universal-12 only (out-of-domain by construction).
   rdr    : RDRPOSTagger with a UPOS-EWT .rdr model — exact UPOS.
@@ -58,6 +58,22 @@ PTB_TO_UNI = {
     "SENT": ".",
 }
 
+# english.par as shipped (2026-10-07) emits a Penn/CLAWS mix on EWT
+# test input (PP/NP/VV*-family alongside VBZ/NN/JJ). Mapped from the
+# observed 25,094-word inventory, same universal-12 targets.
+TT_EXTRA = {
+    "NP": "NOUN", "NPS": "NOUN",
+    "PP": "PRON", "PP$": "PRON",
+    "VV": "VERB", "VVD": "VERB", "VVG": "VERB", "VVN": "VERB",
+    "VVP": "VERB", "VVZ": "VERB",
+    "VH": "VERB", "VHD": "VERB", "VHG": "VERB", "VHN": "VERB",
+    "VHP": "VERB", "VHZ": "VERB",
+    "IN/that": "CONJ",
+    ",": ".", ":": ".", "''": ".", "``": ".", "(": ".", ")": ".",
+    "#": ".", "$": ".",
+}
+PTB_TO_UNI = {**PTB_TO_UNI, **TT_EXTRA}
+
 
 def coarse_upos(tag):
     """UPOS -> universal-12, same projection as PTB_TO_UNI targets."""
@@ -101,28 +117,32 @@ def moby_words(path):
     return body.split()
 
 
-def run_ours(all_words, sents):
-    """Tag the flat test word stream with committed weights."""
+def run_ours(sents):
+    """Tag EWT test sentences with committed weights, one sentence per
+    decode (history resets, as production tag_sentence does). Flat
+    whole-file decoding leaks cross-sentence history and scores ~0.5
+    worse — never use it for accuracy."""
     if shutil.which("cargo") is None:
         return None, "skip (no cargo; run inside nix develop)"
     with tempfile.NamedTemporaryFile(
             "w", suffix=".txt", delete=False) as f:
-        f.write("\n".join(all_words) + "\n")
+        f.write("\n\n".join("\n".join(w) for w, _ in sents) + "\n")
         tokfile = f.name
     t = time.perf_counter()
     try:
         out = subprocess.run(
             ["cargo", "run", "--quiet", "--release",
              "-p", "english-pos", "--example", "tag_tokens",
-             "--", tokfile],
+             "--", tokfile, "--sentences"],
             capture_output=True, text=True, check=True).stdout
     except subprocess.CalledProcessError as e:
         return None, f"skip (tag_tokens failed: {e.stderr[-200:]})"
     dt = time.perf_counter() - t
     pred = [ln.split("\t")[1] for ln in out.splitlines() if "\t" in ln]
-    if len(pred) != len(all_words):
+    n = sum(len(w) for w, _ in sents)
+    if len(pred) != n:
         return None, (f"skip (tag count {len(pred)} != "
-                       f"word count {len(all_words)})")
+                       f"word count {n})")
     return (pred, dt), None
 
 
@@ -179,12 +199,12 @@ def leg_spacy(sents):
     try:
         import spacy
     except ImportError:
-        return None, "skip (no spacy)"
+        return None, "skip (no spacy)", None
     try:
         nlp = spacy.load("en_core_web_sm")
     except OSError:
         return None, ("skip (en_core_web_sm missing; "
-                       "python -m spacy download en_core_web_sm)")
+                      "python -m spacy download en_core_web_sm)"), None
     pred, gkept, t = [], [], time.perf_counter()
     for words, tags in sents:
         doc = nlp(" ".join(words))
@@ -194,8 +214,8 @@ def leg_spacy(sents):
         gkept.extend(tags)
     dt = time.perf_counter() - t
     cov = len(gkept) / max(1, sum(len(w) for w, _ in sents))
-    return (pred, dt, gkept), (None if cov == 1.0
-                               else f"coverage {cov:.3f}")
+    note = (None if cov == 1.0 else f"aligned {cov:.3f} of gold words")
+    return (pred, dt, gkept), None, note
 
 
 def leg_treetagger(sents, binary, params):
@@ -252,7 +272,7 @@ def main(argv):
     rows = []  # (system, exact, exact_n, coarse, coarse_d, tok/s, note)
 
     # Ours (exact UPOS).
-    (res, err) = run_ours(words, sents)
+    (res, err) = run_ours(sents)
     if err:
         rows.append(("ours", None, 0, None, 0, None, err))
     else:
@@ -272,7 +292,7 @@ def main(argv):
             capture_output=True, text=True, check=True)
         sdt = time.perf_counter() - t
         rows.append(("ours", ex / len(gold), len(gold),
-                     cn / cd, cd, len(mwords) / sdt, "flat stream"))
+                     cn / cd, cd, len(mwords) / sdt, "per-sentence decode"))
 
     # NLTK perceptron (coarse only).
     (res, err) = leg_nltk(sents)
@@ -302,15 +322,15 @@ def main(argv):
                      cn / cd, cd, None, "speed: rerun tagRawSentence timed"))
 
     # spaCy (exact UPOS on aligned subset).
-    (res, err) = leg_spacy(sents)
-    if err:
-        rows.append(("spacy-sm", None, 0, None, 0, None, err))
+    (res, skip, note) = leg_spacy(sents)
+    if skip:
+        rows.append(("spacy-sm", None, 0, None, 0, None, skip))
     else:
         pred, _, gkept = res
         ex = score_exact(pred, gkept)
         cn, cd = score_coarse(pred, gkept, coarse_upos)
         rows.append(("spacy-sm", ex / len(gkept), len(gkept),
-                     cn / cd, cd, None, err or "aligned subset"))
+                     cn / cd, cd, None, note or "aligned subset"))
 
     # TreeTagger (coarse only).
     (res, err) = leg_treetagger(sents, a.treetagger, a.tt_params)
