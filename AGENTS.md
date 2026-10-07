@@ -939,6 +939,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (S13/S14); the harness caught my own bookkeeping error, which
   is exactly what the generated-arrays discipline is for.
 
+- Eval-margin probe round 2 (DONE, no code): production-path margins
+  on all 269 eval misses — 17 actionable, 244 confident, 8 ties.
+  The 17 split into standing rejections (4 attr-adj blue-box class,
+  3 titlecase OOV, beneath singleton) plus two EWT checks that both
+  failed decisively: `that`+ADV-next goes PRON 4:0 after ADP (the
+  eval DET reading is EWT-minority — rule would fight EWT) and
+  prep+VBG-gerund goes SCONJ 286:14 (`after kidnapping`, `by
+  playing` are adverbial clauses in EWT — the eval ADP gold is the
+  minority). Nothing admissible; probes deleted.
+
 - External benchmark shootout (DONE 2026-10-06, same hardware,
   same data): NLTK averaged perceptron (WSJ-trained) and
   RDRPOSTagger (UPOS-EWT model, same tagset+domain as ours) run
