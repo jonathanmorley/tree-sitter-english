@@ -5,7 +5,7 @@ const pinput = document.getElementById("pinput");
 const prun = document.getElementById("prun");
 const pstatus = document.getElementById("pstatus");
 const picker = document.getElementById("examples");
-const ptree = document.getElementById("ptree");
+const pback = document.getElementById("pback");
 const treeview = document.getElementById("treeview");
 
 const SHOWCASE = [
@@ -43,6 +43,10 @@ pinput.addEventListener("input", () => {
   clearTimeout(ptimer);
   ptimer = setTimeout(() => run(false), 250);
 });
+pinput.addEventListener("scroll", () => {
+  pback.scrollTop = pinput.scrollTop;
+  pback.scrollLeft = pinput.scrollLeft;
+});
 prun.addEventListener("click", () => run(true));
 
 let lastP = null;
@@ -51,7 +55,7 @@ async function run(force) {
   try {
     await ensure();
   } catch (e) {
-    ptree.innerHTML = '<span class="dim">Parser failed to load: ' + e.message + "</span>";
+    pback.innerHTML = '<span class="dim">Parser failed to load: ' + e.message + "</span>";
     return;
   }
   lastP = pinput.value;
@@ -62,31 +66,41 @@ async function run(force) {
 }
 
 function show(full, out) {
-  ptree.innerHTML = "";
+  pback.innerHTML = "";
   treeview.innerHTML = "";
   if (out.sentences.length === 0) {
-    ptree.innerHTML = '<span class="dim">No sentences — type something.</span>';
+    pback.innerHTML = '<span class="dim">No sentences — type something.</span>';
     return;
   }
+  // Highlight layer mirrors the textarea exactly: every byte of input
+  // is emitted (tokens as spans, gaps as raw text), so overlay aligns.
+  let cur = 0;
+  const emit = (s, e) => {
+    if (e > s) pback.appendChild(document.createTextNode(full.slice(s, e)));
+  };
   for (const s of out.sentences) {
     for (const c of s.tree) {
+      emit(cur, c.s);
       const cspan = document.createElement("span");
       cspan.className = "clause" + (c.sub ? " sub" : "");
       cspan.title = c.sub ? "subordinate clause" : "coordinate clause";
-      let cur = c.s;
+      let cc = c.s;
       for (const t of c.tokens) {
-        if (t.s > cur) cspan.appendChild(document.createTextNode(full.slice(cur, t.s)));
+        if (t.s > cc) cspan.appendChild(document.createTextNode(full.slice(cc, t.s)));
         const el = document.createElement("span");
         el.className = "tok k-" + t.k;
         el.textContent = full.slice(t.s, t.e);
         el.title = t.k;
         cspan.appendChild(el);
-        cur = t.e;
+        cc = t.e;
       }
-      if (cur < c.e) cspan.appendChild(document.createTextNode(full.slice(cur, c.e)));
-      ptree.appendChild(cspan);
+      if (cc < c.e) cspan.appendChild(document.createTextNode(full.slice(cc, c.e)));
+      pback.appendChild(cspan);
+      cur = c.e;
     }
   }
+  emit(cur, full.length);
+  pback.appendChild(document.createTextNode("\n"));
   for (const s of out.sentences) {
     const d = document.createElement("details");
     const sum = document.createElement("summary");
@@ -114,5 +128,5 @@ function show(full, out) {
 }
 
 run(true).catch((e) => {
-  ptree.innerHTML = '<span class="dim">Structure demo failed to load: ' + e.message + "</span>";
+  pback.innerHTML = '<span class="dim">Structure demo failed to load: ' + e.message + "</span>";
 });
