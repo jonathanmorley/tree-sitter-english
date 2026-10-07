@@ -34,6 +34,7 @@
             rustc
             rustfmt
             clippy
+            hyperfine # outer wall-clock runner, see scripts/bench-commands.sh
             # C compiler comes from Xcode CLT (/usr/bin/cc) on macOS.
             # Set CC if the tree-sitter CLI does not find it.
             # wasm32 C toolchain for the Pages demo (tree-sitter 0.27

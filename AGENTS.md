@@ -1638,3 +1638,65 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   demo renders query captures + clause walk with byte→char mapping
   (tree-sitter spans are bytes, JS slices UTF-16 — em-dash drifts
   without it). Stub-scanner recipe capture + build-std notes in entry.
+
+## TreeTagger harvest (QUEUED 2026-10-07, from Schmid 1994/1995)
+
+- Source: TreeTagger page
+  (`https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/`;
+  research license — binary + `.par` never vendored, oracle use
+  only like Punkt/spaCy). What ports and what does not: the
+  decision-tree transition estimator itself does NOT port (the
+  perceptron + beam-2 already covers wider context; the 1994
+  96.36-vs-96.06 trigram win is pre-linear-model history).
+  Architecture validated, not changed (segment → tag → chunk
+  post-pass mirrors TreeTagger + chunker `.par`).
+- (a) OOV decision-list rule (NOT STARTED): TreeTagger's
+  unknown-word tree as a margin-gated correction shape —
+  hierarchical capital → suffix (`-tion/-ness/-ly/-ize`) →
+  hyphen checks, consulted only below τ (correction.rs pattern,
+  never flat affix features: char 4-5 measured dev −130 stands
+  as the negative precedent). Bars: EWT dev/test ≥ 0, evals
+  neutral-or-better, `flies` holds, 15th-rule gate deltas.
+- (b) Lemmatizer, Tier-1 lookup table (NOT STARTED): lemmas come
+  almost free from the same lexicon as (a); consumers are
+  `english-lint` passive (participle identity) and
+  nominalization (deverbal noun→verb) instead of current suffix
+  matching. Scope: EWT-lemma table + closed irregular list,
+  offline-built like `lexicon/verbs.txt`, zero tagger impact.
+  Bars: lint evals neutral-or-better, weights md5 unchanged.
+- (c) Lexicon-constrained decode (PROBE ONLY, expect reject):
+  TreeTagger restricts candidates to lexicon tags; our tagdict
+  behavior change stays rejected, and pred-tags training failed
+  twice on pipeline-moves-AND-gold-holds — measure only, admit
+  only on the same bar.
+- (d) Rerunnable shootout (DONE 2026-10-07):
+  `scripts/bench-taggers.py` reproduces the external-benchmark
+  item on demand: exact-UPOS on EWT test gold words (flat
+  stream, committed-eval discipline) + tagger-only tok/s on
+  Moby body words, coarse universal-12 (Petrov Table 1,
+  reimplemented) for Penn-tagged systems. Legs: ours (cargo
+  `tag_tokens`, needs `nix develop`), nltk-perceptron, rdr
+  (`--rdr-model`), spacy-sm (aligned subset, coverage
+  reported), treetagger (`--treetagger` + `--tt-params`,
+  coarse only). Anything absent is skipped with a hint;
+  `--tsv` writes the record. Verified: skeleton run (all
+  skips), nltk leg 0.5000 on a 4-word synthetic set (caught a
+  FORM/LEMMA column off-by-one before it shipped), ours leg
+  0.7500 via `nix develop`. Standing record stays the
+  2026-10-06 numbers in the shootout item until a rerun
+  replaces them. `docs/references.md` gains the TreeTagger
+  entry + the external-systems list pointing at the script.
+  Hyperfine outer runner (same day): `hyperfine` added to the
+  devShell + `scripts/bench-commands.sh` (shfmt `-i 2` clean like
+  the other scripts) hyperfines the repo-owned commands
+  (`bench` end-to-end, `tag_tokens` on Moby words; release
+  binaries built once so the build is never timed) with
+  `--warmup 2 --runs 5 --export-markdown`, appending
+  nltk/rdr/spacy one-liners only when `BENCH_VENV` provides
+  them and treetagger only when `TREETAGGER_BIN`/`_PARAMS`
+  are set. Split of duties: bench-taggers.py owns accuracy +
+  in-process breakdowns (spawn excluded), bench-commands.sh
+  owns wall clock. Verified on a 6-word stub (spawn-dominated,
+  as documented) incl. the nltk leg; fixed a real quoting bug
+  along the way (newline-split fragments become separate argv
+  elements — single strings only).

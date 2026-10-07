@@ -25,6 +25,37 @@ re-deriving: the queued AGENTS.md items cite them by name.
   suffix backoff for unknowns; the OOV baseline our perceptron
   affixes replace. TnT's seen/OOV-split reporting is the model for
   extending `verify` (AGENTS.md Brill item).
+- Schmid (1994): "Probabilistic part-of-speech tagging using
+  decision trees", Proc. NeMLaP,
+  <https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/>.
+  Transition probabilities from a decision tree (variable context
+  where data supports it) + lexicon + suffix/capitalization tree
+  for unknowns + lemma output. Applies to: the queued OOV
+  decision-list and lemmatizer items (margin-gated, never flat
+  features), and as a `bench-taggers.py` coarse-12 competitor
+  (research license — binary + `.par` stay out of the repo).
+
+## External systems (benchmarked, never vendored)
+
+- NLTK averaged perceptron (WSJ-trained, Penn tags) + Punkt
+  sentence tokenizer: out-of-domain accuracy floor and the
+  differential segmentation oracle (`scripts/sent-diff.py`).
+- RDRPOSTagger (UPOS-EWT model, same tagset+domain): most
+  accurate lightweight system measured (+0.25 over greedy) and
+  most parameter-efficient (0.38 MB), but Python-only at 1/41
+  the speed — offline competitor only.
+- spaCy `en_core_web_sm`: second differential oracle (parse
+  sentences) and exact-UPOS competitor on the aligned subset.
+- Transformers (BERT-family, ~97-98% UPOS): oracle labelers
+  only, distilled into the greedy model — never the keystroke
+  path (50–1000× slower, 7–220× larger).
+- Rerun: `python3 scripts/bench-taggers.py --conllu
+  /tmp/ud/ewt/en_ewt-ud-test.conllu --moby /tmp/moby.txt`
+  (inside `nix develop` for the ours leg; every competitor
+  missing from the env is skipped with an install hint).
+  Wall clock: `scripts/bench-commands.sh --moby /tmp/moby.txt`
+  (hyperfine, in the devShell; see its header for the
+  `BENCH_VENV`/`TREETAGGER_*` opt-ins).
 
 ## Segmentation and tokenization
 
