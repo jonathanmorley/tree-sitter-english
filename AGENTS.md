@@ -1320,6 +1320,30 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   unmeasured). Next rules queued, not started: nominalization,
   sentence complexity (both need their own 60-sent evals).
 
+## Accuracy by reading level (MEASURED 2026-10-07)
+
+- Question: is the tagger better on easy texts? Answer: NO —
+  essentially flat. 112 gold sentences (sweep 60 + genre 20 + hard
+  11 + moby 21), Flesch-Kincaid grade per sentence (vowel-group
+  syllables), tertile bands, greedy + production accuracy:
+  easy (<7.5): 37 sent / 354 tok, 0.8785 / 0.8814;
+  mid (7.5–14.4): 37 / 802, 0.8728 / 0.8741;
+  hard (>14.4): 38 / 2919, 0.8671 / 0.8770.
+  A 1.2-point greedy slope over bands whose token mass differs 8×
+  is noise; production flattens it further. Errors are driven by
+  construction types (titlecase OOV, prep-chains, -s verbs,
+  that-cascades — present at every level), not readability.
+- Caveats: FK on single sentences is noisy (fragments score
+  negative, the 489-word monster scores 88 — bands are tertiles
+  of a noisy measure, still slope-free); probe deleted after use.
+- Eval-hygiene finding (not gate-relevant): committed greedy evals
+  tag FLAT token arrays, leaking t-1/t-2 history across sentence
+  boundaries (titlecase `Police`/`Exports` flip NOUN/PROPN on it);
+  per-sentence decoding (what production `tag_sentence` does)
+  differs by ±3 tokens on 2000. Bars have room; noted, not acted on.
+- Follow-up open, not started: parser UAS by FK band on EWT dev
+  (gold heads exist — same tertile protocol, beam4 cost).
+
 ## Vale alternative, rules 3–4: complexity (DONE 2026-10-07)
 
 - `syntax.sentence-length` (>30 pieces) + `syntax.clause-complexity`
