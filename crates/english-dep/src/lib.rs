@@ -233,6 +233,11 @@ pub fn oracle(gold_heads: &[usize], cfg: &Config) -> Action {
 /// the salient pair (MaltOptimizer step 4: predecessor/successor
 /// word+tag for s0 and b0 — b0+1 rides the existing lookahead,
 /// so the three added positions are s0−1, s0+1, b0−1).
+/// NOTE (measured 2026-10-07): s1 word (0x32) stays — Malt model
+/// 7 drops s1-FORM but our remove-and-measure screened flat
+/// (dev −0.04 / test +0.18, noise), so status quo holds per the
+/// min-count precedent; LaSO-level re-verdict only with fresh
+/// evidence.
 pub fn features(words: &[String], tags: &[String], cfg: &Config, feats: &mut Vec<u64>) {
     feats.clear();
     let n = words.len();

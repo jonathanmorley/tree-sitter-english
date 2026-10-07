@@ -1192,4 +1192,6 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   at this data scale — the cascade is structural (tagger
   misses destroy head evidence), not trainable around from
   below. Joint tag-parse remains the only addressed-to-cause
-  lever; s1-form ablation queued next (cheap).
+  lever; s1-form ablation MEASURED FLAT 2026-10-07 (greedy
+  screen dev −0.04 / test +0.18 — noise; 0x32 stays per the
+  min-count precedent, note in-code).
