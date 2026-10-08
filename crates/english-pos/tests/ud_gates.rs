@@ -39,7 +39,10 @@ fn production(model: &english_pos::Model, words: &[String]) -> Vec<String> {
     if !RULES.is_empty() {
         apply_rules(&mut tagged, RULES, &lower);
     }
-    tagged.into_iter().map(|(t, _)| t.upos().to_string()).collect()
+    tagged
+        .into_iter()
+        .map(|(t, _)| t.upos().to_string())
+        .collect()
 }
 
 fn score(file: &str, floor: usize, label: &str) {

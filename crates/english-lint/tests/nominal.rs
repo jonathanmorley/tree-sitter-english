@@ -78,6 +78,10 @@ const SENTENCES: &[(&str, bool)] = &[
     ("They took advantage of the confusion.", true),
     ("She had no knowledge of the incident.", true),
     ("It took courage to speak up.", true),
+    // Composed Greek -sis plurals (irregulars the single-s strip
+    // cannot reach; closed SIS_PLURALS list + NOUN gate).
+    ("They conducted analyses of the data.", true),
+    ("The doctor made three diagnoses.", true),
     ("We got the message yesterday.", true),
     ("Foreign aid gives leverage to small states.", true),
     ("He has an appreciation of music.", true),
@@ -122,7 +126,7 @@ const SENTENCES: &[(&str, bool)] = &[
 
 #[test]
 fn nominalization_precision_recall() {
-    assert_eq!(SENTENCES.len(), 71);
+    assert_eq!(SENTENCES.len(), 73);
     let models = match Models::load_workspace() {
         Ok(m) => m,
         Err(e) => {
