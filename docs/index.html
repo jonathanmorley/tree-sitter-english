@@ -169,7 +169,7 @@ with forensics.</p>
 <tr><td>Ours, batch</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">119 MB</td></tr>
 <tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
 <tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">482</td><td class="num">266 MB</td><td class="num">621 MB</td></tr>
-<tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.01</td><td class="num">97.47</td><td class="num">377</td><td class="num">66.8 MB</td><td class="num">640 MB</td></tr>
+<tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.39</td><td class="num">97.72</td><td class="num">451</td><td class="num">98.4 MB</td><td class="num">805 MB</td></tr>
 <tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td><td class="num">—</td></tr>
 <tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td><td class="num">260 MB</td></tr>
 <tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td><td class="num">369 MB</td></tr>
@@ -200,7 +200,10 @@ which is why transformers stay offline-only oracles here (a 96.5
 oracle is queued for disagreement mining, never the keystroke
 path). Graph-optimized artifacts (attention fusion, accuracy
 bit-identical on EWT: 96.51/96.01) run 482/377 tok/s on a 20k-word
-Moby sample and are the mining workhorses. NLTK's perceptron is
+Moby sample and are the mining workhorses; calibrated static int8
+(optimize-first — calibrating the raw export collapses to 16.6%)
+reaches 96.39 at 451 tok/s and displaces dynamic (96.01) as the
+int8 row. NLTK's perceptron is
 WSJ-trained (out of domain); detail is in the shootout table above.</p>
 <h4>Parser shootout <span class="sub">EWT test · 25,094 tokens · punct counted both sides</span></h4>
 <table>
