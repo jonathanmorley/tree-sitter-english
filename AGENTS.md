@@ -1415,6 +1415,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   unmeasured). Next rules queued, not started: nominalization,
   sentence complexity (both need their own 60-sent evals).
 
+## Attachment-uncertainty calibration (REJECTED 2026-10-08,
+  probe deleted)
+
+- Question: do low dep attach margins mark sentences a reader
+  finds ambiguous? 60 hand judgments (Moby ADP/SCONJ/CCONJ
+  dependents, stride-sampled 20×3 bands, single judge —
+  noted): lo (<2.0) 0/20 ambiguous, mid (2–5) 1/20 (weak:
+  `tar in general`), hi (≥5) 0/20. Bars needed ≥0.35 lo and
+  ≤0.10 hi; lo misses absolutely. The uncertain population is
+  particles (`show off`, `dashed me off`), coordinations,
+  discourse markers, comparatives — all reader-clear. Parser
+  uncertainty ≠ human ambiguity (margins fire on 500-word
+  sentences and tagger noise, which readers sail through).
+- Mechanism found along the way: beam margins are taken-gap,
+  not best-minus-runner-up — they go negative (to −89) where
+  the winning path overrode local preference. Still a valid
+  uncertainty ordering (negatives are the most uncertain),
+  but the doc comment now says so explicitly. No lint rule
+  reads beam margins; nothing else changes.
+
 ## Accuracy by reading level (MEASURED 2026-10-07)
 
 - Question: is the tagger better on easy texts? Answer: NO —

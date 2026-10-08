@@ -651,9 +651,11 @@ impl Model {
 
     /// Width-`width` beam search over transition sequences. Each
     /// hypothesis carries its own config, cumulative score, and
-    /// per-token margins (recorded at the attaching decision under
-    /// that hypothesis's history — the tagger-beam analogue; 0.0
-    /// where nothing attached). Returns the winning heads plus
+    /// per-token margins (the taken action's gap over its live
+    /// alternatives under that hypothesis's history — negative
+    /// where the winning path overrode local preference, so
+    /// margins are NOT best-minus-runner-up here; 0.0 where
+    /// nothing attached). Returns the winning heads plus
     /// margins. Greedy is width 1 without the margin refinement;
     /// use this for measurement sweeps, not the keystroke path
     /// (cost is ~width×4 scorings per step).
