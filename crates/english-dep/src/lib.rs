@@ -232,7 +232,10 @@ pub fn oracle(gold_heads: &[usize], cfg: &Config) -> Action {
 /// `0x50` s0+b0 word bigram, `0x53`-`0x58` sentence neighbors of
 /// the salient pair (MaltOptimizer step 4: predecessor/successor
 /// word+tag for s0 and b0 — b0+1 rides the existing lookahead,
-/// so the three added positions are s0−1, s0+1, b0−1).
+/// so the three added positions are s0−1, s0+1, b0−1),
+/// `0x59`-`0x5c` tag trigrams over the seam (s1+s0+b0,
+/// s0+b0+b1, b0+b1+b2, b1+b2+b3 — Malt's Merge/Merge3
+/// remainder), `0x5d` b3 tag.
 /// NOTE (measured 2026-10-07): s1 word (0x32) stays — Malt model
 /// 7 drops s1-FORM but our remove-and-measure screened flat
 /// (dev −0.04 / test +0.18, noise), so status quo holds per the
@@ -419,6 +422,33 @@ pub fn features(words: &[String], tags: &[String], cfg: &Config, feats: &mut Vec
     feats.push(hash_feature(0x56, &[tag_at(s0 + 1)]));
     feats.push(hash_feature(0x57, &[word_at(b0.wrapping_sub(1))]));
     feats.push(hash_feature(0x58, &[tag_at(b0.wrapping_sub(1))]));
+    // v5 (MaltParser Merge/Merge3 remainder): tag trigrams over the
+    // stack/buffer seam. We hold s0+b0 and s1+s0 bigrams (0x3c/0x47)
+    // but none of Malt's four trigrams; the ablation credits
+    // conjunctions +3.9 (of which we already hold a share via
+    // bigrams+dep-tree, so expect a fraction). b3 tag rides along
+    // (Malt reads Input[3]; we stop at b2 today).
+    feats.push(hash_feature(
+        0x59,
+        &[
+            if s1_some { tag_at(s1) } else { "<NULL>" },
+            tag_at(s0),
+            tag_at(b0),
+        ],
+    ));
+    feats.push(hash_feature(
+        0x5a,
+        &[tag_at(s0), tag_at(b0), tag_at(b0 + 1)],
+    ));
+    feats.push(hash_feature(
+        0x5b,
+        &[tag_at(b0), tag_at(b0 + 1), tag_at(b0 + 2)],
+    ));
+    feats.push(hash_feature(
+        0x5c,
+        &[tag_at(b0 + 1), tag_at(b0 + 2), tag_at(b0 + 3)],
+    ));
+    feats.push(hash_feature(0x5d, &[tag_at(b0 + 3)]));
 }
 
 fn action_index(a: Action) -> usize {

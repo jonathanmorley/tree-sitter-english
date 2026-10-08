@@ -1237,13 +1237,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (cheap, and malt-only 1,711 is its pool). Punct dominates
   both off-diagonals — largely convention-driven flip-flops,
   not pursued. Both-wrong 2,422 needs genuinely new signal.
-  (c) v5 templates (SCOPED 2026-10-08, not started): port
-  Malt's four tag trigrams (s1+s0+b0, s0+b0+b1, b0+b1+b2,
-  b1+b2+b3) + b3 tag single into 0x59+ templates; greedy
-  screen first (bar: screen-then-license discipline, +2.1 to
-  beat at greedy per the v4 precedent), LaSO-4 verdict only on
-  a passing screen. Expect a fraction of the measured +3.9
-  (bigrams+dep-tree already held).
+  (c) v5 templates (DONE 2026-10-08 — ADMITTED): greedy screen
+  dev 80.74→84.29 (+3.55), test 80.72→83.98 (+3.26), same
+  hparams both runs (deterministic retrains) — exceeds v4's
+  +2.1 screen, LaSO verdict earned. LaSO-4: dev+gold 85.90
+  (+2.0), test+gold 84.99 (+1.5); dev+tagger 79.75 (+1.95),
+  test+tagger 79.56 (+1.76). LAS (labeler v1 untouched):
+  82.07/81.27 +gold (+1.9/+1.2), 73.18/73.31 +tagger (+2.1/+2.0).
+  PUD: UAS 79.3→82.0 / 73.2→76.4, LAS 75.2→77.6 / 65.7→68.8 —
+  out-of-domain gains exceed EWT's. Weights md5 `41f9c850`
+  (31.2 MB, gitignored Tier-1 pair; banked 32 MB backup in
+  /tmp). Cost: parse ~44k→~42k tok/s on Moby (trigram hashing,
+  expected), label 136k unchanged, peak 118 MB. Table story
+  flips: same-input gap −0.07 (85.06 vs 84.99), pipeline LEAD
+  +0.19 (79.56 vs 79.37); Malt-full keeps +1.0 on feats alone.
+  Test-gold 84.99 ≈ UDPipe-2.0 85.01 (different settings —
+  gold inputs vs raw text — noted, not claimed). Full
+  workspace + lint evals green; front table + dep chart
+  updated (chart axis 65–86: 85.9 broke the old scale).
   (d) parser weight packaging (QUEUED 2026-10-08): min-count=2
   re-verdict at LaSO-4/v4 (v3 measurement: flat 78.8/79.3 at
   11.5/9.3 MB vs 29 MB — pruning buys size, not UAS). Bar:
