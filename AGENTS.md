@@ -2025,10 +2025,33 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   features read POSTAG (= XPOS), not CPOSTAG — training with
   XPOS blanked gives a FORM-only model, proven exactly
   tag-invariant (0/25094 flips); the XPOS←UPOS mapping is
-  load-bearing; (2) splice hygiene (a stray newline corrupts
-  columns; symptom: POSTAG-symbol error); (3) pred tags are
+  load-bearing (CPOSTAG-named custom XML also trains, same
+  strings in lex2 — the ablation below uses it);
+- Ablation (DONE 2026-10-08, same inputs FORM+UPOS, gold tags,
+  custom `-F` XML, CPOSTAG-named): singles-only 77.99;
+  +tag-merges (Malt's five, no labels) 81.92; full default
+  85.06. So conjunctions +3.9, label-informed transitions
+  (DEPREL ldep/rdep feats) +3.1. Ours (83.5, LaSO-4 beam4)
+  sits between: our features+training beat merges-only by
+  +1.6, labels are the hole — and Malt-greedy beats our-beam,
+  so no beam excuse. Matched-poverty check: Malt-min 78.0 vs
+  our v1 58.9 looks like learner magic, but our v2+averaging
+  reached 78.7 at similar density — learners tie, no magic.
+- Lessons, ranked: (1) LABEL-INFORMED ARCS (+3.1, biggest
+  lever) need joint arc+label decode (two-pass feedback or
+  joint beam) — NEW DECODER STAGE, queued with measured prize
+  (larger than any harvest step); (2) v5 TEMPLATES (scoped,
+  not started): port Malt's four tag trigrams (s1+s0+b0,
+  s0+b0+b1, b0+b1+b2, b1+b2+b3 — we have only s0+b0/s1+s0
+  bigrams) + b3 tag single, greedy screen then LaSO verdict,
+  expect fraction of +3.9 (we already hold bigrams+dep-tree);
+  (3) the +0.9 feats-input gap stays BLOCKED (no morphology
+  predictor); (4) no learner change (tied at matched
+  density).
+- Further pitfalls: (a) splice hygiene (a stray newline corrupts
+  columns; symptom: POSTAG-symbol error); (b) pred tags are
   GREEDY (`Model::tag`), matching the dep eval's +tagger
-  regime, not production; (4) spaCy excluded with reason (PTB
+  regime, not production; (c) spaCy excluded with reason (PTB
   head scheme → 51.5 UAS vs UD gold measures scheme, not
   parsing; no converter); UDPipe 2.0 row is published
   (K18-2020, raw text, older EWT — same scale, not same
