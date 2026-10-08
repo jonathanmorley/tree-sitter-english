@@ -75,11 +75,16 @@ fn tag_margins_agree_with_tags() {
         assert!(*m >= 0.0, "margin is best minus runner-up");
         assert!(m.is_finite());
     }
-    // Ambiguous `flies` decodes less confidently than closed-class `an`.
-    let flies_margin = margined[1].1;
+    // Dict-skipped tokens (`flies`, `.` — unambiguous in training)
+    // carry the documented placeholder, not a measured gap; the
+    // ambiguous-vs-closed-class ordering holds among scored tokens
+    // (`Time` 3 < `an` 26 — garden-path subject vs determiner).
+    assert_eq!(margined[1].1, english_pos::FAST_PATH_MARGIN);
+    assert_eq!(margined[5].1, english_pos::FAST_PATH_MARGIN);
+    let time_margin = margined[0].1;
     let an_margin = margined[3].1;
     assert!(
-        flies_margin < an_margin,
-        "flies {flies_margin} vs an {an_margin}"
+        time_margin < an_margin,
+        "time {time_margin} vs an {an_margin}"
     );
 }

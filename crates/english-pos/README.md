@@ -9,18 +9,21 @@ A greedy perceptron: `Model::tag` decodes surface tokens left to right
 are 64-bit FNV-1a hashes extracted with zero per-token allocation
 (scratch buffer reused; weights ride dense `[f32; 17]` arrays in a
 trivial `u64`-keyed map — no SipHash re-hashing of pre-hashed ids), so
-tagging runs ~2.1M tokens/sec on the tag pass (~550k end-to-end with
+tagging runs ~2.5M tokens/sec on the tag pass (~570k end-to-end with
 parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT plus
 in-domain oracle data (EWT: UD_English-EWT contributors, CC BY-SA
 4.0, <https://github.com/UniversalDependencies/UD_English-EWT>):
-dev 91.84%, test 92.05% greedy (1.76 MB,
+dev 92.14%, test 92.65% greedy (1.98 MB with the tagdict table,
 whole-number weights serialize as integers). Production decodes
 through a width-2 beam re-decode plus fourteen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
 participle repair — each admitted with EWT-majority and gate
-deltas, 14-for-27 with rejections recorded): dev 91.94%,
-test 92.13%.
+deltas, 14-for-27 with rejections recorded): dev 92.20%,
+test 92.81%. Tagger weights embed a 14,563-word tagdict (words
+seen under one tag in training) for the inference fast path —
+byte-identical decode is measured per weights/rules change,
+never assumed (see the train README probe record).
 
 ```rust
 let model = english_pos::Model::from_json(include_str!("weights/upos.json"))?;

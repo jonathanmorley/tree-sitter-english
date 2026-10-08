@@ -47,9 +47,11 @@ flatten parentheticals and keep subordinators and joiners.
 Labels each word with one of 17 Universal POS tags. A greedy
 left-to-right perceptron (u64 FNV-1a hashed features, dense
 `[f32; 17]` rows in a trivially-hashed map, zero per-token alloc
-beyond one lowercase pass — ~2.1M tok/s on the tag pass, 1.76 MB
-integer-encoded weights, trained on UD English-EWT plus in-domain
-oracle data (dev 91.84% / test 92.05% greedy; beam 91.89% / 92.15%)),
+beyond one lowercase pass — ~2.5M tok/s on the tag pass, 1.98 MB
+integer-encoded weights incl. a 14,563-word tagdict, trained on UD
+English-EWT plus in-domain
+oracle data (dev 92.14% / test 92.65% greedy; beam+rules 92.20% /
+92.81%)),
 followed by a width-2 joint re-decode of low-margin spans
 (`BEAM_MARGIN_T` 2.0, cap 8: 20–22% of sentences, ~6% of tokens
 rescored) and fourteen gated correction rules (lexicon-backed
@@ -108,14 +110,14 @@ six tokens, one left-to-right pass each stage.
 | Measure | Result |
 |---|---|
 | Full parse | ~210 ms (body text; full file higher) |
-| Tag pass | ~100 ms (~10 µs/sentence) |
+| Tag pass | ~87 ms (~9 µs/sentence) |
 | One-word-edit keystroke path | ~40 ms (reparse + retag) |
 | Dep parse (beam4) | ~4 s/book — batch/save-pass, never keystroke |
 | Peak memory | 58 MB |
-| Tagger weights | 1.76 MB, zero-dependency pure Rust |
+| Tagger weights | 1.98 MB, zero-dependency pure Rust |
 | Dep weights | 32 + 3.8 MB lazy Tier-1 pair (gitignored, never vendored) |
 
-Transformers (~97-98% UPOS vs our 92.05) were measured against
+Transformers (~97-98% UPOS vs our 92.65) were measured against
 these lines and evicted: 50–1000× slower, 7–220× larger, plus a
 foreign runtime in a dependency-free core. They contribute
 offline as oracle labelers, distilled into the small model —
