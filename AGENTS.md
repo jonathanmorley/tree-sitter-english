@@ -1468,6 +1468,43 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   mean reproduces banked 83.9. No action: length-driven, not a
   readability defect.
 
+## Vale alternative, rules 8–9: scope ambiguity (DONE 2026-10-08,
+  coord P 0.844 / R 0.900, neg P 0.968 / R 1.000)
+
+- Of the three scoped ambiguity classes only scope patterns were
+  open (demonstratives shipped as rule 7, attachments rejected
+  by calibration). Census first: ADJ-NOUN-and-NOUN 391 hits /
+  4 books (viable), stacked-PP ~10k (noise — and the rejected
+  calibration says nested-clear can't be separated), Q…n't 231
+  (thin). Built coordination + negation; stacked stays out.
+- `syntax.coord-scope`: ADJ NOUN and/or/but NOUN, same category
+  (`old men and women` — are the women old?). Contrastive and
+  repeated adjectives never match by construction. v1 tag-trust
+  measured 0.737 (bar miss) → like-category guard (conjunct
+  tags must be EQUAL — `the whole year and Paris` reads as
+  intentionally separate; real parallelism preference, not
+  fitting): 4 design FPs killed, 0 TP lost → 0.844/0.900. All
+  8 remaining misses pipeline-caused (gratitude/winds-VERB,
+  dim/drank/risen/sleep/heartily-as-NOUN, spears/seas-PROPN),
+  gold stands throughout. One TP lost to the guard via mistag
+  (`clubs/NOUN` vs `spears/PROPN`) — documented, not fitted.
+- `syntax.negation-scope`: DET/PRON quantifier
+  (`all/every/each/everybody/everyone/everything/both`) before
+  `n't/not/never` (`everybody didn't come` — nobody, or not
+  everybody?). Reversed scope and excluded `no` stay silent by
+  construction; adverbial `all` tag-gated out. 0.968/1.000 with
+  a single honest FP (verbatim book cross-clausal `never` —
+  same-clause bounding needs clause spans the shallow path
+  doesn't carry; documented residual, bars need no refinement).
+  Books avoid the shape (1 corpus hit) so positives are
+  30/30 composed — circularity risk carried openly, weight on
+  the near-miss negatives (reversed, `no`, adverbial-`all`,
+  `not-only`, quasi-negation `seldom`).
+- Both POS-only (keystroke path), wired CLI + WASM; latency
+  0.8 ms / 237 + 4.0 ms / 165 on Moby (negation needed an
+  alloc-free rewrite: 18→4.0 ms, behavior-identical both
+  evals). Rules total ~23 ms. Census + latency probes deleted.
+
 ## Vale alternative, rules 3–4: complexity (DONE 2026-10-07)
 
 - `syntax.sentence-length` (>30 pieces) + `syntax.clause-complexity`

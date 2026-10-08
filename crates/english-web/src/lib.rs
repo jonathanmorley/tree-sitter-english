@@ -14,8 +14,8 @@
 //! weights (32 + 3.8 MB) are Tier-1 lazy assets, not browser freight.
 
 use english_lint::{
-    annotate_shallow, line_col, ClauseComplexity, Hedge, Rule, SentenceLength, VagueDemonstrative,
-    Weasel,
+    annotate_shallow, line_col, ClauseComplexity, CoordScope, Hedge, NegScope, Rule,
+    SentenceLength, VagueDemonstrative, Weasel,
 };
 use wasm_bindgen::prelude::*;
 
@@ -45,7 +45,15 @@ pub fn analyze(text: &str) -> String {
     let length = SentenceLength::default();
     let complexity = ClauseComplexity::default();
     let vague = VagueDemonstrative;
-    let rules: Vec<&dyn Rule> = vec![&length, &complexity, &Weasel, &Hedge, &vague];
+    let rules: Vec<&dyn Rule> = vec![
+        &length,
+        &complexity,
+        &Weasel,
+        &Hedge,
+        &vague,
+        &CoordScope,
+        &NegScope,
+    ];
     let mut findings_json = Vec::new();
     for rule in &rules {
         for f in rule.check(&ann) {

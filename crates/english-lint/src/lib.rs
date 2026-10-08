@@ -549,6 +549,127 @@ impl Rule for Hedge {
     }
 }
 
+/// Coordination scope (`syntax.coord-scope`): ADJ NOUN `and/or/but`
+/// NOUN where the adjective may not distribute (`old men and
+/// women` — are the women old?). Structural 4-tag window, first
+/// hit per sentence. Contrastive (`old men and young women`)
+/// and repeated (`old men and old women`) adjectives never match
+/// by construction (4th slot must be nominal); category-blocked
+/// readings (`the whole winter, and Meryton was...`) and
+/// verb-mistag shapes (`and risen`, `and sleep`) count NEGATIVE
+/// in eval — the rule flags the shape and lets the writer
+/// decide, so overfire is honest. POS-only (keystroke path).
+pub struct CoordScope;
+
+impl Rule for CoordScope {
+    fn id(&self) -> &'static str {
+        "syntax.coord-scope"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            let mut hit: Option<(usize, usize)> = None;
+            for k in 0..sent.pieces.len() {
+                if k + 3 >= sent.pieces.len() {
+                    break;
+                }
+                if sent.tags.get(k) != Some(&Tag::Adj) {
+                    continue;
+                }
+                if !matches!(sent.tags.get(k + 1), Some(Tag::Noun) | Some(Tag::Propn)) {
+                    continue;
+                }
+                if sent.tags.get(k + 2) != Some(&Tag::Cconj) {
+                    continue;
+                }
+                if !matches!(sent.tags.get(k + 3), Some(Tag::Noun) | Some(Tag::Propn)) {
+                    continue;
+                }
+                // Like-category coordination only: the scope question
+                // arises where the adjective COULD distribute, i.e.
+                // both conjuncts share a category (`men and women`).
+                // Unlike-category pairs (`the whole year and Paris`,
+                // `the thick book and Mary`) read as intentionally
+                // separate — the adjective self-evidently stops.
+                if sent.tags.get(k + 1) != sent.tags.get(k + 3) {
+                    continue;
+                }
+                hit = Some((k, k + 3));
+                break;
+            }
+            if let Some((a, b)) = hit {
+                let adj = sent.pieces[a].clone();
+                let tail = sent.pieces[a + 1..=b].join(" ");
+                out.push(Finding {
+                    rule: self.id(),
+                    span: sent.cover(a, b),
+                    message: format!("\"{adj}\" may not cover \"{tail}\" — repeat it or reword"),
+                });
+            }
+        }
+        out
+    }
+}
+
+/// Negation scope (`syntax.negation-scope`): a universal
+/// quantifier (`all/every/each/everybody/everyone/everything/
+/// both`, DET/PRON-tagged so adverbial `all` stays out) before
+/// `n't/not/never` in the same sentence (`everybody didn't
+/// come` — nobody, or not everybody?). Reversed order (`I did
+/// not see all the films`) reads unambiguously the other way
+/// and stays silent by construction; `no` is excluded (pure
+/// negation, no scope question). First quantifier + first
+/// following negation per sentence. POS-only (keystroke path).
+pub struct NegScope;
+
+impl Rule for NegScope {
+    fn id(&self) -> &'static str {
+        "syntax.negation-scope"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        const QUANT: &[&str] = &[
+            "all",
+            "every",
+            "each",
+            "everybody",
+            "everyone",
+            "everything",
+            "both",
+        ];
+        const NEG: &[&str] = &["n't", "not", "never"];
+        let mut out = Vec::new();
+        for sent in &doc.sentences {
+            // Case-insensitive match without allocating a lowered
+            // copy per sentence (Moby-body best-of-5 discipline).
+            let is_quant = |k: usize| {
+                QUANT.iter().any(|q| sent.pieces[k].eq_ignore_ascii_case(q))
+                    && matches!(sent.tags.get(k), Some(Tag::Det) | Some(Tag::Pron))
+            };
+            let qi = (0..sent.pieces.len()).find(|&k| is_quant(k));
+            let qi = match qi {
+                Some(qi) => qi,
+                None => continue,
+            };
+            let ni = ((qi + 1)..sent.pieces.len())
+                .find(|&k| NEG.iter().any(|n| sent.pieces[k].eq_ignore_ascii_case(n)));
+            let ni = match ni {
+                Some(ni) => ni,
+                None => continue,
+            };
+            let q = sent.pieces[qi].clone();
+            let n = sent.pieces[ni].clone();
+            out.push(Finding {
+                rule: self.id(),
+                span: sent.cover(qi, ni),
+                message: format!("\"{q} … {n}\" scope is unclear — say who didn't, or reword"),
+            });
+        }
+        out
+    }
+}
+
 /// Vague demonstratives (`syntax.vague-demonstrative`):
 /// a sentence-initial demonstrative pronoun (`this/that/these/those`)
 /// with no clear antecedent. The pronominal/determiner call is
