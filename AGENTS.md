@@ -1865,6 +1865,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   that-vcomp), G modal-VERB zero rows (no support), H
   admitted above, I though (model right both directions).
   All rejected except H, probes deleted.
+- Triage round 2 (same discipline, margin-gated where the
+  feature failed): T titlecase-PROPN-gated 29 vs 27 others
+  (NOUN 12 + ADJ 12 — no single flip target; closes the
+  gated variant too), P1 VERB-ADP-ADP 210:32 ADP (model
+  right — DB's particle reading loses), P2 VERB-ADV-DET
+  131:6 ADV (model right), D be-final-ADV 33:3 ADV (model
+  right). All rejected. The mine is fully triaged: 28,469
+  diffs → 1 rule; our confident readings beat 96.5 on books
+  everywhere EWT can adjudicate except final-there.
 
 ## Correction probe refused: conj-verb (REJECTED 2026-10-08,
   zero code written)
