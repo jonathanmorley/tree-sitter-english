@@ -2232,6 +2232,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   hard-codes a chdir dance (enter from `pSCRDRtagger/`),
   DICT is the .RDR stem sibling.
 
+## Muse Spark 1.3 shootout line (DONE 2026-10-08)
+
+- API model tagged pinned EWT test via 10 chunk workers (strict TSV
+  protocol, SENTIDs 0–2076, subagent sessions since deleted): exact
+  93.04 (23,331/25,076), coarse-12 94.52 (Petrov Table 1, same
+  projection as `bench-taggers.py`). Coverage 2076/2077 sents
+  (99.93% of words): sid 1907 excluded — tagger merged trailing
+  `./:)` into one tag (17 vs 18 words), length-mismatch rule same
+  as the spaCy leg. Top confusions: PRON→DET 341, NOUN→PROPN 152,
+  SCONJ→ADP 113 (ours-inverted shapes: our tagger's worst classes
+  are its confusions too, minus titlecase).
+- Vendored `crates/english-pos-train/data/spark-ewt-test-tags.tsv`
+  (139 KB, tags only — zero EWT surface text, no redistribution
+  question; excluded sentence marked `# EXCLUDED` inline, raw tags
+  kept for indexing). Single-run, non-rerunnable by construction —
+  NO harness leg; front-table § footnote states single-run +
+  possible train-data contamination + non-comparability. No tok/s
+  (API wall time is not model speed), no size (no artifact).
+- Process lessons: chunk-02's first arrival carried chunk-06's IDs
+  (1248–1455) — verify ID ranges immediately on save (the scorer's
+  word-echo check catches content but a range check is cheaper);
+  background saves can predate the retry that claims them (check
+  mtimes, not byte counts). Inter-session tag variance is real
+  (I/PRON vs I/PROPN across attempts on identical input) — scored
+  as ordinary output, not adjudicated.
+
 ## Parser shootout: MaltParser leg (DONE 2026-10-08)
 
 - MaltParser 1.9.2 (BSD license, jar in /tmp, never vendored —
