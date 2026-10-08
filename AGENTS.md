@@ -2285,6 +2285,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   correction-rule shape candidates (each still clears EWT
   gates individually, drift-immune by construction). That is
   the only oracle use that survives the drift record.
+- Quantized 2026-10-08 (bars: accuracy ≥ 96.0, size ≤ 70MB —
+  BOTH PASS): eager dynamic-quant SEGFAULTS silently after
+  convert on this toolchain (torch 2.14 CPU; version-churn
+  lesson repeated — an optimum install downgraded
+  transformers 5.19→4.57 mid-run and changed tokenizer keys,
+  so scripts now pass explicit input_ids/attention_mask and
+  pip stays frozen during runs). ONNX route instead (optimum
+  export + ORT dynamic quant): exact 96.01 (−0.50, exactly on
+  the bar), coarse 97.47, artifact 66.8 MB, speed 318 tok/s
+  (20k-word Moby sample) — quantization buys SIZE (255→67MB),
+  ~1.09× speed, not the 2–4× of lore. fp32 coarse 97.83;
+  peaks `time -v`: fp32 621 MB (EWT-eval process), int8
+  640 MB (short Moby run, pure session — the 2.1 GB first
+  reading double-loaded torch+ORT). Front shootout carries
+  both rows; harness gains a `--distilbert` leg (fp32 exact+
+  coarse+speed, skip-with-hint, synthetic-verified 5/5);
+  int8 procedure stays in this entry (export+quant scripts
+  /tmp-ephemeral). Beams doc note: tokenizer key drift is
+  why all probe feeds are explicit.
 
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
