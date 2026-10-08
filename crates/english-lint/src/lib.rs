@@ -732,6 +732,22 @@ fn nominal_suffix(word: &str) -> Option<&'static str> {
     })
 }
 
+/// Greek `-sis` plurals (`analyses`→`analysis`): the single-`s`
+/// strip cannot reach them, and mechanical `-ses` reversal
+/// false-matches common nouns (`cases`→`casis`). Closed list of
+/// (plural, singular) pairs — NOUN-gated at the call site, since
+/// `-ses` words are overwhelmingly ordinary nouns.
+const SIS_PLURALS: &[(&str, &str)] = &[
+    ("analyses", "analysis"),
+    ("theses", "thesis"),
+    ("diagnoses", "diagnosis"),
+    ("hypotheses", "hypothesis"),
+    ("crises", "crisis"),
+    ("oases", "oasis"),
+    ("parentheses", "parenthesis"),
+    ("neuroses", "neurosis"),
+];
+
 impl Rule for Nominalization {
     fn id(&self) -> &'static str {
         "syntax.nominalization"
@@ -755,7 +771,19 @@ impl Rule for Nominalization {
                 let dep = &sent.pieces[k - 1];
                 let suffix = match nominal_suffix(dep) {
                     Some(s) => s,
-                    None => continue,
+                    // Greek `-sis` plurals live outside the strip logic
+                    // (closed list above); NOUN-gated because `-ses`
+                    // words are overwhelmingly ordinary nouns.
+                    None => {
+                        let low = dep.to_lowercase();
+                        if sent.tags.get(k - 1) == Some(&Tag::Noun)
+                            && SIS_PLURALS.iter().any(|(p, _)| *p == low)
+                        {
+                            "sis"
+                        } else {
+                            continue;
+                        }
+                    }
                 };
                 // `-ing`/`-age` guards (EWT-measured): the dependent must
                 // read as a noun (verbal gerunds like inceptive `get
