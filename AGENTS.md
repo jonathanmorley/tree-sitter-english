@@ -1211,17 +1211,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   3.8 MB labeler, regeneration in trainer docs).
 - Backlog (queued, in ROI order — none changes a shipped
   decision, all need fresh bars before work):
-  (a) joint arc+label decode (NEW STAGE, prize +3.1 MEASURED
-  2026-10-08): Malt's DEPREL ldep/rdep features are worth +3.1
-  UAS with identical inputs — the precise shape of the table
-  loss and larger than any harvest step. Options: two-pass
-  feedback (parse unlabeled → label → re-parse with label
-  features) vs joint beam; needs decoder/features/evals/budgets
-  scope like the dep stage had before any probe. (The STOPPED
-  joint tag-parse program is a different coupling — cascade tax
-  stays; this one is arc+label, not tag+parse.) Overlap study
-  (b) reprices the prize to ≤ +1.5 net (realistic +0.5–1.0) —
-  the scope below carries the corrected number.
+  (a) joint arc+label decode (SCOPE DONE 2026-10-08,
+  `docs/joint-arc-label.md` — no code without clearing §4):
+  prize repriced ≤ +1.5 net (realistic +0.5–1.0) by overlap.
+  Options A two-pass feedback (recommended, reversible) / B
+  joint beam (behind A) / C unified rejected upfront. Stage 0:
+  greedy trains only — 0a oracle bound (gold labels at
+  decode, unshippable ceiling) + 0b mismatch tax (predicted
+  labels); 0b beats v5-greedy dev 84.29 → LaSO earns its run.
+  Bars: gold UAS ≥ 85.7 / LAS ≥ 81.9, pipeline UAS +0.5 with
+  LAS neutral-or-better; lint label-readers + PUD hold.
   (b) error-overlap study (DONE 2026-10-08, probe deleted):
   ours-beam4-gold vs Malt-lex2-gold on EWT test: both-right
   19,634 / ours-only 1,327 / malt-only 1,711 / neither 2,422.
