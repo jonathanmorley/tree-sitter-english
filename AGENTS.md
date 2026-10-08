@@ -1677,11 +1677,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   matching. Scope: EWT-lemma table + closed irregular list,
   offline-built like `lexicon/verbs.txt`, zero tagger impact.
   Bars: lint evals neutral-or-better, weights md5 unchanged.
-- (c) Lexicon-constrained decode (PROBE ONLY, expect reject):
-  TreeTagger restricts candidates to lexicon tags; our tagdict
-  behavior change stays rejected, and pred-tags training failed
-  twice on pipeline-moves-AND-gold-holds — measure only, admit
-  only on the same bar.
+- (c) Lexicon-constrained decode (REJECTED 2026-10-07, zero code
+  written — the probe sufficed): out-of-observed-set picks are
+  COMMON, not rare (dev 1,831/7.3%, test 1,985/7.9%), and
+  constraining breaks more than it fixes. Split on test: OOV
+  1,882 (1,420 right — untouchable, TreeTagger itself falls back
+  to open classes there); seen-word 103 with 30 right / 73 wrong.
+  The 30 right would ALL break (gold outside the set by
+  definition), against at most 73 fixes (in-set-best must equal
+  gold — unproven, realistic far less). Same verdict shape as
+  s-verb (net-negative without building). Probe deleted.
 - (d) Rerunnable shootout (DONE 2026-10-07):
   `scripts/bench-taggers.py` reproduces the external-benchmark
   item on demand: exact-UPOS on EWT test gold words (flat
