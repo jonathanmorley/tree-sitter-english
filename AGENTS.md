@@ -1211,7 +1211,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   3.8 MB labeler, regeneration in trainer docs).
 - Backlog (queued, in ROI order — none changes a shipped
   decision, all need fresh bars before work):
-  (a) joint tag-parse (NEW STAGE): the only addressed-to-cause
+  (a) joint arc+label decode (NEW STAGE, prize +3.1 MEASURED
+  2026-10-08): Malt's DEPREL ldep/rdep features are worth +3.1
+  UAS with identical inputs — the precise shape of the table
+  loss and larger than any harvest step. Options: two-pass
+  feedback (parse unlabeled → label → re-parse with label
+  features) vs joint beam; needs decoder/features/evals/budgets
+  scope like the dep stage had before any probe. (The STOPPED
+  joint tag-parse program is a different coupling — cascade tax
+  stays; this one is arc+label, not tag+parse.)
+  (b) v5 templates (SCOPED 2026-10-08, not started): port
+  Malt's four tag trigrams (s1+s0+b0, s0+b0+b1, b0+b1+b2,
+  b1+b2+b3) + b3 tag single into 0x59+ templates; greedy
+  screen first (bar: screen-then-license discipline, +2.1 to
+  beat at greedy per the v4 precedent), LaSO-4 verdict only on
+  a passing screen. Expect a fraction of the measured +3.9
+  (bigrams+dep-tree already held).
+  (c) joint tag-parse (NEW STAGE): the only addressed-to-cause
   cascade lever (5.5-pt structural loss, twice confirmed
   untrainable-around); needs decoder/features/evals/budgets
   scope like this stage had — SCOPE DONE 2026-10-07
@@ -1219,7 +1235,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   options A uncertainty-features / B two-pass feedback / C joint
   beam / D unified rejected upfront; Stage-0 probes first
   (margin separability + feedback headroom ≥ +1.0 or STOP);
-  (b) pseudo-projective lifting (CLOSED 2026-10-08 without
+  (d) pseudo-projective lifting (CLOSED 2026-10-08 without
   building — the premise failed): eval census finds 33 dev /
   27 test non-projective sentences, but they parse at 79.8% /
   82.4% UAS with ~zero stranding (1 token each split). The
@@ -1229,7 +1245,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   need cross-model mark plumbing (arc/label split), 2–3× the
   "moderate" guess, for a prize that needs no special program.
   Probes deleted.
-  (c) UAS-87 adjudication (DONE 2026-10-08 — bar RETIRED):
+  (e) UAS-87 adjudication (DONE 2026-10-08 — bar RETIRED):
   no published linear-parser predicted-tag EWT-UAS exists.
   Best documented EWT numbers: UDPipe 2.0 (BiLSTM, raw text)
   85.01/82.51 (CoNLL-2018 K18-2020); WSJ linear figures
