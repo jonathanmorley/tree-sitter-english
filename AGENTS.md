@@ -1220,14 +1220,37 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   scope like the dep stage had before any probe. (The STOPPED
   joint tag-parse program is a different coupling — cascade tax
   stays; this one is arc+label, not tag+parse.)
-  (b) v5 templates (SCOPED 2026-10-08, not started): port
+  (b) error-overlap study (QUEUED 2026-10-08 — runs before v5
+  spends a training cycle): per-token 2×2 (both-right /
+  ours-only / malt-only / both-wrong) of ours-beam4-gold vs
+  Malt-lex2-gold on EWT test, plus top relations in malt-only.
+  Malt outputs already on disk; ours need a dump run (temp
+  probe, deleted after). Decision rule: malt-only mass >>
+  ours-only → v5/joint have headroom and stack; near-complete
+  overlap → levers fight over the same tokens, reprice joint
+  down. No bar (analysis, not a gate).
+  (c) v5 templates (SCOPED 2026-10-08, not started): port
   Malt's four tag trigrams (s1+s0+b0, s0+b0+b1, b0+b1+b2,
   b1+b2+b3) + b3 tag single into 0x59+ templates; greedy
   screen first (bar: screen-then-license discipline, +2.1 to
   beat at greedy per the v4 precedent), LaSO-4 verdict only on
   a passing screen. Expect a fraction of the measured +3.9
   (bigrams+dep-tree already held).
-  (c) joint tag-parse (NEW STAGE): the only addressed-to-cause
+  (d) parser weight packaging (QUEUED 2026-10-08): min-count=2
+  re-verdict at LaSO-4/v4 (v3 measurement: flat 78.8/79.3 at
+  11.5/9.3 MB vs 29 MB — pruning buys size, not UAS). Bar:
+  dev/test within ±0.2 of banked AND artifact ≤ ~12 MB → ship
+  min-count=2 weights (regeneration docs + md5 re-pin; weights
+  stay gitignored Tier-1, this only shrinks the lazy fetch).
+  (e) Malt-silver distillation (QUEUED 2026-10-08,
+  SPECULATIVE): joint-train on EWT gold + Malt-parsed book
+  bodies (books tagged by our tagger first — silver heads,
+  /tmp-only like all training data). Tagger distillation went
+  0-for-5 on drift; parser LaSO is untested ground, same small-
+  batch discipline. Bars: EWT dev/test ≥ 0 AND PUD
+  neutral-or-better (PUD is the only headed out-of-domain
+  eval; books have no gold heads).
+  (f) joint tag-parse (NEW STAGE): the only addressed-to-cause
   cascade lever (5.5-pt structural loss, twice confirmed
   untrainable-around); needs decoder/features/evals/budgets
   scope like this stage had — SCOPE DONE 2026-10-07
@@ -1235,7 +1258,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   options A uncertainty-features / B two-pass feedback / C joint
   beam / D unified rejected upfront; Stage-0 probes first
   (margin separability + feedback headroom ≥ +1.0 or STOP);
-  (d) pseudo-projective lifting (CLOSED 2026-10-08 without
+  (g) pseudo-projective lifting (CLOSED 2026-10-08 without
   building — the premise failed): eval census finds 33 dev /
   27 test non-projective sentences, but they parse at 79.8% /
   82.4% UAS with ~zero stranding (1 token each split). The
@@ -1245,7 +1268,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   need cross-model mark plumbing (arc/label split), 2–3× the
   "moderate" guess, for a prize that needs no special program.
   Probes deleted.
-  (e) UAS-87 adjudication (DONE 2026-10-08 — bar RETIRED):
+  (h) UAS-87 adjudication (DONE 2026-10-08 — bar RETIRED):
   no published linear-parser predicted-tag EWT-UAS exists.
   Best documented EWT numbers: UDPipe 2.0 (BiLSTM, raw text)
   85.01/82.51 (CoNLL-2018 K18-2020); WSJ linear figures
