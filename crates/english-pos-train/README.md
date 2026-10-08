@@ -395,6 +395,31 @@ Weakest (bio/textbook/voyage) is OOV-heavy specialist vocabulary;
 fiction trails EWT by 1.4 points. This is the baseline any
 domain-data or Brill-rule work moves deliberately.
 
+## Cross-treebank standing (PUD test + GUM refresh, gold)
+
+PUD (UD_English-PUD r2.18, CC BY-SA, news+wiki, 1,000 sents /
+21,180 words, fetched like EWT — see `scripts/fetch-ud.sh`):
+the fourth UD English treebank and the first non-EWT gold check
+on the dependency stages. GUM test re-measured with current
+weights beside it (28,397 words):
+
+| split | tag exact | tag coarse | UAS gold | UAS pipe | LAS gold | LAS pipe |
+|---|---|---|---|---|---|---|
+| EWT test | 92.81 | 94.99 | 83.9 | 77.8 | 80.2 | 71.3 |
+| PUD test | 91.56 | 93.74 | 79.3 | 73.2 | 75.2 | 65.7 |
+| GUM test | 91.77 | 93.74 | — | — | — | — |
+
+PUD is uniformly ~1–5 points harder (longer news sentences), and
+the cascade tax is EXACTLY preserved: gold→pipeline UAS −6.1 on
+both EWT (83.9→77.8) and PUD (79.3→73.2) — independent
+confirmation that the cascade is structural, not EWT-shaped.
+Labeler ceilings (gold 93.31 / pipeline 85.59) show the same
+compression. No gates change: bars were set on EWT; PUD is a
+standing second opinion, recorded here. Competitor rows on PUD
+(NLTK coarse 91.06, Pattern 92.12, spaCy 95.27/96.61 @96.9%
+aligned) live in the harness TSV, not the table — same-domain
+caveats as EWT.
+
 ## More data (tried, rejected)
 
 `fetch-ud.sh` also builds `ewt+gum`, `ewt+lines`, and `all` presets,

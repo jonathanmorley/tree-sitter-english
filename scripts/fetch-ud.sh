@@ -55,6 +55,9 @@ done
 EWT_SHA="4a4d77f599ea53cc405f85d0cec4b2f14f81d42b"
 GUM_SHA="1fe635509c649e376dfb449d528424ab78f4eaee"
 LINES_SHA="f1e4f1d6d6dd03ee4e5176d6b6a13f694c7efab0"
+# PUD has no train/dev splits (test only, 1,000 sents); it is an
+# eval corpus, never training input — fetched to cache, no preset.
+PUD_TAG="r2.18"
 
 CACHE="$DIR/.cache"
 mkdir -p "$CACHE"
@@ -73,6 +76,9 @@ fetch() { # repo sha remote_prefix local_prefix
 fetch UD_English-EWT "$EWT_SHA" en_ewt-ud en_ewt-ud
 fetch UD_English-GUM "$GUM_SHA" en_gum-ud en_gum-ud
 fetch UD_English-LinES "$LINES_SHA" en_lines-ud en_lines-ud
+# PUD by release tag (immutable, same pinning discipline as SHAs).
+curl -fSL -o "$CACHE/en_pud-ud-test.conllu" \
+  "https://raw.githubusercontent.com/UniversalDependencies/UD_English-PUD/${PUD_TAG}/en_pud-ud-test.conllu"
 
 OUT="$DIR/$PRESET"
 mkdir -p "$OUT"
