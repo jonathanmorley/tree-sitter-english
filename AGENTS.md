@@ -1271,14 +1271,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   dense with surviving averaged weights. Same verdict shape as
   the tagger min-count=2 trial (pruning buys size, not UAS —
   here it buys neither). Tier-1 fetch stays 31 MB.
-  (e) Malt-silver distillation (QUEUED 2026-10-08,
-  SPECULATIVE): joint-train on EWT gold + Malt-parsed book
-  bodies (books tagged by our tagger first — silver heads,
-  /tmp-only like all training data). Tagger distillation went
-  0-for-5 on drift; parser LaSO is untested ground, same small-
-  batch discipline. Bars: EWT dev/test ≥ 0 AND PUD
-  neutral-or-better (PUD is the only headed out-of-domain
-  eval; books have no gold heads).
+  (e) Malt-silver distillation (REJECTED 2026-10-08, 0-for-2,
+  weights restored md5-verified, suite green): joint greedy
+  screen, EWT + Malt-parsed Moby (silver heads on our greedy
+  tags — parse already on disk from the speed run). 1k silver:
+  dev 84.29→83.74 / 78.64→77.95, test 83.98→84.23 /
+  78.03→78.05 — dev drops both regimes, test flat/noise.
+  250-sent rescue retry drifts MORE (dev −1.10/−0.91, test
+  −0.33/−0.17): small batches yank shared priors harder, the
+  tagger ch.36 lesson repeating. No PUD run (EWT fails first;
+  PUD cannot admit against an EWT regression). Parser joins
+  the tagger at 0-for-N on distillation drift.
   (f) joint tag-parse (NEW STAGE): the only addressed-to-cause
   cascade lever (5.5-pt structural loss, twice confirmed
   untrainable-around); needs decoder/features/evals/budgets
