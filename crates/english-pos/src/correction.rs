@@ -220,6 +220,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: quite_adv,
     },
+    Rule {
+        name: "those-pron",
+        threshold: 2.0,
+        test: those_pron,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -441,6 +446,18 @@ fn quite_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Adj) | Some(Tag::Adv)).then_some(Tag::Adv)
+}
+
+/// Elliptical `those` (`those in power`, `those of you`): pred-DET
+/// `those` before ADP is PRON 7:0 in EWT train (the head noun is
+/// elided; ADJ-next stays out — DET 14:5 there — as do NOUN/NUM
+/// (44/5:0 DET) and VERB (2:3 noise)). Single-word lexical rule,
+/// `quite`-precedent, τ=2.0.
+fn those_pron(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Det || low[i] != "those" {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Adp)).then_some(Tag::Pron)
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties

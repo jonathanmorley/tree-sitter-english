@@ -587,3 +587,43 @@ fn quite_adv_fixes_determiner_quite() {
         Tag::Adv
     );
 }
+
+#[test]
+fn those_pron_fixes_elliptical_those() {
+    // `those of you`: DET before ADP → PRON (EWT train 7:0).
+    assert_eq!(
+        run(
+            &["those", "of", "you"],
+            &[(Tag::Det, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            "those-pron",
+        )[0],
+        Tag::Pron
+    );
+    // Determiner use (`those books`) abstains: NOUN next.
+    assert_eq!(
+        run(
+            &["those", "books", "are"],
+            &[(Tag::Det, 1.0), (Tag::Noun, 9.0), (Tag::Aux, 9.0)],
+            "those-pron",
+        )[0],
+        Tag::Det
+    );
+    // ADJ next abstains (DET 14:5 in EWT — no majority).
+    assert_eq!(
+        run(
+            &["those", "yellow", "creatures"],
+            &[(Tag::Det, 1.0), (Tag::Adj, 9.0), (Tag::Noun, 9.0)],
+            "those-pron",
+        )[0],
+        Tag::Det
+    );
+    // Already PRON: nothing to do.
+    assert_eq!(
+        run(
+            &["those", "of", "you"],
+            &[(Tag::Pron, 1.0), (Tag::Adp, 9.0), (Tag::Pron, 9.0)],
+            "those-pron",
+        )[0],
+        Tag::Pron
+    );
+}

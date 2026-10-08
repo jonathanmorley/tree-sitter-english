@@ -16,10 +16,10 @@ in-domain oracle data (EWT: UD_English-EWT contributors, CC BY-SA
 4.0, <https://github.com/UniversalDependencies/UD_English-EWT>):
 dev 92.14%, test 92.65% greedy (1.98 MB with the tagdict table,
 whole-number weights serialize as integers). Production decodes
-through a width-2 beam re-decode plus fourteen gated correction
+through a width-2 beam re-decode plus fifteen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
 participle repair — each admitted with EWT-majority and gate
-deltas, 14-for-27 with rejections recorded): dev 92.20%,
+deltas, 15-for-28 with rejections recorded): dev 92.20%,
 test 92.81%. Tagger weights embed a 14,563-word tagdict (words
 seen under one tag in training) for the inference fast path —
 byte-identical decode is measured per weights/rules change,

@@ -1647,6 +1647,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   recall recalibrates 0.65 → 0.50 on measured-mechanism
   (confident-mistag class, genre/sweep-chunk precedent).
 
+## Correction rule 15: those-pron (ADMITTED 2026-10-08)
+
+- From the vague-demonstrative forensics (tagger misreads
+  demonstratives both directions): EWT-train probe (greedy tags
+  over train, shapes on PREDICTED tags per the color-adj lesson)
+  finds exactly one flippable cell — pred-DET `those` before ADP
+  (`those in power`, `those of you`) is gold PRON 7:0 (elliptical
+  head; ADJ-next stays out — DET 14:5 — as do NOUN/NUM/VERB).
+  Single-word lexical rule, `quite`-precedent, τ=2.0.
+- Gates: unit fire + 3 abstains green; EWT dev/test ±0 (zero
+  fires both splits — web text never shows the shape, same
+  signature as `that-det`); 1 verified production fix on Moby
+  body (`those of the middle one`, margin 1.0, gold PRON —
+  in-gate firing proven, not assumed); all POS/chunk/lint evals
+  green, zero rule breaks; `flies` holds; weights md5 untouched
+  (rules never retrain). 15-for-28.
+
 ## Docs sweep + Pages WASM demo (DONE 2026-10-07)
 
 - Docs sweep pushed (`61d7bcf`): pinned-CLI command, 16 abbreviations,
