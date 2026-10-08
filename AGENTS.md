@@ -1348,8 +1348,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   boundaries (titlecase `Police`/`Exports` flip NOUN/PROPN on it);
   per-sentence decoding (what production `tag_sentence` does)
   differs by ±3 tokens on 2000. Bars have room; noted, not acted on.
-- Follow-up open, not started: parser UAS by FK band on EWT dev
-  (gold heads exist — same tertile protocol, beam4 cost).
+- Follow-up DONE 2026-10-08 (probe deleted): parser UAS by FK
+  band on EWT dev, gold tags, beam4, sentence-tertile protocol:
+  easy 667 sent / 3793 tok (grade −3.4–3.4) UAS 0.8964;
+  mid 667 / 7954 (3.4–8.3) 0.8574;
+  hard 667 / 13401 (8.4–421.4) 0.8119.
+  Unlike the tagger (flat), the parser shows a real 8.5-point
+  easy→hard slope — expected: FK's length term proxies
+  attachment ambiguity, and UAS degrades with sentence length
+  (hard band carries 3.5× the easy token mass). Band-weighted
+  mean reproduces banked 83.9. No action: length-driven, not a
+  readability defect.
 
 ## Vale alternative, rules 3–4: complexity (DONE 2026-10-07)
 
