@@ -771,6 +771,31 @@ impl Model {
     /// dominate decoding (measured: 33% vs 88% dev on a 300-sentence
     /// pilot). Plain final-iteration weights win here.
     pub fn train(data: &[(Vec<String>, Vec<String>)], iters: usize, min_count: usize) -> Self {
+        Self::train_impl(data, iters, min_count, false)
+    }
+
+    /// Train with history advanced from the model's own guesses.
+    /// Probe of the Honnibal (2013) caveat: training history must come
+    /// from the guesses, "otherwise it will be way over-reliant on the
+    /// tag-history features". Updates still move toward gold; only the
+    /// `prev1`/`prev2` carried to the next position is the predicted
+    /// tag instead of the gold tag. The counts pass stays on gold
+    /// history (gating only, no learning). Admission needs EWT
+    /// dev/test ≥ the `train` baseline plus neutral-or-better evals.
+    pub fn train_guessed_history(
+        data: &[(Vec<String>, Vec<String>)],
+        iters: usize,
+        min_count: usize,
+    ) -> Self {
+        Self::train_impl(data, iters, min_count, true)
+    }
+
+    fn train_impl(
+        data: &[(Vec<String>, Vec<String>)],
+        iters: usize,
+        min_count: usize,
+        guessed_history: bool,
+    ) -> Self {
         let mut counts: U64Map<usize> = U64Map::default();
         let mut feats = Vec::with_capacity(20);
         for (raw, gold) in data {
@@ -824,7 +849,15 @@ impl Model {
                             arr[best] -= 1.0;
                         }
                     }
-                    prev2 = std::mem::replace(&mut prev1, g.clone());
+                    // History models inference: advance from the guess
+                    // when probing (Honnibal 2013), else gold as before.
+                    // The counts pass above stays on gold (gating only).
+                    let next_hist = if guessed_history {
+                        TAGS[best].to_string()
+                    } else {
+                        g.clone()
+                    };
+                    prev2 = std::mem::replace(&mut prev1, next_hist);
                 }
             }
         }

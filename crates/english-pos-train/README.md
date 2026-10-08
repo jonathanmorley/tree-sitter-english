@@ -235,11 +235,49 @@ Across all operating points (frozen K≤500, counterweight k=2/3,
 plain joint) book gains scale with web-test damage and no point
 passes both splits: the trade is structural at this capacity,
 not a mechanics artifact. Accuracy roadmap now stands:
-distillation 0-for-5, mechanics 0-for-2, char 0-for-2, clusters
+distillation 0-for-5, mechanics 0-for-3, char 0-for-2, clusters
 0-for-1 — the linear ceiling is holding on every axis with a
 measurement behind each. Remaining accuracy work is the
 no-weight-change column only (lexicon backoffs beyond the 3
 shipped, beam refinements). Weights restored (`56082361`).
+
+Guessed-history training (MECHANICS REJECTED 2026-10-07, third
+mechanics — the Honnibal REAL FIND): `Model::train_guessed_history`
+(history advances from the predicted tag, updates still toward
+gold) + trainer `--guessed-history`, canonical joint protocol
+(EWT+01+02, iters=20/min-count=1). The discipline's most
+interesting negative result in a while, because the theory is
+sound and the measurement goes the other way:
+
+| path | dev | test |
+|---|---|---|
+| committed greedy | 23096 (91.84%) | 23100 (92.05%) |
+| guessed greedy | 23063 (91.71%, −33) | 23043 (91.83%, −57) |
+| committed production | 91.94% | 92.22% |
+| guessed production | 23081 (91.78%, −0.16) | 23050 (91.85%, −0.37) |
+
+Gate fails at greedy on both splits; production (beam-2 + all 14
+rules) halves the dev gap to −0.16pp but test stays −0.37pp
+(−91 tokens). Book evals
+not run — the EWT gate failed first, and no book gain can un-fail
+a −91-token test split. Forensics, two parts. First, the mismatch
+math: inference-time history matches gold 92% of the time (the
+tagger is 92% accurate), so gold-trained history features fire
+correctly in the overwhelmingly common case; the 8% mismatch
+costs less than training on noise. Second, perceptron dynamics:
+updates fire only on mispredicts, and early-iteration guesses are
+the noisiest — history-induced mispredicts drag LEXICAL rows
+around (top guessed confusions shift toward noun sinks:
+PROPN→NOUN 479, VERB→NOUN down only to 95 while NOUN→VERB stays
+61), while gold history gives clean tag-bigram signal from
+iteration 0. Honnibal's warning assumes the history features are
+the fragile part; here the lexical rows pay for history noise
+instead. The beam span counts corroborate: guessed production
+spans 427/2001 dev sentences vs the mechanism needing MORE
+re-decode, not less. Code kept (`train_guessed_history`,
+`--guessed-history`) as measured infrastructure; weights
+restored (`56082361`, md5-verified; rejected artifact
+`17c37c3d` in /tmp only).
 
 ## Cross-genre standing (GUM test, gold)
 

@@ -260,7 +260,7 @@ fn report(
 
 fn usage() -> ! {
     eprintln!(
-        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N] [--freeze-at K]] [--correct] [--beam T MAX]"
+        "usage: english-pos-train --corpus <dir> [--iters N] [--min-count N] [--eval-only test|dev] [--finetune <conllu> [--finetune-iters N] [--freeze-at K]] [--correct] [--beam T MAX] [--guessed-history]"
     );
     std::process::exit(2);
 }
@@ -274,6 +274,7 @@ fn main() {
     let mut finetune_iters = 3usize;
     let mut freeze_at: Option<usize> = None;
     let mut correct = false;
+    let mut guessed_history = false;
     let mut beam: Option<(f32, usize)> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -315,6 +316,7 @@ fn main() {
                 )
             }
             "--correct" => correct = true,
+            "--guessed-history" => guessed_history = true,
             "--beam" => {
                 let t: f32 = args
                     .next()
@@ -402,7 +404,11 @@ fn main() {
         train.len(),
         train.iter().map(|(w, _)| w.len()).sum::<usize>()
     );
-    let model = Model::train(&train, iters, min_count);
+    let model = if guessed_history {
+        Model::train_guessed_history(&train, iters, min_count)
+    } else {
+        Model::train(&train, iters, min_count)
+    };
     let json = model.to_json().expect("serialize weights");
     println!("weights: {} bytes", json.len());
     fs::create_dir_all(weights_path.parent().unwrap()).expect("mkdir weights");
