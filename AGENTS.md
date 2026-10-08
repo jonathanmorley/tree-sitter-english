@@ -1211,16 +1211,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   3.8 MB labeler, regeneration in trainer docs).
 - Backlog (queued, in ROI order — none changes a shipped
   decision, all need fresh bars before work):
-  (a) joint arc+label decode (SCOPE DONE 2026-10-08,
-  `docs/joint-arc-label.md` — no code without clearing §4):
-  prize repriced ≤ +1.5 net (realistic +0.5–1.0) by overlap.
-  Options A two-pass feedback (recommended, reversible) / B
-  joint beam (behind A) / C unified rejected upfront. Stage 0:
-  greedy trains only — 0a oracle bound (gold labels at
-  decode, unshippable ceiling) + 0b mismatch tax (predicted
-  labels); 0b beats v5-greedy dev 84.29 → LaSO earns its run.
-  Bars: gold UAS ≥ 85.7 / LAS ≥ 81.9, pipeline UAS +0.5 with
-  LAS neutral-or-better; lint label-readers + PUD hold.
+  (a) joint arc+label decode (STOPPED at Stage 0, 2026-10-08):
+  0x73–0x78 templates + `train_averaged_with_labels` +
+  `parse_with_labels` + `--labelfeats` built, measured, then
+  FULLY REVERTED (unmeasurable code doesn't ship — color-adj
+  precedent). Stage-0, greedy, gold tags: pass1 84.29/83.98,
+  0a-gold 85.62/85.38 (+1.33/+1.40 ceiling confirmed), 0b-pred
+  84.28/83.92 (−0.01/−0.06 — dead flat). Gate needed 0b to
+  beat 84.29; it missed by one dev token. First attempt had a
+  pass-1 bug (labeled label-starved 74.39 heads — caught by
+  the gate logic, corrected to retrained plain-v5 heads;
+  determinism reproduced 84.29 to the digit). Third
+  confirmation of the pred-noise tradeoff (labeler, parser
+  tags, now arc labels): mismatch eats the entire ceiling.
+  Per the scope's pre-registered rule the program STOPS — no
+  LaSO run, option B stays parked. v5 weights restored
+  (md5-verified) and suite re-greened after revert. Scope doc
+  stands as the record; backlog (b) overlap and (c) v5-DONE
+  unaffected.
   (b) error-overlap study (DONE 2026-10-08, probe deleted):
   ours-beam4-gold vs Malt-lex2-gold on EWT test: both-right
   19,634 / ours-only 1,327 / malt-only 1,711 / neither 2,422.
