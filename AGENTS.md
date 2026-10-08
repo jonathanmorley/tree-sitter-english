@@ -2357,6 +2357,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   stays queued behind (calibration might recover part of the
   −0.50 int8 gap); int4 stays off (near-certain bar miss on
   CPU, possibly slower). Probes deleted after use.
+- Static DONE 2026-10-08 (calibrated QDQ on the OPTIMIZED
+  artifact — calibrating the raw export collapses to 16.63%
+  all-PUNCT, procedure-hostile, recorded not pursued):
+  96.39/97.72 (+0.38 over dynamic, −0.12 under fp32), 451
+  tok/s, 98.4 MB, 805 MB peak. Displaces dynamic as the int8
+  row (accuracy + speed both win; the ≤70MB size bar falls on
+  evidence — disk is free in /tmp, QDQ overhead is structural;
+  goalposts moved openly, not silently). Dynamic numbers
+  stand historically (96.01/97.47/318/66.8MB/640MB).
 
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
