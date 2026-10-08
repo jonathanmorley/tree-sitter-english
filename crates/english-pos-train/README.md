@@ -339,10 +339,16 @@ interventions for opposite failure modes.
   still overrides; distinct phenomenon, possibly model bug or EWT
   quirk); (2) the 28 wrong flips (titlecase-forcing suspect — a
   guard needs its own EWT-majority measurement, color-adj
-  discipline); (3) beam-dict consistency (beam rescores dict
-  words inside spans today and can overturn memorized tags —
-  forcing dict tags there might recover the dev −12, or cost
-  the test +19; unknowable without measuring); (4) per-class
+  discipline); (3) beam-dict consistency (DONE 2026-10-07,
+  REJECTED, code fully reverted): forcing dict tags inside
+  re-decoded spans measured dev 23187→23197 (+10) but test
+  23290→23284 (−6) — a wash trading test for dev, failing the
+  change-gate; beam stays as-is. Fixes outnumber breaks in both
+  splits (32/26 diffs), but the breaks concentrate exactly where
+  suspected (titlecase PROPN forcing: `War`/`PHB`/`Margin`/`Call`
+  →NOUN, `laudatory`→VERB), while the fixes (`'s`→PART,
+  `heard`→VERB, `political`→ADJ) don't generalize into a rule.
+  Probe plumbing reverted, hot decoder untouched; (4) per-class
   weighting for rare-word identity rows (the census hands the
   queued distillation idea a concrete target).
 - Follow-up closures (DONE 2026-10-07, probes since deleted):
