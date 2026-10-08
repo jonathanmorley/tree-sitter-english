@@ -1650,13 +1650,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   96.36-vs-96.06 trigram win is pre-linear-model history).
   Architecture validated, not changed (segment → tag → chunk
   post-pass mirrors TreeTagger + chunker `.par`).
-- (a) OOV decision-list rule (NOT STARTED): TreeTagger's
-  unknown-word tree as a margin-gated correction shape —
-  hierarchical capital → suffix (`-tion/-ness/-ly/-ize`) →
-  hyphen checks, consulted only below τ (correction.rs pattern,
-  never flat affix features: char 4-5 measured dev −130 stands
-  as the negative precedent). Bars: EWT dev/test ≥ 0, evals
-  neutral-or-better, `flies` holds, 15th-rule gate deltas.
+- (a) OOV decision-list rule (REJECTED 2026-10-07, zero code
+  written — no support found): temporary `oov_probe` example
+  (since deleted) tabulated EWT-dev post-rule gate errors
+  (0<m<2.0) by shape × train-vocab × pred/gold: 159 errors,
+  and TreeTagger's population is absent from every cell.
+  Suffix inventory (`-ly/-ness/-ment/-ize/-ise/-ous`) has ZERO
+  gate rows; `-tion` 1; `-ed` 9× Adj→VERB (the deferred
+  participle gap on SEEN words, not unknowns — needs barrier
+  analysis, out of scope here). Titlecase has no majority
+  (TitleMid PROPN→ADJ/ADP 8 against, NOUN→PROPN ≤7 for, with
+  unmeasured noun-adjunct counter-fires — the color-adj lesson
+  in advance). OOV proper is ~15 scattered singletons, no cell
+  above 3, mixed directions. Lesson, generalizing color-adj:
+  TreeTagger's tree solves unknown-word guessing, but our
+  gate-zone errors are uncertain readings of KNOWN words
+  (function/category flips: ADJ/ADV/ADP/DET/SCONJ/NOUN plain) —
+  different population, different tool. Process note: the first
+  probe run raced its own edit (stale binary, mixed-case rows
+  impossible from one code path) — same poisoned-build lesson
+  as the Pattern entry; clean rerun confirmed.
 - (b) Lemmatizer, Tier-1 lookup table (NOT STARTED): lemmas come
   almost free from the same lexicon as (a); consumers are
   `english-lint` passive (participle identity) and
