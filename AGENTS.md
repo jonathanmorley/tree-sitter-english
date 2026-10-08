@@ -1219,9 +1219,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   options A uncertainty-features / B two-pass feedback / C joint
   beam / D unified rejected upfront; Stage-0 probes first
   (margin separability + feedback headroom ≥ +1.0 or STOP);
-  (b) pseudo-projective lifting (Nivre & Nilsson 2005) for the
-  2.3% non-projective training sentences: +0.2–0.4 est,
-  moderate build (head-marking + lift + decode-time unlift);
+  (b) pseudo-projective lifting (CLOSED 2026-10-08 without
+  building — the premise failed): eval census finds 33 dev /
+  27 test non-projective sentences, but they parse at 79.8% /
+  82.4% UAS with ~zero stranding (1 token each split). The
+  backlog assumed projectivity defeats the parser; it doesn't —
+  remaining errors are ordinary attachment errors, addressable
+  by the same levers as everything else. Lifting would also
+  need cross-model mark plumbing (arc/label split), 2–3× the
+  "moderate" guess, for a prize that needs no special program.
+  Probes deleted.
   (c) UAS-87 adjudication: needs the published linear-parser
   predicted-tag EWT-UAS number (CoNLL UDPipe-baseline EWT
   row) before another accuracy euro is spent against it.
