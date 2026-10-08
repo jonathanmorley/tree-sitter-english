@@ -195,6 +195,29 @@ yet measured in this harness.</p>
 measurements — they buy ~5 points of UPOS (97–98 vs 92.1) at 100–1000× the
 cost, which is why they stay offline-only oracles here. NLTK's perceptron is
 WSJ-trained (out of domain); detail is in the shootout table above.</p>
+<h4>Parser shootout <span class="sub">EWT test · 25,094 tokens · punct counted both sides</span></h4>
+<table>
+<tr><th>System</th><th>Input tags</th><th class="num">UAS</th><th class="num">LAS</th></tr>
+<tr><td>MaltParser arc-eager liblinear, full feats</td><td>gold</td><td class="num">86.00</td><td class="num">82.90</td></tr>
+<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>gold</td><td class="num">85.06</td><td class="num">82.12</td></tr>
+<tr><td>UDPipe 2.0 (CoNLL-2018, raw text) †</td><td>own (95.4)</td><td class="num">85.01</td><td class="num">82.51</td></tr>
+<tr><td>Ours (beam4)</td><td>gold</td><td class="num">83.5</td><td class="num">80.1</td></tr>
+<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (92.65)</td><td class="num">79.37</td><td class="num">73.96</td></tr>
+<tr><td>Ours (beam4)</td><td>greedy (92.65)</td><td class="num">77.8</td><td class="num">71.3</td></tr>
+</table>
+<p class="fine">Rerun it: <code>EWT=/path/to/ewt WORK=/tmp/malt
+scripts/bench-parsers.sh</code> trains both Malt models (BSD jar, /tmp only,
+never vendored) and scores all three Malt rows; ours rows are committed
+gates. Malt runs arc-eager + liblinear — the linear family, like ours.
+FORM+UPOS sees exactly our inputs (words + UPOS; LEMMA/FEATS blanked,
+XPOS slot carries UPOS because default features read POSTAG — training
+with it blanked yields a FORM-only model, measured exactly tag-invariant).
+† UDPipe 2.0 is the published CoNLL-2018 number (K18-2020) from raw text on
+an older EWT revision — same scale, not same denominator. spaCy's parser is
+excluded with reason: it follows PTB head conventions (prepositions head
+PPs), so scoring it against UD gold measures scheme divergence (51.5 UAS),
+not parsing. Cascade is consistent across implementations (gold→pred:
+ours −6.1, Malt −5.7), confirming the pipeline tax is structural.</p>
 </section>
 
 </main>
