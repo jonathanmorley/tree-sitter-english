@@ -1840,6 +1840,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   green, zero rule breaks; `flies` holds; weights md5 untouched
   (rules never retrain). 15-for-28.
 
+## Correction rule 16: there-adv (ADMITTED 2026-10-08)
+
+- First fruit of disagreement mining (tagger-vs-96.5 on Moby,
+  28,469 diffs): pred-PRON `there`/`here` in the last two
+  positions is gold ADV 22:0 in EWT train (existentials lead
+  sentences; trailers locate). Single closed pair,
+  `quite`-precedent, τ=2.0.
+- Gates: unit fire + 3 abstains green; EWT dev/test ±0 (zero
+  fires both splits — same signature as `that-det`); 3
+  verified production fixes on Moby (`Look there`, `tail
+  there`, fragment `but there` — all gold-ADV, margins 1.0,
+  in-gate) plus 1 beam flip (margin 9.0, correctly ADV but
+  not the rule's doing — recorded, not claimed); zero breaks;
+  all POS/chunk/lint evals green; production EWT output
+  byte-identical with/without; `flies` holds; weights
+  untouched. 16-for-30.
+- Triage appendix (same probe run, all pred-conditioned):
+  A to-PART+NOUN 7:6 (coin flip), C material 2:0 (no
+  support), D attributive-VERB 221:4 (model right — DB wrong
+  on books), E more-ADV 47:0 (model right), F that-by-prev
+  (ADP 13:5 overlapping that-det, ADV 8:1 n=9 thin, AUX 17:4
+  below the 89:1 bar, NOUN 57:48 flip, VERB covered by
+  that-vcomp), G modal-VERB zero rows (no support), H
+  admitted above, I though (model right both directions).
+  All rejected except H, probes deleted.
+
 ## Correction probe refused: conj-verb (REJECTED 2026-10-08,
   zero code written)
 

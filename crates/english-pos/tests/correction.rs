@@ -627,3 +627,44 @@ fn those_pron_fixes_elliptical_those() {
         Tag::Pron
     );
 }
+
+#[test]
+fn there_adv_fixes_final_locative_there() {
+    // `water-gazers there`: PRON in last two positions -> ADV
+    // (EWT train 22:0; existentials lead sentences instead).
+    assert_eq!(
+        run(
+            &["gazers", "there"],
+            &[(Tag::Noun, 9.0), (Tag::Pron, 1.0)],
+            "there-adv",
+        )[1],
+        Tag::Adv
+    );
+    // Sentence-initial existential abstains (not final).
+    assert_eq!(
+        run(
+            &["there", "stand", "trees"],
+            &[(Tag::Pron, 1.0), (Tag::Verb, 9.0), (Tag::Noun, 9.0)],
+            "there-adv",
+        )[0],
+        Tag::Pron
+    );
+    // Already ADV: nothing to do.
+    assert_eq!(
+        run(
+            &["go", "there"],
+            &[(Tag::Verb, 9.0), (Tag::Adv, 1.0)],
+            "there-adv",
+        )[1],
+        Tag::Adv
+    );
+    // Mid-sentence abstains.
+    assert_eq!(
+        run(
+            &["there", "sleep", "cattle"],
+            &[(Tag::Pron, 1.0), (Tag::Verb, 9.0), (Tag::Noun, 9.0)],
+            "there-adv",
+        )[0],
+        Tag::Pron
+    );
+}

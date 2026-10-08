@@ -19,7 +19,7 @@ whole-number weights serialize as integers). Production decodes
 through a width-2 beam re-decode plus fifteen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
 participle repair — each admitted with EWT-majority and gate
-deltas, 15-for-29 with rejections recorded): dev 92.20%,
+deltas, 16-for-30 with rejections recorded): dev 92.20%,
 test 92.81%. Tagger weights embed a 14,563-word tagdict (words
 seen under one tag in training) for the inference fast path —
 byte-identical decode is measured per weights/rules change,

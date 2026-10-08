@@ -225,6 +225,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: those_pron,
     },
+    Rule {
+        name: "there-adv",
+        threshold: 2.0,
+        test: there_adv,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -441,6 +446,17 @@ fn pass_by(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
 /// `quite` FNs sit at margins 9–18, unreachable below any gate —
 /// the hedge-recall bar recalibrates to measured-mechanism on that
 /// account); this rule's gates stand on their own.
+/// Sentence-final locative `there`/`here` (`water-gazers
+/// there`): pred-PRON at the last two positions is gold ADV 22:0
+/// in EWT train (existentials lead sentences; trailers locate).
+/// Single closed pair, `quite`-precedent, τ=2.0.
+fn there_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Pron || (low[i] != "there" && low[i] != "here") {
+        return None;
+    }
+    (i + 2 >= tags.len()).then_some(Tag::Adv)
+}
+
 fn quite_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
     if tags[i] != Tag::Det || low[i] != "quite" {
         return None;
