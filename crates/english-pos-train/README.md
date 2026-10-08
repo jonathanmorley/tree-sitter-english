@@ -310,7 +310,26 @@ rejection, which concerned AMBIGUOUS words in beam spans):
 single-tag-in-train words are memorization, and full decode was
 overriding memorized readings with context noise — the dict
 restores them. The old rejection stands for ambiguous words
-(`this`/`that` never enter the table). Two implementation scars
+(`this`/`that` never enter the table). Flip census on the train
+corpus (banked vs new weights, 204,932 tok; probe since deleted):
+1,179 flips, 1,151 correct (97.6%). Mechanism, measured three ways.
+(1) Rare words: flip mass by train count [1, 2–3, 4–10, 11–50,
+51+] = [326, 295, 269, 203, 86] — weak word-identity rows lose to
+dense context features that outvote them (context steamrolling).
+(2) Confident errors: mean baseline margin at flips 5.61 — far
+above every gate (τ ≤ 5.0) and beam threshold, so no correction
+rule and no re-decode span could ever reach them; the tagdict is
+the only layer that touches the confident-mistag class (the same
+class the joint and margin probes measured at capture 0.139 from
+below). (3) Directions concentrate on the known hard classes:
+NOUN→PROPN 205, PROPN→NOUN 174, NOUN→ADJ 146, NOUN→VERB 143
+(gerunds), PROPN→ADJ 78, VERB→NOUN 71. The 28 wrong flips (2.4%)
+are the price, bounded and sampled. This also reconciles the
+rejected Honnibal probe: training on guessed history hurt
+because early-iteration noise drags lexical rows, while
+constraining inference to memorized tags helps because these
+errors are systematic context bias, not noise — opposite
+interventions for opposite failure modes. Two implementation scars
 worth recording: (1) the first table was a sorted vec — binary
 search cost MORE than scoring on misses (tag pass 102→148 ms);
 a hash map fixed it; (2) the `U64Hasher::write` fallback REPLACED
