@@ -1262,6 +1262,14 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   gold inputs vs raw text — noted, not claimed). Full
   workspace + lint evals green; front table + dep chart
   updated (chart axis 65–86: 85.9 broke the old scale).
+- v6 forensics (DONE 2026-10-08 — no v6): re-ran the overlap
+  2×2 with v5 weights (Malt-lex2 85.06 vs ours 84.99):
+  malt-only 1,375 / ours-only 1,357 — net −18 tokens, symmetric.
+  Asymmetric cells top out at 27 tokens (all punct/long-tail
+  convention noise: PUNCT-R-2-3, PUNCT-L-8+, list). v5 absorbed
+  the havable share; no template signal remains. Parser
+  accuracy work closes here pending a consumer (joint stopped,
+  feats blocked, silver/min-count rejected, v6 empty).
   (d) parser weight packaging (REJECTED 2026-10-08, weights
   restored md5-verified, suite green): LaSO-4/min-count=2 gives
   dev 85.55 (−0.35, outside the ±0.2 bar) / test 84.94 (−0.05)
