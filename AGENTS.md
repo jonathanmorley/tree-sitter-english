@@ -2033,6 +2033,17 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   parsing; no converter); UDPipe 2.0 row is published
   (K18-2020, raw text, older EWT — same scale, not same
   denominator).
+- Size/speed/RSS columns (same Moby-body basis as the tagger
+  table): ours beam4 ~44k tok/s parse-only (label pass ~136k —
+  combined UAS+LAS ≈ 34k), 120 MB task peak incl. weights load;
+  Malt lex2 ~18k tok/s labels-jointly, 204 MB incl. JVM baseline.
+  Weights: ours 32 + 3.8 MB (split stages) vs Malt lex2 single
+  3.8 MB (joint) vs Malt full 6.0 MB. Moby-FORM pitfalls: (1)
+  empty-symbol crash is OOV-adjacent but here was a bare-newline
+  piece (`1\t` line — sanitize whitespace/control, skip+count,
+  29 on Moby); (2) a leading-space piece (`  “`) shifts columns
+  (NF=9 — same sanitize fixes it); both verified malformed=0
+  before the full run. Probe deleted after use.
 
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
