@@ -1219,16 +1219,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   features) vs joint beam; needs decoder/features/evals/budgets
   scope like the dep stage had before any probe. (The STOPPED
   joint tag-parse program is a different coupling — cascade tax
-  stays; this one is arc+label, not tag+parse.)
-  (b) error-overlap study (QUEUED 2026-10-08 — runs before v5
-  spends a training cycle): per-token 2×2 (both-right /
-  ours-only / malt-only / both-wrong) of ours-beam4-gold vs
-  Malt-lex2-gold on EWT test, plus top relations in malt-only.
-  Malt outputs already on disk; ours need a dump run (temp
-  probe, deleted after). Decision rule: malt-only mass >>
-  ours-only → v5/joint have headroom and stack; near-complete
-  overlap → levers fight over the same tokens, reprice joint
-  down. No bar (analysis, not a gate).
+  stays; this one is arc+label, not tag+parse.) Overlap study
+  (b) reprices the prize to ≤ +1.5 net (realistic +0.5–1.0) —
+  the scope below carries the corrected number.
+  (b) error-overlap study (DONE 2026-10-08, probe deleted):
+  ours-beam4-gold vs Malt-lex2-gold on EWT test: both-right
+  19,634 / ours-only 1,327 / malt-only 1,711 / neither 2,422.
+  Off-diagonal relation histograms are near-IDENTICAL shapes
+  (punct ~270s, conj/obl/compound/nmod/root in the same order
+  both sides) — the systems fail in the SAME places. Per the
+  decision rule this reprices joint DOWN: net available is 384
+  tokens (+1.5 UAS) at perfect capture with zero ours-only
+  breakage; realistic joint prize +0.5–1.0, not +3.1 (that was
+  Malt's internal full-vs-nodeprel delta, not all transferable).
+  Joint stays atop the queue (still the biggest lever) with
+  corrected expectations; v5 screen proceeds unchanged
+  (cheap, and malt-only 1,711 is its pool). Punct dominates
+  both off-diagonals — largely convention-driven flip-flops,
+  not pursued. Both-wrong 2,422 needs genuinely new signal.
   (c) v5 templates (SCOPED 2026-10-08, not started): port
   Malt's four tag trigrams (s1+s0+b0, s0+b0+b1, b0+b1+b2,
   b1+b2+b3) + b3 tag single into 0x59+ templates; greedy
