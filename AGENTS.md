@@ -743,10 +743,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   ~2 points need a context-sensitive encoder that breaks every budget
   (see item above). Declare victory at 95 with 2MB deterministic, not
   97 with 400MB. Ordered by ROI, all inside size/latency budgets:
-  (1) silver distillation at scale — large per-class-targeted oracle
-  batches (titlecase OOV, prep-chains, 3sg, imperatives) over
-  book-domain text, ch.36 batch-size discipline (small batches drift
-  shared priors); zero runtime change; expect +1-2;
+  (1) silver distillation at scale — CLOSED 2026-10-08 as
+  pre-refuted without running (owner-confirmed): every sub-claim it
+  stands on is already measured — targeting/balance/small-batches
+  (tagger distillation 0-for-5 data: joint 03, finetune 03, joint
+  04, joint 05, micro-06; 05 is the mirror case, evals up / EWT
+  down, still rejected per EWT-gates discipline; 06 proves
+  composition dominates mass, killing the drift-floor hypothesis)
+  and mechanics (frozen-prior 0-for-2: 5 K-points, zero drift but
+  zero gain; counterweight k=2/3: moby-15 high-water but test −51
+  — trade structural; parser Malt-silver 0-for-2, the 250-sent
+  retry drifting MORE than the 1k run). DistilBERT verdict adds the
+  oracle-grade argument: human-gold book batches already drift
+  0-for-6, so 96.5-silver adds 3.5% label noise to the same
+  mechanism. Large per-class-targeted batches over book-domain
+  text would re-test settled questions; do not reopen without a
+  new mechanism (none queued). The surviving oracle use is
+  disagreement mining (rule candidates clearing EWT gates
+  individually — drift-immune by construction).
   (2) char n-gram + cluster features (CHAR HALF MEASURED AND
   REJECTED 2026-10-06: suffixes 4-5 with stem guard,
   Titlecase×position conjunction, cap-split suffix 2-4 backoff —
