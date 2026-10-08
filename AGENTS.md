@@ -2255,6 +2255,37 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (NF=9 — same sanitize fixes it); both verified malformed=0
   before the full run. Probe deleted after use.
 
+## DistilBERT look (MEASURED 2026-10-08, probes deleted)
+
+- Purpose-built model found:
+  `Basengalenga/destilbert-part-of-speech-partial-fine-tuning`
+  (DistilBERT UPOS, EWT-trained, last-2-layers fine-tune, card
+  claims test 96.55%). Ran it locally (venv torch 2.14 CPU +
+  transformers 5.19, nix gcc/zlib on LD_LIBRARY_PATH like
+  spaCy; model + toolchain all /tmp-ephemeral, CC BY-SA 4.0
+  eval use only, nothing vendored).
+- Verified 96.51% exact-UPOS on EWT test (first-subword
+  alignment, full 25,094 coverage — 9 tokens under the card,
+  confirmed not inflated). Confusions better than ours
+  everywhere that matters: PROPN→NOUN 169 (ours 291),
+  NOUN→PROPN 119 (ours 150) DESPITE uncased (context beats
+  case); our worst class (VERB→NOUN 105) misses their top-12.
+  Shared pain only: attributive adjectives (their ADJ↔NOUN
+  78 — same family as rejected attr-adj).
+- Speed/size kill the keystroke case dead: Moby body 208k
+  words in 715 s wall = 291 tok/s (~7,200× our in-process tag
+  pass); 255 MB fp32 on disk. The page's ~10–30 s / ~60 MB
+  was the int8-ONNX estimate — fp32 eager reality is 24–70×
+  slower and 4× larger (page footnote corrected, estimate
+  kept labeled). Offline-only stands, harder than before.
+- Oracle verdict: NOT training data (human-gold book batches
+  already drift 0-for-6; 96.5-silver adds 3.5% label noise to
+  the same mechanism). QUEUED instead: disagreement mining —
+  tagger-vs-96.5 disagreements on unlabeled book text as
+  correction-rule shape candidates (each still clears EWT
+  gates individually, drift-immune by construction). That is
+  the only oracle use that survives the drift record.
+
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
 - Pattern (CLiPS, BSD) added as the blog's second real tagger
