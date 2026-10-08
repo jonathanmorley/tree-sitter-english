@@ -1229,9 +1229,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   need cross-model mark plumbing (arc/label split), 2–3× the
   "moderate" guess, for a prize that needs no special program.
   Probes deleted.
-  (c) UAS-87 adjudication: needs the published linear-parser
-  predicted-tag EWT-UAS number (CoNLL UDPipe-baseline EWT
-  row) before another accuracy euro is spent against it.
+  (c) UAS-87 adjudication (DONE 2026-10-08 — bar RETIRED):
+  no published linear-parser predicted-tag EWT-UAS exists.
+  Best documented EWT numbers: UDPipe 2.0 (BiLSTM, raw text)
+  85.01/82.51 (CoNLL-2018 K18-2020); WSJ linear figures
+  (MaltParser arc-eager ~86-88, Yara 93.32) are clean-newswire
+  and/or gold-tag — they do not transfer to web text with
+  predicted tags. A spaCy-sm measurement leg died honestly:
+  51.5 UAS vs UD gold is PTB-vs-UD head-scheme divergence
+  (prepositions/copulas head differently), not parser error —
+  a PTB→UD converter is out of scope; probe deleted. A
+  from-scratch MaltParser run was priced and SKIPPED: no
+  outcome changes the verdict (Malt beating a BiLSTM with a
+  +2.6 tagger advantage is implausible), and the JDK+jar
+  spend buys a number, not a decision. Verdict: 87 was
+  WSJ-derived and never had EWT-linear standing. Standing
+  frontier stands as banked (gold 83.9 / pipeline 77.8,
+  1.1 under a BiLSTM with a better tagger); 85.01 is the
+  nearest aspirational reference, not a bar. No further
+  accuracy spend without consumer need or a real linear
+  comparator.
 - Revisit triggers (nothing else): constructs erroring as a
   class, or a consumer needing entities/relations beyond LAS.
 
