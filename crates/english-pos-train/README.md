@@ -234,12 +234,12 @@ web-text broadly — exactly what the EWT gates exist to catch.
 Across all operating points (frozen K≤500, counterweight k=2/3,
 plain joint) book gains scale with web-test damage and no point
 passes both splits: the trade is structural at this capacity,
-not a mechanics artifact. Accuracy roadmap now stands:
-distillation 0-for-5, mechanics 0-for-3, char 0-for-2, clusters
-0-for-1 — the linear ceiling is holding on every axis with a
-measurement behind each. Remaining accuracy work is the
-no-weight-change column only (lexicon backoffs beyond the 3
-shipped, beam refinements). Weights restored (`56082361`).
+not a mechanics artifact. Standing tally: distillation 0-for-5,
+mechanics 1-for-4 (guessed-history rejected, tagdict admitted),
+char 0-for-2, clusters 0-for-1. The tagdict fast path (below) is the
+first weight change since the joint protocol to pass every gate —
+it wins by restoring memorization rather than reshaping shared
+priors, which is why it escapes the structural trade.
 
 Guessed-history training (MECHANICS REJECTED 2026-10-07, third
 mechanics — the Honnibal REAL FIND): `Model::train_guessed_history`
@@ -278,6 +278,48 @@ re-decode, not less. Code kept (`train_guessed_history`,
 `--guessed-history`) as measured infrastructure; weights
 restored (`56082361`, md5-verified; rejected artifact
 `17c37c3d` in /tmp only).
+
+Tagdict inference fast path (ADMITTED 2026-10-07 — Honnibal (b),
+and the largest single EWT jump since the joint protocol):
+`Model.tagdict` (lowercased words seen under exactly one tag in
+training: 14,563 entries) + `decode_lower` skip with a gate-inert
+placeholder margin (`FAST_PATH_MARGIN`, finite for the
+`tag_margins` contract) + `tagdict` key in the weights JSON
+(1.76→1.98 MB). Retrained under the canonical protocol; weight
+values bit-identical to a tagdict-less retrain (0/30,360 rows
+differ), so every delta below is the fast path at inference:
+
+| path | dev | test |
+|---|---|---|
+| committed greedy | 23096 (91.84%) | 23100 (92.05%) |
+| tagdict greedy | 23171 (92.14%, +75) | 23250 (92.65%, +150) |
+| committed production | 91.94% | 92.22% |
+| tagdict production | 23187 (92.20%, +~67) | 23290 (92.81%, +~149) |
+
+Book evals: moby 27→27, genre 20→20 (both neutral, miss lists
+entry-identical in count), hard 0.8644→0.8741 (+~15 tok), sweep
+greedy 1827→1839 (+12) / production 1843→1853 (+10) with zero
+rule breaks, `flies` holds on all three decode paths, full
+workspace 123 green. Train-corpus diff (banked vs new weights,
+204,932 tok): 1,179 greedy / 1,109 production flips (0.6%), every
+sampled flip correct-direction (initialisms→PROPN, gerunds→VERB,
+`dominant`→ADJ, `effect`→NOUN). Speed: tag pass 101.8→87.2 ms
+(−14%, 25.8% skip rate on Moby body).
+Why it helps (against the old "locks the wrong tag early"
+rejection, which concerned AMBIGUOUS words in beam spans):
+single-tag-in-train words are memorization, and full decode was
+overriding memorized readings with context noise — the dict
+restores them. The old rejection stands for ambiguous words
+(`this`/`that` never enter the table). Two implementation scars
+worth recording: (1) the first table was a sorted vec — binary
+search cost MORE than scoring on misses (tag pass 102→148 ms);
+a hash map fixed it; (2) the `U64Hasher::write` fallback REPLACED
+state instead of folding, collapsing all String keys into one
+bucket (52µs/lookup); folding fixed it (226 ns). Both caught by
+bench, not review. `finetune`/`finetune_frozen` clear the table
+(weight updates can move a word off its dict tag); smoke tests
+pin the placeholder-margin contract deliberately. New weights
+md5 `0b72993e`; site wasm bundle rebuilt from them.
 
 ## Cross-genre standing (GUM test, gold)
 

@@ -41,8 +41,12 @@ struct U64Hasher(u64);
 
 impl Hasher for U64Hasher {
     fn write(&mut self, bytes: &[u8]) {
-        // Fallback (never taken for `u64` keys): FNV-1a over bytes.
-        let mut h = FNV_OFFSET_BASIS;
+        // Fold into running state, never replace: `HashMap<String,
+        // ..>` hashes keys with two calls (bytes, then a tag byte),
+        // so replacing here collapses every key into one bucket
+        // (observed: 14k-entry linear scans, 52µs/lookup). Single-call
+        // `u64` keys are unaffected (they go through `write_u64`).
+        let mut h = self.0 ^ FNV_OFFSET_BASIS;
         for b in bytes {
             h ^= *b as u64;
             h = h.wrapping_mul(FNV_PRIME);
@@ -262,7 +266,28 @@ fn push_shape(raw_word: &str, feats: &mut Vec<u64>) {
 #[derive(Debug, Default, Clone)]
 pub struct Model {
     weights: U64Map<[f32; 17]>,
+    /// Inference fast path (Honnibal tagdict probe): lowercased words
+    /// seen under exactly one tag in training, hashed like every other
+    /// map in this crate (one FNV + one probe — the earlier sorted-vec
+    /// binary search cost MORE than scoring on misses and slowed the
+    /// tag pass 102→148 ms; map probe is ~10× cheaper). `decode_lower` emits the dict tag with
+    /// [`FAST_PATH_MARGIN`] instead of scoring. Consulted on the fast
+    /// path only — never in training, never in rules. Empty for weight
+    /// files written before it existed. Byte-identity vs full decode
+    /// is empirical, not structural: any weights/rules change must
+    /// re-verify on every eval (see the probe record in the train
+    /// README). Finetune clears it (weight updates can move a word off
+    /// its dict tag; the fast path must never shadow training).
+    tagdict: HashMap<String, u8, BuildHasherDefault<U64Hasher>>,
 }
+
+/// Fabricated margin for tagdict-skipped tokens: finite (the
+/// `tag_margins` contract), far above every rule threshold (max 5.0)
+/// and beam span threshold, so gates and spans behave exactly as
+/// with infinite confidence. Part of the API: consumers must treat
+/// it as "confident by lookup", never as a measured gap (ordering
+/// assertions hold among scored tokens only).
+pub const FAST_PATH_MARGIN: f32 = 1e9;
 
 /// Position of a tag code in [`TAGS`].
 fn tag_index(code: &str) -> Option<usize> {
@@ -362,6 +387,21 @@ impl Model {
         let mut tags = Vec::with_capacity(words.len());
         let mut margins = Vec::with_capacity(words.len());
         for i in 0..words.len() {
+            // Tagdict fast path: unambiguous-in-training words skip
+            // scoring with a gate-inert margin (rules and beam spans
+            // never touch confident tokens by construction) instead of
+            // infinity, which the `tag_margins` finite contract
+            // forbids. History still advances through the dict tag, so
+            // downstream positions see identical context whenever the
+            // full decode agrees — byte-identity is measured, never
+            // assumed (see the probe record in the train README).
+            if let Some(dict_idx) = self.tagdict_lookup(&lower[i]) {
+                tags.push(Tag::from_upos(TAGS[dict_idx]).expect("tagdict holds valid tags"));
+                margins.push(FAST_PATH_MARGIN);
+                prev2 = prev1;
+                prev1 = TAGS[dict_idx];
+                continue;
+            }
             let acc = self.score_tag(words, &lower, i, prev1, prev2, &mut feats);
             // Single pass tracks best and runner-up; strict `>` keeps
             // the fixed TAGS order as tie-break.
@@ -573,7 +613,61 @@ impl Model {
             }
             weights.insert(f, arr);
         }
-        Ok(Model { weights })
+        Ok(Model {
+            weights,
+            tagdict: Self::parse_tagdict(&serde_json::from_str::<serde_json::Value>(json)?),
+        })
+    }
+
+    /// Build the inference fast-path table: lowercased words seen under
+    /// exactly one tag in training, sorted for binary search. Serialized
+    /// with the weights; empty for ambiguous words (context decides).
+    fn build_tagdict(
+        data: &[(Vec<String>, Vec<String>)],
+    ) -> HashMap<String, u8, BuildHasherDefault<U64Hasher>> {
+        let mut seen: std::collections::HashMap<String, (usize, bool)> =
+            std::collections::HashMap::new();
+        for (raw, gold) in data {
+            for (w, g) in raw.iter().zip(gold.iter()) {
+                let e = seen.entry(w.to_lowercase()).or_insert_with(|| {
+                    (
+                        tag_index(g).expect("training tag must be a UPOS code"),
+                        true,
+                    )
+                });
+                if tag_index(g).expect("training tag must be a UPOS code") != e.0 {
+                    e.1 = false;
+                }
+            }
+        }
+        let mut out: HashMap<String, u8, BuildHasherDefault<U64Hasher>> = HashMap::default();
+        for (w, (t, single)) in seen {
+            if single {
+                out.insert(w, t as u8);
+            }
+        }
+        out
+    }
+
+    /// Parse the optional `tagdict` table (sorted `[[word, tagidx]]`
+    /// pairs); absent in weight files written before it existed.
+    fn parse_tagdict(v: &serde_json::Value) -> HashMap<String, u8, BuildHasherDefault<U64Hasher>> {
+        let mut out: HashMap<String, u8, BuildHasherDefault<U64Hasher>> = HashMap::default();
+        if let Some(arr) = v.get("tagdict").and_then(|t| t.as_array()) {
+            for pair in arr {
+                let w = pair.get(0).and_then(|w| w.as_str()).unwrap_or_default();
+                let t = pair.get(1).and_then(|t| t.as_u64()).unwrap_or(17) as usize;
+                if !w.is_empty() && t < 17 {
+                    out.insert(w.to_string(), t as u8);
+                }
+            }
+        }
+        out
+    }
+
+    /// Look up a fast-path tag index for a pre-lowered word.
+    fn tagdict_lookup(&self, lower: &str) -> Option<usize> {
+        self.tagdict.get(lower).map(|t| *t as usize)
     }
 
     /// Serialize weights for committing: compact JSON with sorted keys,
@@ -616,7 +710,12 @@ impl Model {
                 )
             })
             .collect();
-        serde_json::to_string(&serde_json::json!({"weights": sorted}))
+        let mut dict: Vec<(&String, &u8)> = self.tagdict.iter().collect();
+        dict.sort();
+        serde_json::to_string(&serde_json::json!({
+            "weights": sorted,
+            "tagdict": dict,
+        }))
     }
 
     /// Fine-tune in-domain: more perceptron passes over `data starting
@@ -628,6 +727,10 @@ impl Model {
     /// are computed on `data` with threshold 1: every in-domain
     /// observation counts.
     pub fn finetune(&mut self, data: &[(Vec<String>, Vec<String>)], iters: usize) {
+        // Weight updates can move a word off its dict tag; the fast
+        // path must never shadow training, so it goes (finetuned
+        // models are dev-only; committed weights train joint).
+        self.tagdict.clear();
         let mut counts: U64Map<usize> = U64Map::default();
         let mut feats = Vec::with_capacity(20);
         for (raw, gold) in data {
@@ -702,6 +805,9 @@ impl Model {
         iters: usize,
         freeze_at: usize,
     ) {
+        // Same invalidation as `finetune`: updates can move words off
+        // their dict tags.
+        self.tagdict.clear();
         let mut counts: U64Map<usize> = U64Map::default();
         let mut feats = Vec::with_capacity(20);
         for (raw, gold) in base {
@@ -811,6 +917,7 @@ impl Model {
             }
         }
         let mut weights: U64Map<[f32; 17]> = U64Map::default();
+        let tagdict = Self::build_tagdict(data);
 
         for _ in 0..iters {
             for (raw, gold) in data {
@@ -867,6 +974,6 @@ impl Model {
         weights.retain(|f, arr| {
             arr.iter().any(|w| *w != 0.0) && counts.get(f).is_some_and(|&c| c >= min_count)
         });
-        Model { weights }
+        Model { weights, tagdict }
     }
 }
