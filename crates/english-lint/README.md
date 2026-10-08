@@ -32,4 +32,10 @@ markdown structure (tables, lists) is out of prose scope.
 
 ```console
 cargo run -p english-lint -- file.txt...
+cargo run -p english-lint -- --markdown notes.md...
 ```
+
+`--markdown` strips markdown structure (fenced code, tables,
+list markers) before linting — blank-preserving, so findings
+still point at the real lines. Default path never filters
+(book prose has no markdown).

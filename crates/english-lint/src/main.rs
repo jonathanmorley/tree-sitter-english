@@ -7,16 +7,20 @@ use std::process::ExitCode;
 
 use english_lint::{
     ClauseComplexity, CoordScope, Hedge, Models, NegScope, Nominalization, Passive, Rule,
-    SentenceLength, VagueDemonstrative, Weasel, line_col, lint, lint_streaming,
+    SentenceLength, VagueDemonstrative, Weasel, line_col, lint, lint_streaming, markdown_filter,
 };
 
 fn main() -> ExitCode {
     let mut batch = false;
+    let mut markdown = false;
     let files: Vec<String> = std::env::args()
         .skip(1)
         .filter(|a| {
             if a == "--batch" {
                 batch = true;
+                false
+            } else if a == "--markdown" {
+                markdown = true;
                 false
             } else {
                 true
@@ -24,7 +28,7 @@ fn main() -> ExitCode {
         })
         .collect();
     if files.is_empty() {
-        eprintln!("usage: english-lint [--batch] <file...>");
+        eprintln!("usage: english-lint [--batch] [--markdown] <file...>");
         return ExitCode::from(2);
     }
     let models = match Models::load_workspace() {
@@ -62,6 +66,14 @@ fn main() -> ExitCode {
                 eprintln!("english-lint: cannot read {path}: {e}");
                 return ExitCode::from(2);
             }
+        };
+        // Opt-in markdown structure stripping. Blank-preserving by
+        // construction, so spans and line numbers below still point
+        // at the user's real lines on both paths.
+        let source = if markdown {
+            markdown_filter(&source)
+        } else {
+            source
         };
         // Batch (legacy) vs streaming residency; findings identical
         // (pinned by tests/streaming.rs). `--batch` exists so the
