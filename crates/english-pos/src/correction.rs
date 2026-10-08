@@ -230,6 +230,11 @@ pub const RULES: &[Rule] = &[
         threshold: 2.0,
         test: there_adv,
     },
+    Rule {
+        name: "be-aux",
+        threshold: 2.0,
+        test: be_aux,
+    },
 ];
 
 /// True when a VERB/AUX tag appears strictly ahead of `i`
@@ -455,6 +460,22 @@ fn there_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     (i + 2 >= tags.len()).then_some(Tag::Adv)
+}
+
+/// Infinitive `be` read as main verb (`seems to be a duchess`):
+/// pred-VERB `be` right after `to` is gold AUX 38:5 in EWT train
+/// (the 5 breaks are raising/existential annotation noise —
+/// `there seems to be a problem`, same surface shape, no guard
+/// available). Modal-prev (`can/will be`) stays out: thin and mixed
+/// there (5–8 instances either way), so the guard is prev-word
+/// `to` only. Candidate from disagreement mining (tagger-vs-96.5
+/// on Austen/Doyle/Stevenson: 67 `to be` instances, 3 in-gate at
+/// margin 1.0); admit only with EWT dev/test ≥ 0 measured.
+fn be_aux(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Verb || low[i] != "be" {
+        return None;
+    }
+    (i > 0 && low[i - 1] == "to").then_some(Tag::Aux)
 }
 
 fn quite_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
