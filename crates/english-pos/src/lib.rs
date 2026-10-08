@@ -21,8 +21,9 @@ mod wire;
 pub use correction::{RULES, Rule, apply_rules};
 pub use tag::Tag;
 pub use wire::{
-    TagCache, append_clause_pieces, append_sentence_pieces, clause_pieces, sentence_pieces,
-    split_contraction, tag_clause, tag_document, tag_sentence, token_pieces,
+    TagCache, align_token_pieces, append_clause_pieces, append_sentence_pieces, clause_pieces,
+    sentence_pieces, sentence_pieces_spanned, split_contraction, tag_clause, tag_document,
+    tag_sentence, tag_sentence_spanned, token_pieces,
 };
 
 use std::collections::HashMap;

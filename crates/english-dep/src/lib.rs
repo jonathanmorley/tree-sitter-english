@@ -1562,10 +1562,7 @@ impl LabelModel {
                 }
                 impl<'de> serde::de::Visitor<'de> for W<'_> {
                     type Value = ();
-                    fn expecting(
-                        &self,
-                        f: &mut std::fmt::Formatter,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         write!(f, "map from feature id to label-weight map")
                     }
                     fn visit_map<A: serde::de::MapAccess<'de>>(
@@ -1609,10 +1606,7 @@ impl LabelModel {
                 }
                 impl<'de> serde::de::Visitor<'de> for R<'_> {
                     type Value = ();
-                    fn expecting(
-                        &self,
-                        f: &mut std::fmt::Formatter,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         write!(f, "map from label code to weight")
                     }
                     fn visit_map<A: serde::de::MapAccess<'de>>(

@@ -17,10 +17,8 @@ fn rules() -> Vec<Box<dyn Rule>> {
 }
 
 fn batch(source: &str) -> Vec<english_lint::Finding> {
-    let model = english_pos::Model::from_json(include_str!(
-        "../../english-pos/weights/upos.json"
-    ))
-    .unwrap();
+    let model =
+        english_pos::Model::from_json(include_str!("../../english-pos/weights/upos.json")).unwrap();
     let doc = annotate_shallow(&model, source);
     let rs = rules();
     let refs: Vec<&dyn Rule> = rs.iter().map(|r| r.as_ref()).collect();
@@ -33,10 +31,8 @@ fn batch(source: &str) -> Vec<english_lint::Finding> {
 }
 
 fn streamed(source: &str) -> Vec<english_lint::Finding> {
-    let model = english_pos::Model::from_json(include_str!(
-        "../../english-pos/weights/upos.json"
-    ))
-    .unwrap();
+    let model =
+        english_pos::Model::from_json(include_str!("../../english-pos/weights/upos.json")).unwrap();
     let rs = rules();
     let refs: Vec<&dyn Rule> = rs.iter().map(|r| r.as_ref()).collect();
     let mut out = Vec::new();

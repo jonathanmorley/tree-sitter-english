@@ -170,6 +170,48 @@ pub fn append_sentence_pieces(out: &mut Vec<String>, sentence: &english::Sentenc
     sentence.for_each_token(|tok| push_piece_merged(&mut *out, &mut prev, tok));
 }
 
+/// UD-style pieces for a parsed sentence with byte spans, in order.
+///
+/// Mirrors [`append_sentence_pieces`] exactly (same merge rule, same
+/// order) while tracking spans; the hot path stays untouched by
+/// design. Span rule per token: `Period` byte-adjacent after a
+/// wordish piece extends that piece's span (abbreviation merge);
+/// every other token contributes `align_token_pieces` spans.
+/// Parity with [`sentence_pieces`] is pinned by the unit tests
+/// below (including a Moby-scale dev-time check, not committed).
+pub fn sentence_pieces_spanned(
+    sentence: &english::Sentence,
+) -> (Vec<String>, Vec<std::ops::Range<usize>>) {
+    let mut out: Vec<String> = Vec::new();
+    let mut spans: Vec<std::ops::Range<usize>> = Vec::new();
+    let mut prev: Option<(usize, bool)> = None;
+    sentence.for_each_token(|tok| {
+        let span = tok.span();
+        // Pieces and spans stay in lockstep: every token appends ≥1
+        // piece (via push_token_pieces) and exactly one span per
+        // piece (via align_token_pieces); merges extend both lasts.
+        if tok.kind() == english::TokenKind::Period
+            && matches!(prev, Some((end, true)) if end == span.start)
+        {
+            out.last_mut()
+                .expect("pieces/spans lockstep")
+                .push_str(tok.text());
+            spans.last_mut().expect("pieces/spans lockstep").end = span.end;
+            prev = Some((span.end, false));
+            return;
+        }
+        let wordish = matches!(
+            tok.kind(),
+            english::TokenKind::Word | english::TokenKind::Dotted
+        );
+        let before = out.len();
+        push_token_pieces(&mut out, &tok);
+        spans.extend(align_token_pieces(tok.text(), span.start, &out[before..]));
+        prev = Some((span.end, wordish));
+    });
+    (out, spans)
+}
+
 /// Expand one visited token into pieces, merging in-sentence `period`
 /// into a byte-adjacent preceding `Word`/`Dotted` token. Called per
 /// token by the `append_*` walkers above, which drive the token
@@ -190,6 +232,60 @@ fn push_piece_merged(out: &mut Vec<String>, prev: &mut Option<(usize, bool)>, to
     );
     push_token_pieces(out, &tok);
     *prev = Some((span.end, wordish));
+}
+
+/// Byte spans for already-split pieces within their token's text.
+///
+/// The splitter normalizes (curly `’` → ASCII `'`, fused tails
+/// lowercased), so pieces are not always verbatim substrings — match
+/// fuzzily (case-insensitive, apostrophe-class) instead of searching.
+/// Falls back to the whole token span for any piece that will not
+/// align (defensive; unreachable for splitter output — pinned by the
+/// unit tests below).
+pub fn align_token_pieces(
+    text: &str,
+    base: usize,
+    pieces: &[String],
+) -> Vec<std::ops::Range<usize>> {
+    fn same(a: char, b: char) -> bool {
+        if a == b {
+            return true;
+        }
+        let apos = ['\'', '’'];
+        if apos.contains(&a) && apos.contains(&b) {
+            return true;
+        }
+        a.to_lowercase().next() == b.to_lowercase().next()
+    }
+    let chars: Vec<(usize, char)> = text.char_indices().collect();
+    let mut out = Vec::with_capacity(pieces.len());
+    let mut ci = 0usize;
+    for piece in pieces {
+        let start = chars
+            .get(ci)
+            .map(|(b, _)| base + b)
+            .unwrap_or(base + text.len());
+        let mut ok = true;
+        for pc in piece.chars() {
+            match chars.get(ci) {
+                Some((_, tc)) if same(*tc, pc) => ci += 1,
+                _ => {
+                    ok = false;
+                    break;
+                }
+            }
+        }
+        if ok {
+            let end = chars
+                .get(ci)
+                .map(|(b, _)| base + b)
+                .unwrap_or(base + text.len());
+            out.push(start..end);
+        } else {
+            out.push(base..base + text.len());
+        }
+    }
+    out
 }
 
 /// Tag a parsed clause: `(surface piece, tag)` pairs in order.
@@ -221,16 +317,29 @@ pub fn tag_clause(model: &Model, clause: &english::Clause) -> Vec<(String, Tag)>
 /// Each sentence is decoded independently (tag history resets at the
 /// boundary), matching training on UD sentences.
 pub fn tag_sentence(model: &Model, sentence: &english::Sentence) -> Vec<(String, Tag)> {
-    let pieces = sentence_pieces(sentence);
+    tag_sentence_spanned(model, sentence).0
+}
+
+/// Tag a parsed sentence, also returning per-piece byte spans.
+///
+/// Single decode definition shared with [`tag_sentence`] (identical
+/// pieces in — parity-pinned — so identical tags out); the lint
+/// layer needs the spans for word-level findings.
+pub fn tag_sentence_spanned(
+    model: &Model,
+    sentence: &english::Sentence,
+) -> (Vec<(String, Tag)>, Vec<std::ops::Range<usize>>) {
+    let (pieces, spans) = sentence_pieces_spanned(sentence);
     let (mut tagged, lower) = model.tag_beam_margins_lowered(&pieces);
     if !RULES.is_empty() {
         apply_rules(&mut tagged, RULES, &lower);
     }
-    tagged
+    let tagged = tagged
         .into_iter()
         .zip(pieces)
         .map(|((tag, _), text)| (text, tag))
-        .collect()
+        .collect();
+    (tagged, spans)
 }
 
 /// Tag a whole document, one entry per sentence in document order.
@@ -344,5 +453,84 @@ impl TagCache {
             para.for_each_sentence(|sent| out.push(self.tag_sentence(model, &sent)));
         });
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn aligned(word: &str) -> Vec<std::ops::Range<usize>> {
+        let pieces = split_contraction(word);
+        // `gonna`/`cannot` go through split_fused, not split_contraction.
+        let pieces = if pieces == vec![word.to_string()] && word.to_lowercase() == "gonna" {
+            vec!["gon".to_string(), "na".to_string()]
+        } else {
+            pieces
+        };
+        align_token_pieces(word, 0, &pieces)
+    }
+
+    #[test]
+    fn plain_word_single_span() {
+        assert_eq!(aligned("Hello"), vec![0..5]);
+    }
+
+    #[test]
+    fn ascii_contraction_splits_exactly() {
+        // don't → do + n't at byte 2.
+        assert_eq!(aligned("don't"), vec![0..2, 2..5]);
+    }
+
+    #[test]
+    fn curly_apostrophe_aligns_to_ascii_piece() {
+        // don’t (curly, 7 bytes) → do + n't (ASCII piece).
+        assert_eq!(aligned("don’t"), vec![0..2, 2..7]);
+    }
+
+    #[test]
+    fn fused_form_lowercased_tail_still_aligns() {
+        // GONNA → GON + na (tail lowercased): case-insensitive match.
+        let pieces = vec!["GON".to_string(), "na".to_string()];
+        assert_eq!(align_token_pieces("GONNA", 0, &pieces), vec![0..3, 3..5]);
+    }
+
+    #[test]
+    fn spans_tile_without_gaps() {
+        for w in ["it's", "l'homme", "o'clock", "’tis", "cannot"] {
+            let spans = aligned(w);
+            assert_eq!(spans[0].start, 0, "{w}");
+            assert_eq!(spans.last().unwrap().end, w.len(), "{w}");
+            for pair in spans.windows(2) {
+                assert_eq!(pair[0].end, pair[1].start, "{w}");
+            }
+        }
+    }
+    #[test]
+    fn spanned_parity_with_plain_pieces() {
+        // Mirror walker emits identical pieces to sentence_pieces,
+        // with tiling spans, on abbreviation/comma/contraction shapes.
+        for text in [
+            "Mr. Smith left.",
+            "Hello, world, don't stop.",
+            "It cost $5, and 10:30 passed.",
+        ] {
+            let owned = text.to_string();
+            let doc = english::Document::parse(owned.clone());
+            let mut sents = Vec::new();
+            for para in doc.paragraphs() {
+                for sent in para.sentences() {
+                    sents.push(sent);
+                }
+            }
+            assert_eq!(sents.len(), 1, "{text}");
+            let plain = sentence_pieces(&sents[0]);
+            let (pieces, spans) = sentence_pieces_spanned(&sents[0]);
+            assert_eq!(plain, pieces, "{text}");
+            assert_eq!(pieces.len(), spans.len(), "{text}");
+            for (p, s) in pieces.iter().zip(spans.iter()) {
+                assert_eq!(&owned[s.clone()], p, "{text}");
+            }
+        }
     }
 }

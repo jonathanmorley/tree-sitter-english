@@ -12,7 +12,7 @@ use std::ops::Range;
 use std::path::Path;
 
 use english_dep::{LabelModel, Model as DepModel};
-use english_pos::{Model as PosModel, Tag, tag_sentence};
+use english_pos::{Model as PosModel, Tag, tag_sentence_spanned};
 
 /// One lint finding: rule id, byte span in the document source, message.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,6 +38,9 @@ pub struct SentenceAnn {
     pub span: Range<usize>,
     /// Surface pieces (tagger output; contractions split).
     pub pieces: Vec<String>,
+    /// Byte span per piece (parallel to `pieces`; see
+    /// `english_pos::sentence_pieces_spanned`).
+    pub piece_spans: Vec<Range<usize>>,
     /// UPOS tag per piece.
     pub tags: Vec<Tag>,
     /// Head index per 1-based piece (`0` = root).
@@ -55,6 +58,24 @@ pub struct SentenceAnn {
 pub struct AnnotatedDoc {
     pub source: String,
     pub sentences: Vec<SentenceAnn>,
+}
+
+impl SentenceAnn {
+    /// Byte span of the `i`th piece (0-based), if present.
+    pub fn piece_span(&self, i: usize) -> Option<Range<usize>> {
+        self.piece_spans.get(i).cloned()
+    }
+
+    /// Byte span covering pieces `a..=b` (0-based, either order);
+    /// falls back to the whole sentence when an endpoint is missing
+    /// (mock documents, defensive shape changes — never silent).
+    pub fn cover(&self, a: usize, b: usize) -> Range<usize> {
+        let (lo, hi) = (a.min(b), a.max(b));
+        match (self.piece_span(lo), self.piece_span(hi)) {
+            (Some(s), Some(e)) => s.start..e.end,
+            _ => self.span.clone(),
+        }
+    }
 }
 
 /// The three trained models (tagger vendored; parser + labeler are
@@ -159,33 +180,46 @@ fn annotate_sentence(
     sent: &english::Sentence,
     span: std::ops::Range<usize>,
 ) -> SentenceAnn {
-            let tagged = tag_sentence(tagger, &sent);
-            let pieces: Vec<String> = tagged.iter().map(|(w, _)| w.clone()).collect();
-            let tags: Vec<Tag> = tagged.iter().map(|(_, t)| *t).collect();
-            let (heads, rels) = match (parser, labeler) {
-                (Some(p), Some(l)) => {
-                    let upos: Vec<String> = tags.iter().map(|t| t.upos().to_string()).collect();
-                    let (heads, _) = p.parse_beam(&pieces, &upos, 4);
-                    let rels = l.predict(&pieces, &upos, &heads);
-                    (heads, rels)
-                }
-                // Shallow: root heads, empty rels (see doc comment).
-                _ => (
-                    vec![0usize; pieces.len() + 1],
-                    vec![String::new(); pieces.len() + 1],
-                ),
-            };
-            let clauses = sent.clauses();
-            let subords = clauses.iter().filter(|c| c.is_subordinate()).count();
-            SentenceAnn {
-                span,
-                pieces,
-                tags,
-                heads,
-                rels,
-                clauses: clauses.len(),
-                subords,
-            }
+    let (tagged, rel_spans) = tag_sentence_spanned(tagger, &sent);
+    let pieces: Vec<String> = tagged.iter().map(|(w, _)| w.clone()).collect();
+    let tags: Vec<Tag> = tagged.iter().map(|(_, t)| *t).collect();
+    // Piece spans arrive in the parsed text's frame (absolute
+    // for whole-document parses, slice-relative for lone
+    // re-parses); `span` is always document frame. Lone
+    // sentence spans start at their slice start (measured on
+    // trivia-leading input), so the difference composes both
+    // paths exactly — pinned by tests/streaming.rs on Moby
+    // scale, which covers 36 trivia-absorption cases.
+    let base = span.start.saturating_sub(sent.span().start);
+    let piece_spans: Vec<std::ops::Range<usize>> = rel_spans
+        .into_iter()
+        .map(|r| base + r.start..base + r.end)
+        .collect();
+    let (heads, rels) = match (parser, labeler) {
+        (Some(p), Some(l)) => {
+            let upos: Vec<String> = tags.iter().map(|t| t.upos().to_string()).collect();
+            let (heads, _) = p.parse_beam(&pieces, &upos, 4);
+            let rels = l.predict(&pieces, &upos, &heads);
+            (heads, rels)
+        }
+        // Shallow: root heads, empty rels (see doc comment).
+        _ => (
+            vec![0usize; pieces.len() + 1],
+            vec![String::new(); pieces.len() + 1],
+        ),
+    };
+    let clauses = sent.clauses();
+    let subords = clauses.iter().filter(|c| c.is_subordinate()).count();
+    SentenceAnn {
+        span,
+        pieces,
+        piece_spans,
+        tags,
+        heads,
+        rels,
+        clauses: clauses.len(),
+        subords,
+    }
 }
 
 /// Run every rule over one annotated document; findings sorted by
@@ -291,7 +325,8 @@ pub fn lint_streaming_shallow(
         };
         for para in sdoc.paragraphs() {
             for sent in para.sentences() {
-                ann.sentences.push(annotate_sentence(tagger, None, None, &sent, span.clone()));
+                ann.sentences
+                    .push(annotate_sentence(tagger, None, None, &sent, span.clone()));
             }
         }
         // Findings leave in lint() order (span start, ties by rule
@@ -395,9 +430,14 @@ impl Rule for Passive {
                 (None, Some(v)) => format!("\"{v}\""),
                 _ => "passive construction".to_string(),
             };
+            // Point at the verb when identified, else the sentence.
+            let span = verb_idx
+                .and_then(|h| h.checked_sub(1))
+                .and_then(|i| sent.piece_span(i))
+                .unwrap_or_else(|| sent.span.clone());
             out.push(Finding {
                 rule: self.id(),
-                span: sent.span.clone(),
+                span,
                 message: format!("{what} is passive — prefer active voice where the actor matters"),
             });
         }
@@ -426,7 +466,7 @@ impl Rule for Weasel {
         let mut out = Vec::new();
         for sent in &doc.sentences {
             // One finding per sentence (first weasel in order).
-            let mut hit: Option<(String, String)> = None;
+            let mut hit: Option<(usize, usize)> = None;
             for k in 0..sent.pieces.len() {
                 if sent.tags.get(k) != Some(&Tag::Adv) {
                     continue;
@@ -441,13 +481,15 @@ impl Rule for Weasel {
                 if !matches!(sent.tags.get(j), Some(Tag::Adj) | Some(Tag::Adv)) {
                     continue;
                 }
-                hit = Some((sent.pieces[k].clone(), sent.pieces[j].clone()));
+                hit = Some((k, j));
                 break;
             }
-            if let Some((w, next)) = hit {
+            if let Some((k, j)) = hit {
+                let w = sent.pieces[k].clone();
+                let next = sent.pieces[j].clone();
                 out.push(Finding {
                     rule: self.id(),
-                    span: sent.span.clone(),
+                    span: sent.cover(k, j),
                     message: format!("weasel intensifier: \"{w} {next}\" — cut it or say how much"),
                 });
             }
@@ -473,7 +515,7 @@ impl Rule for Hedge {
         let mut out = Vec::new();
         for sent in &doc.sentences {
             // One finding per sentence (first hedge in order).
-            let mut hit: Option<(String, String)> = None;
+            let mut hit: Option<(usize, usize)> = None;
             for k in 0..sent.pieces.len() {
                 if sent.tags.get(k) != Some(&Tag::Adv) {
                     continue;
@@ -488,13 +530,15 @@ impl Rule for Hedge {
                 if !matches!(sent.tags.get(j), Some(Tag::Adj) | Some(Tag::Adv)) {
                     continue;
                 }
-                hit = Some((sent.pieces[k].clone(), sent.pieces[j].clone()));
+                hit = Some((k, j));
                 break;
             }
-            if let Some((w, next)) = hit {
+            if let Some((k, j)) = hit {
+                let w = sent.pieces[k].clone();
+                let next = sent.pieces[j].clone();
                 out.push(Finding {
                     rule: self.id(),
-                    span: sent.span.clone(),
+                    span: sent.cover(k, j),
                     message: format!(
                         "hedging intensifier: \"{w} {next}\" — say how much, or cut it"
                     ),
@@ -697,7 +741,8 @@ impl Rule for Nominalization {
         let mut out = Vec::new();
         for sent in &doc.sentences {
             // One finding per sentence (first offending pair in order).
-            let mut hit: Option<(String, String)> = None;
+            // Indices are 1-based dep positions (see cover() at use).
+            let mut hit: Option<(usize, usize)> = None;
             for (k, rel) in sent.rels.iter().enumerate().skip(1) {
                 // Government only: temporal `obl:tmod` (`in the
                 // morning`) is adjunct, never a nominalization object.
@@ -741,14 +786,16 @@ impl Rule for Nominalization {
                 }
                 let gov = sent.pieces[h - 1].to_lowercase();
                 if LIGHT_VERBS.contains(&gov.as_str()) {
-                    hit = Some((sent.pieces[h - 1].clone(), dep.clone()));
+                    hit = Some((h, k));
                     break;
                 }
             }
-            if let Some((verb, noun)) = hit {
+            if let Some((h, k)) = hit {
+                let verb = sent.pieces[h - 1].clone();
+                let noun = sent.pieces[k - 1].clone();
                 out.push(Finding {
                     rule: self.id(),
-                    span: sent.span.clone(),
+                    span: sent.cover(h - 1, k - 1),
                     message: format!(
                         "nominalization with light verb: \"{verb} {noun}\" — prefer the direct verb"
                     ),
@@ -774,10 +821,23 @@ mod tests {
         assert_eq!(pieces.len(), tags.len());
         assert_eq!(pieces.len() + 1, heads.len());
         assert_eq!(pieces.len() + 1, rels.len());
+        // Synthesized spans (cumulative with single spaces): mocks pin
+        // rule logic; span assertions on mocks pin the NARROWING
+        // (verb/pair cover vs sentence span) with deterministic
+        // coordinates, while byte-exact spans are pinned by the
+        // real-pipeline tests in tests/word-spans (POS-only rules)
+        // — dep rules cannot run there (weights-gated).
+        let mut spans = Vec::with_capacity(pieces.len());
+        let mut b = 0usize;
+        for p in pieces {
+            spans.push(b..b + p.len());
+            b += p.len() + 1;
+        }
         SentenceAnn {
             span: 0..0,
             pieces: pieces.iter().map(|s| s.to_string()).collect(),
             tags: tags.to_vec(),
+            piece_spans: spans,
             heads: heads.to_vec(),
             rels: rels.iter().map(|s| s.to_string()).collect(),
             clauses,
@@ -811,6 +871,9 @@ mod tests {
             "message names the verb: {}",
             got[0].message
         );
+        // Synthesized spans (cheese 0..6, was 7..10, eaten 11..16):
+        // the finding points at the verb, not the sentence.
+        assert_eq!(got[0].span, 11..16);
     }
 
     #[test]
@@ -874,6 +937,9 @@ mod tests {
             "message names the pair: {}",
             got[0].message
         );
+        // Synthesized spans (they 0..4, conducted 5..14, an 15..17,
+        // investigation 18..31): the finding covers verb..noun.
+        assert_eq!(got[0].span, 5..31);
     }
 
     #[test]
@@ -914,6 +980,7 @@ mod tests {
         SentenceAnn {
             span: 0..0,
             pieces: vec!["w".to_string(); n],
+            piece_spans: vec![0..0; n],
             tags: vec![Tag::Noun; n],
             heads: vec![0; n + 1],
             rels: vec![String::new(); n + 1],
