@@ -383,6 +383,67 @@ def speed_each(name, words, fn):
     return len(words) / max(dt, 1e-9)
 
 
+DBERT_REPO = ("Basengalenga/destilbert-part-of-speech-partial-fine-tuning")
+
+
+def leg_distilbert(sents, mwords, flag):
+    """DistilBERT UPOS (EWT-finetuned). Slow (~10 min EWT + ~12 min
+    Moby on CPU) — opt-in on purpose. CC BY-SA 4.0 eval use only,
+    model cached in HF_HOME, never vendored."""
+    if not flag:
+        return None, "skip (--distilbert not given)", None
+    try:
+        import torch
+        from transformers import (AutoModelForTokenClassification,
+                                  AutoTokenizer)
+    except ImportError as e:
+        return None, (f"skip (no torch+transformers: {e}; compiled "
+                      "wheels also need nix gcc/zlib on LD_LIBRARY_PATH)"), None
+    try:
+        tok = AutoTokenizer.from_pretrained(DBERT_REPO)
+        model = AutoModelForTokenClassification.from_pretrained(DBERT_REPO)
+    except Exception as e:  # noqa: BLE001 - network/model errors vary
+        return None, f"skip (HF download failed: {e})", None
+    model.eval()
+    id2label = model.config.id2label
+
+    def tag_batch(blocks):
+        enc = tok(blocks, is_split_into_words=True, padding=True,
+                  truncation=True, return_tensors="pt")
+        feeds = {"input_ids": enc["input_ids"],
+                 "attention_mask": enc["attention_mask"]}
+        with torch.no_grad():
+            logits = model(**feeds).logits.argmax(-1)
+        out = []
+        for ids, pred in zip(enc.encodings, logits):
+            first = {}
+            for s, p in zip(ids.word_ids, pred.tolist()):
+                if s is not None and s not in first:
+                    first[s] = p
+            out.append(first)
+        return out
+
+    pred, gkept = [], []
+    for i in range(0, len(sents), 16):
+        batch = sents[i:i + 16]
+        for (words, tags), first in zip(
+                batch, tag_batch([w for w, _ in batch])):
+            for j, (w, g) in enumerate(zip(words, tags)):
+                if j not in first:
+                    continue
+                pred.append(id2label[first[j]])
+                gkept.append(g)
+    # Tagger-only speed on Moby body words (64-word blocks).
+    t = time.perf_counter()
+    for i in range(0, len(mwords), 64 * 16):
+        tag_batch([mwords[i + k:i + k + 64]
+                   for k in range(0, 64 * 16, 64)
+                   if mwords[i + k:i + k + 64]])
+    dt = time.perf_counter() - t
+    rate = len(mwords) / max(dt, 1e-9)
+    return (pred, rate, gkept), None, None
+
+
 def main(argv):
     import argparse
     ap = argparse.ArgumentParser(description="rerunnable tagger shootout")
@@ -392,6 +453,7 @@ def main(argv):
     ap.add_argument("--rdr-repo", default=None)
     ap.add_argument("--treetagger", default=None)
     ap.add_argument("--tt-params", default=None)
+    ap.add_argument("--distilbert", action="store_true")
     ap.add_argument("--tsv", default=None)
     a = ap.parse_args(argv)
 
@@ -517,6 +579,18 @@ def main(argv):
         cn, cd = score_coarse(pred, gold, PTB_TO_UNI.get)
         rows.append(("treetagger", None, 0, cn / cd, cd, None, None,
                      "Penn tags; research license, never vendored"))
+
+    # DistilBERT UPOS-EWT (exact + coarse, full coverage).
+    (res, skip, note) = leg_distilbert(sents, mwords, a.distilbert)
+    if skip:
+        rows.append(("distilbert", None, 0, None, 0, None, None, skip))
+    else:
+        pred, rate, gkept = res
+        ex = score_exact(pred, gkept)
+        cn, cd = score_coarse(pred, gkept, coarse_upos)
+        rows.append(("distilbert", ex / len(gkept), len(gkept),
+                     cn / cd, cd, rate, self_peak_mb(),
+                     note or "UPOS-EWT finetune; CC BY-SA, never vendored"))
 
     print(f"{'system':<16}{'exact-UPOS':>12}{'n':>7}"
           f"{'coarse-12':>11}{'tok/s':>12}{'peak(MB)':>10}  note")

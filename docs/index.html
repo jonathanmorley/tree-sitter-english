@@ -163,18 +163,13 @@ with forensics.</p>
 </svg>
 </div>
 </div>
-<table>
-<tr><th></th><th>Full-doc time</th><th>Weights</th><th>Peak mem</th></tr>
-<tr><td>Ours (measured)</td><td>~0.4 s</td><td>1.98 MB</td><td>~58 MB</td></tr>
-<tr><td>DistilBERT int8 (estimated)</td><td>~10–30 s</td><td>~60 MB</td><td>~300 MB</td></tr>
-<tr><td>DistilBERT fp32 (measured 2026-10-08)</td><td>~12 min</td><td>255 MB</td><td>—</td></tr>
-<tr><td>BERT-base fp32 (estimated)</td><td>~3–10 min</td><td>~440 MB</td><td>~1 GB</td></tr>
-</table>
 <h4>Competitor shootout <span class="sub">EWT test · same hardware+data</span></h4>
 <table>
 <tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th><th class="num">Peak RSS</th></tr>
 <tr><td>Ours, batch</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">119 MB</td></tr>
 <tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
+<tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">291</td><td class="num">255 MB</td><td class="num">621 MB</td></tr>
+<tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.01</td><td class="num">97.47</td><td class="num">318</td><td class="num">66.8 MB</td><td class="num">640 MB</td></tr>
 <tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td><td class="num">—</td></tr>
 <tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td><td class="num">260 MB</td></tr>
 <tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td><td class="num">369 MB</td></tr>
@@ -192,11 +187,19 @@ Sizes are on-disk artifacts (spaCy model pack, english.par + binary).
 Peak RSS is measured per task process on the Moby body: ours rows run
 the lint binary batch vs streaming (identical findings); NLTK/Pattern
 are isolated fresh-process peaks. RDR/spaCy/TreeTagger peaks are not
-yet measured in this harness.</p>
-<p class="fine">Transformer rows are single-thread CPU estimates for context, not
-measurements — they buy ~5 points of UPOS (97–98 vs 92.1) at 100–1000× the
-cost, which is why they stay offline-only oracles here. NLTK's perceptron is
-WSJ-trained (out of domain); detail is in the shootout table above.</p>
+yet measured in this harness. DistilBERT peaks are whole-process marks
+on different bases (fp32: EWT-eval run; int8: short Moby run) —
+same `time -v` instrument, stated bases. The fp32 row reruns via
+`--distilbert` (opt-in: ~10 min EWT + ~12 min Moby on CPU); the int8
+row's export+quantize procedure lives in the DistilBERT AGENTS entry,
+not the harness.</p>
+<p class="fine">Transformer context, now measured not estimated: DistilBERT
+fp32 tags EWT test at 96.51 exact-UPOS but takes ~12 min over the
+Moby body (291 tok/s) at 255 MB on disk — ~7,200× our tag pass,
+which is why transformers stay offline-only oracles here (a 96.5
+oracle is queued for disagreement mining, never the keystroke
+path). NLTK's perceptron is WSJ-trained (out of domain); detail
+is in the shootout table above.</p>
 <h4>Parser shootout <span class="sub">EWT test · 25,094 tokens · punct counted both sides</span></h4>
 <table>
 <tr><th>System</th><th>Input tags</th><th class="num">UAS</th><th class="num">LAS</th><th class="num">Weights</th><th class="num">Parse tok/s</th><th class="num">Peak RSS</th></tr>
