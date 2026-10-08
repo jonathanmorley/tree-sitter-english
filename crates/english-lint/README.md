@@ -17,13 +17,15 @@ pre-registered precision/recall bars):
 | `syntax.weasel` | `very/really/extremely` + ADJ/ADV | 0.968 / 1.000 | 2.7 ms (249 findings) |
 | `syntax.hedge` | `so/quite/rather` + ADJ/ADV | 0.941 / 0.533 (bar 0.50) | 2.5 ms (489 findings) |
 | `syntax.vague-demonstrative` | sentence-initial `this/that` + unclear antecedent | 0.824 / 0.967 | 1.1 ms (93 findings) |
+| `syntax.coord-scope` | ADJ NOUN and/or/but NOUN, same category | 0.844 / 0.900 | 0.8 ms (237 findings) |
+| `syntax.negation-scope` | quantifier before `n't/not/never` | 0.968 / 1.000 | 4.0 ms (165 findings) |
 
 POS/grammar rules (`sentence-length`, `clause-complexity`,
 `weasel`, `hedge`) run on the shallow path — no parser weights,
 keystroke-capable. Dependency rules need the Tier-1 weight pair
 (see `english-dep` README). Check costs are best-of-5 on a
 pre-annotated Moby body (full annotate itself: 8.0 s, dep-beam
-bound): rules total ~18 ms, 0.2% of the pipeline — rule logic is
+bound): rules total ~23 ms, 0.3% of the pipeline — rule logic is
 never the latency constraint, annotation is. Spelling and vocabulary are explicitly
 out (not a spellchecker — syntax differentiation is the point);
 markdown structure (tables, lists) is out of prose scope.
