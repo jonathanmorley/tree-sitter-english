@@ -1854,3 +1854,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Gotchas recorded in-harness: no PyPI package, module
   hard-codes a chdir dance (enter from `pSCRDRtagger/`),
   DICT is the .RDR stem sibling.
+
+## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
+
+- Pattern (CLiPS, BSD) added as the blog's second real tagger
+  (TextBlob is a wrapper, not a tagger — excluded with reason):
+  coarse 88.99 on the aligned 89.3%, ~11.9k tok/s, 67 MB
+  installed (lexicon-heavy). Install gauntlet, all venv-local:
+  PyPI `pattern` is a plotting name-squat, `pattern3` ships an
+  IndentationError, GitHub source needs `--no-deps` (mysqlclient
+  is web-mining baggage), plus a one-line PEP 479 fix
+  (`raise StopIteration` → `return` in the lazy lexicon loader,
+  broken on 3.14) and NLTK wordnet for first use.
+- LESSON (load-bearing): the full run printed ours 91.83/91.90
+  because a concurrent edit landed mid-`cargo build` — a poisoned
+  binary, not a model change (weights md5 identical, decode path
+  untouched; recount on a stable tree: 92.05). Standing rule:
+  benchmark binaries build from a clean tree or the numbers are
+  void; pure-Python legs in the same run were unaffected and
+  stand (Pattern, RDR, spaCy, NLTK, TreeTagger unchanged).
+  Their history-probe diff (train-only) is the cooperative
+  upside of the same shared tree.

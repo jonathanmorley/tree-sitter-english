@@ -186,6 +186,28 @@ def leg_nltk(sents):
     return (pred, dt), None
 
 
+def leg_pattern(sents):
+    """Pattern pattern.en tagger (coarse only; Penn-ish tags). Like
+    spaCy it retokenizes, so only count-aligned sentences score —
+    the kept gold subset is returned for scoring."""
+    try:
+        from pattern.en import tag as pattern_tag
+    except ImportError:
+        return None, ("skip (no pattern; pip install pattern)", None)
+    pred, gkept, t = [], [], time.perf_counter()
+    for words, tags in sents:
+        tagged = pattern_tag(" ".join(words))
+        if len(tagged) != len(words):
+            continue
+        pred.extend(tag for _, tag in tagged)
+        gkept.extend(tags)
+    dt = time.perf_counter() - t
+    n = sum(len(w) for w, _ in sents)
+    cov = len(gkept) / max(1, n)
+    note = (None if cov == 1.0 else f"aligned {cov:.3f} of gold words")
+    return (pred, dt, gkept), (None, note)
+
+
 _RDR = {}
 
 
@@ -378,6 +400,22 @@ def main(argv):
             r = None
         rows.append(("nltk-perceptron", None, 0, cn / cd, cd, r,
                      "WSJ Penn tags; domain gap conflated"))
+
+    # Pattern (coarse only, aligned subset).
+    (res, (skip, note)) = leg_pattern(sents)
+    if skip:
+        rows.append(("pattern", None, 0, None, 0, None, skip))
+    else:
+        pred, _, gkept = res
+        cn, cd = score_coarse(pred, gkept, PTB_TO_UNI.get)
+        try:
+            from pattern.en import tag as _pt
+            r = speed_each("pattern", mwords,
+                           lambda ws: _pt(" ".join(ws)))
+        except Exception:  # noqa: BLE001 - speed is best-effort
+            r = None
+        rows.append(("pattern", None, 0, cn / cd, cd, r,
+                     note or "CLiPS Penn tags; domain gap conflated"))
 
     # RDRPOSTagger (exact UPOS).
     (res, err) = leg_rdr(sents, a.rdr_model, a.rdr_repo)
