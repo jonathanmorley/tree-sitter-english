@@ -329,7 +329,22 @@ rejected Honnibal probe: training on guessed history hurt
 because early-iteration noise drags lexical rows, while
 constraining inference to memorized tags helps because these
 errors are systematic context bias, not noise — opposite
-interventions for opposite failure modes. Two implementation scars
+interventions for opposite failure modes.
+- Beam re-measured under dict (DONE 2026-10-07, keep): greedy+rules
+  vs beam+rules = dev 23199→23187 (−12), test 23271→23290 (+19).
+  Pre-dict the marginal was +25/+17; the dict shrank beam's role
+  (fewer/weaker spans) but split the splits, so removal fails the
+  change-gate on test (−19) and beam stays. NOT deleted.
+- Queued: (1) the 51+ count flips (86 — frequent words the dict
+  still overrides; distinct phenomenon, possibly model bug or EWT
+  quirk); (2) the 28 wrong flips (titlecase-forcing suspect — a
+  guard needs its own EWT-majority measurement, color-adj
+  discipline); (3) beam-dict consistency (beam rescores dict
+  words inside spans today and can overturn memorized tags —
+  forcing dict tags there might recover the dev −12, or cost
+  the test +19; unknowable without measuring); (4) per-class
+  weighting for rare-word identity rows (the census hands the
+  queued distillation idea a concrete target). Two implementation scars
 worth recording: (1) the first table was a sorted vec — binary
 search cost MORE than scoring on misses (tag pass 102→148 ms);
 a hash map fixed it; (2) the `U64Hasher::write` fallback REPLACED
