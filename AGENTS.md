@@ -1543,6 +1543,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   needs its own FP-rate measurement before it touches the
   pipeline, and docs-linting is not the product's first market
   (book prose is).
+- Filter measured 2026-10-08, DEFERRED (probe deleted): fences/
+  tables/list-markers stripped → README 8→7, AGENTS 502→491
+  (−2%). But the lost set mixes structural with REAL findings
+  (`take moment` nominal, `are windowed` passive, 34–40-word
+  prose sentences) — hiding real findings without changing any
+  rule, plus removed lines shift all downstream line numbers
+  (breaks the path:line:col contract unless blank-preserving).
+  No per-finding adjudication, no admission; revisit only with
+  both.
 - Fragments add noise (expected — rules assume sentences; ERROR
   recovery still annotates, findings follow garbage-in). Not
   acted on: same contract as the grammar (recover, never refuse).
