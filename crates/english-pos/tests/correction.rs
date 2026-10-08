@@ -668,3 +668,48 @@ fn there_adv_fixes_final_locative_there() {
         Tag::Pron
     );
 }
+
+#[test]
+fn be_aux_fixes_infinitive_be() {
+    // `seems to be a duchess`: VERB after `to` -> AUX (EWT 38:5).
+    assert_eq!(
+        run(
+            &["seems", "to", "be", "a"],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Part, 9.0),
+                (Tag::Verb, 1.0),
+                (Tag::Det, 9.0)
+            ],
+            "be-aux",
+        )[2],
+        Tag::Aux
+    );
+    // Modal-prev stays out (thin and mixed in EWT: `can be` 3:2).
+    assert_eq!(
+        run(
+            &["can", "be", "done"],
+            &[(Tag::Aux, 9.0), (Tag::Verb, 1.0), (Tag::Verb, 9.0)],
+            "be-aux",
+        )[1],
+        Tag::Verb
+    );
+    // Imperative `be` (no prev) abstains.
+    assert_eq!(
+        run(
+            &["be", "quiet"],
+            &[(Tag::Verb, 1.0), (Tag::Adj, 9.0)],
+            "be-aux",
+        )[0],
+        Tag::Verb
+    );
+    // Above-gate margin abstains even in the shape.
+    assert_eq!(
+        run(
+            &["to", "be", "fair"],
+            &[(Tag::Part, 9.0), (Tag::Verb, 5.0), (Tag::Adj, 9.0)],
+            "be-aux",
+        )[1],
+        Tag::Verb
+    );
+}

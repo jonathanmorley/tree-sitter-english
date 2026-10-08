@@ -1897,6 +1897,67 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   diffs → 1 rule; our confident readings beat 96.5 on books
   everywhere EWT can adjudicate except final-there.
 
+## Disagreement mining round 2: three sweep books (DONE 2026-10-08,
+  46,448 diffs → 1 rule)
+
+- Tagger-vs-opt-fp32-96.5 on Austen/Doyle/Stevenson bodies
+  (122k/104k/68k words, grammar sentences → whitespace words;
+  ours greedy `tag_tokens --sentences`, DBERT 64-word blocks,
+  first-subword tags; 15–17% raw diff rate). Pre-registered bars:
+  triage at n≥5, admission = standing rule gates.
+- Load-bearing methods finding: 47% of raw diffs (22,064) sit on
+  punctuation-glued or contraction tokens (44% diff rate vs 9.9%
+  on clean words) — a mining-tokenization artifact, NOT a
+  production gap: production pieces split punctuation (`him.` →
+  PUNCT whole-token, `Therefore,` → PRON, `I,` → PROPN all tag
+  correctly unglued) and contractions (`cannot`, `don't`,
+  `i'll` — EWT splits them too, so no EWT support exists for
+  whole-token shapes either). Candidacy restricted to clean
+  words (24,384 diffs); the glued class is out by construction.
+- Triage (all EWT-train pred-conditioned, greedy tags): model
+  right — had-VERB 325:4, have/has/had-AUX 94–95%,
+  more/much/most-ADJ 315:132, very-ADV 325:0, enough-ADV 38:3,
+  though-ADV 30:3, once-SCONJ 27:6, this-DET 711:23,
+  those-DET 235:22, for-ADP 1696:83, need-VERB 180:2,
+  NOUN→PROPN lowercase names + PROPN→NOUN sentence-initial
+  commons (no case signal — encoder territory); below bar —
+  what+NOUN→DET 29:8 (78%, light-do territory),
+  for+VERB→SCONJ 27:6 (82%), that splits (VERB-prev 82%,
+  PRON-subject 69%, DET-next 82% — gap-detection class stands),
+  all-ADV 55:32, quite-DET 15:10; thin/no-support — Miss→PROPN
+  (train has zero title-Miss), dare n=1, cannot (absent from
+  train entirely), has/had-nominal slices n≤9; confident-mistag
+  (margin-gated, unreachable) — quite 9–20, there-mid ≥2.0,
+  convinced/engaged (fast-path ties included — v1.1 residual
+  stands), to-part residuals (1/40 in-gate: singleton),
+  that-residuals (1 in-gate: singleton).
+- Production already covers: `as`-residuals with no verb ahead
+  (ADP 21:0 + 12:0 — shipped subconj-adp, verified fixing
+  `considered as the rightful property` on the production path);
+  verb-ahead `as` is 68%, below bar.
+- Follow-up flag, no action: have-verb's PRON arm flips against
+  a train 15:9 AUX majority (`have it done`-class) — shipped
+  rule stays (dev/test gates green), needs its own dev/test
+  measurement before any narrowing.
+- Probes deleted (`mine_dbert/diff`, `ewt_cell`, `drill`,
+  `margin_words`, `sent_words`); raw tags stay in /tmp.
+
+## Correction rule 17: be-aux (ADMITTED 2026-10-08)
+
+- Infinitive `be` read as main verb (`seems to be a duchess`):
+  pred-VERB `be` after `to` is gold AUX 38:5 in EWT train (the 5
+  breaks are raising/existential annotation noise — `there seems
+  to be a problem`, same surface shape, no guard available).
+  Modal-prev (`can/will be`) stays out — thin and mixed there —
+  so the guard is prev-word `to` only. Single-word lexical rule,
+  `quite`-precedent, τ=2.0.
+- Gates: unit fire + 3 abstains green; EWT dev/test ±0 (zero
+  fires both splits — same signature as `that-det`); 3 verified
+  production fixes on Austen (`a valuable neighbour`, `a most
+  conscientious`, `a duchess` — all gold-AUX infinitives,
+  margins 1.0, in-gate); zero breaks; full workspace (49
+  suites) green; `flies` holds; weights untouched. 17-for-31.
+
 ## Correction probe refused: conj-verb (REJECTED 2026-10-08,
   zero code written)
 
