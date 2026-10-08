@@ -1,4 +1,4 @@
-//! `english-lint file...`: Vale-comparable prose linting.
+//! `english-lint [--batch] file...`: Vale-comparable prose linting.
 //! Prints `path:line:col [rule] message` per finding, one rule per
 //! line, document order; exits 1 when findings exist (standard lint
 //! behavior), 0 when clean. Weights errors exit 2 (never silent).
@@ -7,13 +7,24 @@ use std::process::ExitCode;
 
 use english_lint::{
     ClauseComplexity, Hedge, Models, Nominalization, Passive, Rule, SentenceLength, Weasel,
-    line_col, lint_streaming,
+    line_col, lint, lint_streaming,
 };
 
 fn main() -> ExitCode {
-    let files: Vec<String> = std::env::args().skip(1).collect();
+    let mut batch = false;
+    let files: Vec<String> = std::env::args()
+        .skip(1)
+        .filter(|a| {
+            if a == "--batch" {
+                batch = true;
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
     if files.is_empty() {
-        eprintln!("usage: english-lint <file>...");
+        eprintln!("usage: english-lint [--batch] <file...>");
         return ExitCode::from(2);
     }
     let models = match Models::load_workspace() {
@@ -46,14 +57,23 @@ fn main() -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        // Streaming batch path: identical findings (pinned by
-        // tests/streaming.rs), bounded per-sentence residency.
+        // Batch (legacy) vs streaming residency; findings identical
+        // (pinned by tests/streaming.rs). `--batch` exists so the
+        // shootout harness can measure both paths.
         let mut total_file = 0usize;
-        lint_streaming(&models, &source, &rules, &mut |f| {
-            let (line, col) = line_col(&source, f.span.start);
-            println!("{path}:{line}:{col} [{}] {}", f.rule, f.message);
-            total_file += 1;
-        });
+        if batch {
+            for f in lint(&models, &source, &rules) {
+                let (line, col) = line_col(&source, f.span.start);
+                println!("{path}:{line}:{col} [{}] {}", f.rule, f.message);
+                total_file += 1;
+            }
+        } else {
+            lint_streaming(&models, &source, &rules, &mut |f| {
+                let (line, col) = line_col(&source, f.span.start);
+                println!("{path}:{line}:{col} [{}] {}", f.rule, f.message);
+                total_file += 1;
+            });
+        }
         total += total_file;
     }
     if total > 0 {
