@@ -1639,6 +1639,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   rejection note in module docs). fmt reflow of long test tuples
   kept (committed unformatted — gate hygiene).
 
+## Per-class weighting (CLOSED 2026-10-08, no code written)
+
+- The speculative roadmap item died at premise check (EWT test
+  greedy confusion + class totals, existing `--correct` output
+  — nothing to prototype): rare tags show no actionable recall
+  gap. SYM (gold 113) is OVER-predicted (pred 131 on ~100
+  correct — weighting it up worsens precision); X (gold 42)
+  recalls ~0.1 but is an incoherent bucket (fragments/typos)
+  worth +0.15 even if perfected; INTJ recalls ~0.86, fine.
+  The bulk errors are common-class confusions (PROPN↔NOUN 441,
+  VERB→NOUN 105) that class weights cannot touch without
+  fighting base rates (morphology-rules precedent). Either
+  reading of the item (rare tags, rare words — OOV proper was
+  already measured at ~15 scattered singletons) caps the prize
+  at noise level with no surviving mechanism. Do not reopen
+  without a named target error class plus its EWT-majority.
+
 ## Dogfood: english-lint on repo docs (DONE 2026-10-07)
 
 - README.md: 6 findings, all readable (2 long-sentences, 2
