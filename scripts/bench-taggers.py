@@ -192,7 +192,9 @@ def leg_pattern(sents):
     the kept gold subset is returned for scoring."""
     try:
         from pattern.en import tag as pattern_tag
-    except ImportError:
+    except (ImportError, ValueError):
+        # Absent package, or present-but-unrunnable (wordnet download
+        # blocked/unpacked is env, not code): optional either way.
         return None, ("skip (no pattern; pip install pattern)", None)
     pred, gkept, t = [], [], time.perf_counter()
     for words, tags in sents:
