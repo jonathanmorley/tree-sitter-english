@@ -42,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import os
 
 # Penn Treebank -> Petrov universal-12 (Petrov et al. 2012, Table 1;
 # reimplemented from the published table, not copied code).
@@ -117,6 +118,51 @@ def moby_words(path):
     i = text.find(mark)
     body = text[i:] if i >= 0 else text
     return body.split()
+
+
+def proc_peak(argv):
+    """Run argv, return (peak_rss_mb, seconds) for the child process.
+
+    Polls /proc/PID/status VmHWM (a high-water mark, so sparse
+    polling cannot miss the peak). Linux-only; (None, seconds)
+    where /proc is unavailable. Never times the build: callers pass
+    prebuilt binary paths.
+    """
+    import time as _t
+    t0 = _t.perf_counter()
+    try:
+        p = subprocess.Popen(argv, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL)
+    except Exception:
+        return None, None
+    peak = 0
+    try:
+        while p.poll() is None:
+            try:
+                with open(f"/proc/{p.pid}/status", encoding="utf-8") as f:
+                    for line in f:
+                        if line.startswith("VmHWM:"):
+                            peak = max(peak, int(line.split()[1]))
+                            break
+            except Exception:
+                pass
+            _t.sleep(0.005)
+    finally:
+        p.wait()
+    dt = _t.perf_counter() - t0
+    return ((peak / 1024 if peak else None), dt)
+
+
+def self_peak_mb():
+    """Whole-process peak RSS (cumulative high-water mark): honest for
+    in-process legs only when read as the max after the leg, and it
+    includes the harness itself — noted per row, never silently
+    compared against subprocess peaks."""
+    try:
+        import resource
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    except Exception:
+        return None
 
 
 def run_ours(sents):
@@ -356,41 +402,58 @@ def main(argv):
     mwords = moby_words(a.moby)
     print(f"speed: {len(mwords)} body words from {a.moby}")
 
-    rows = []  # (system, exact, exact_n, coarse, coarse_d, tok/s, note)
+    rows = []  # (system, exact, exact_n, coarse, coarse_d, tok/s,
+                # peak_rss_mb, note). Peaks: subprocess legs report the
+                # monitored child peak; in-process legs report the whole-
+                # process high-water mark after the leg (includes harness
+                # baseline — comparable across runs, not against
+                # subprocess peaks).
 
-    # Ours: greedy + production (exact UPOS + coarse).
+    # Ours: production accuracy only (greedy decoded internally for
+    # the record; the front page shows the shipped path only).
+    # Tagger speed runs the prebuilt binary (the build is never
+    # timed); batch/streaming peaks run the lint binary both ways
+    # (identical findings; the shapes differ in memory).
     (res, err) = run_ours(sents)
     if err:
-        rows.append(("ours-greedy", None, 0, None, 0, None, err))
-        rows.append(("ours-prod", None, 0, None, 0, None, err))
+        rows.append(("ours-batch", None, 0, None, 0, None, None, err))
+        rows.append(("ours-stream", None, 0, None, 0, None, None, err))
     else:
         (greedy, prod), dt = res
-        ex = score_exact(greedy, gold)
-        cn, cd = score_coarse(greedy, gold, coarse_upos)
+        ex = score_exact(prod, gold)
+        cn, cd = score_coarse(prod, gold, coarse_upos)
+        subprocess.run(
+            ["cargo", "build", "--quiet", "--release",
+             "-p", "english-pos", "--example", "tag_tokens"],
+            check=True)
+        subprocess.run(
+            ["cargo", "build", "--quiet", "--release",
+             "-p", "english-lint", "--bin", "english-lint"],
+            check=True)
+        tagbin = os.path.join("target", "release", "examples",
+                              "tag_tokens")
+        lintbin = os.path.join("target", "release", "english-lint")
         # Tagger-only speed on the shared Moby word list (greedy path).
         with tempfile.NamedTemporaryFile(
                 "w", suffix=".txt", delete=False) as f:
             f.write("\n".join(mwords) + "\n")
             mf = f.name
-        t = time.perf_counter()
-        subprocess.run(
-            ["cargo", "run", "--quiet", "--release",
-             "-p", "english-pos", "--example", "tag_tokens",
-             "--", mf],
-            capture_output=True, text=True, check=True)
-        sdt = time.perf_counter() - t
-        rows.append(("ours-greedy", ex / len(gold), len(gold),
-                     cn / cd, cd, len(mwords) / sdt,
-                     "per-sentence decode"))
-        ex = score_exact(prod, gold)
-        cn, cd = score_coarse(prod, gold, coarse_upos)
-        rows.append(("ours-prod", ex / len(gold), len(gold),
-                     cn / cd, cd, None, "beam-2 + 14 rules"))
+        tpeak, sdt = proc_peak([tagbin, mf])
+        rate = len(mwords) / sdt if sdt else None
+        # Lint-pipeline peaks on the Moby body file itself.
+        bpeak, _ = proc_peak([lintbin, "--batch", a.moby])
+        speak, _ = proc_peak([lintbin, a.moby])
+        rows.append(("ours-batch", ex / len(gold), len(gold),
+                     cn / cd, cd, rate, bpeak,
+                     "beam-2 + 14 rules; batch lint path"))
+        rows.append(("ours-stream", ex / len(gold), len(gold),
+                     cn / cd, cd, rate, speak,
+                     "beam-2 + 14 rules; streaming lint path"))
 
     # NLTK perceptron (coarse only).
     (res, err) = leg_nltk(sents)
     if err:
-        rows.append(("nltk-perceptron", None, 0, None, 0, None, err))
+        rows.append(("nltk-perceptron", None, 0, None, 0, None, None, err))
     else:
         pred, _ = res
         cn, cd = score_coarse(pred, gold, PTB_TO_UNI.get)
@@ -398,15 +461,16 @@ def main(argv):
             from nltk.tag import PerceptronTagger as _P
             _tagger = _P()
             r = speed_each("nltk", mwords, _tagger.tag)
+            peak = self_peak_mb()
         except Exception:  # noqa: BLE001 - speed is best-effort
-            r = None
-        rows.append(("nltk-perceptron", None, 0, cn / cd, cd, r,
+            r, peak = None, None
+        rows.append(("nltk-perceptron", None, 0, cn / cd, cd, r, peak,
                      "WSJ Penn tags; domain gap conflated"))
 
     # Pattern (coarse only, aligned subset).
     (res, (skip, note)) = leg_pattern(sents)
     if skip:
-        rows.append(("pattern", None, 0, None, 0, None, skip))
+        rows.append(("pattern", None, 0, None, 0, None, None, skip))
     else:
         pred, _, gkept = res
         cn, cd = score_coarse(pred, gkept, PTB_TO_UNI.get)
@@ -414,56 +478,59 @@ def main(argv):
             from pattern.en import tag as _pt
             r = speed_each("pattern", mwords,
                            lambda ws: _pt(" ".join(ws)))
+            peak = self_peak_mb()
         except Exception:  # noqa: BLE001 - speed is best-effort
-            r = None
-        rows.append(("pattern", None, 0, cn / cd, cd, r,
+            r, peak = None, None
+        rows.append(("pattern", None, 0, cn / cd, cd, r, peak,
                      note or "CLiPS Penn tags; domain gap conflated"))
 
     # RDRPOSTagger (exact UPOS).
     (res, err) = leg_rdr(sents, a.rdr_model, a.rdr_repo)
     if err:
-        rows.append(("rdr", None, 0, None, 0, None, err))
+        rows.append(("rdr", None, 0, None, 0, None, None, err))
     else:
         pred, _ = res
         ex = score_exact(pred, gold)
         cn, cd = score_coarse(pred, gold, coarse_upos)
         rows.append(("rdr", ex / len(gold), len(gold),
                      cn / cd, cd, speed_rdr(mwords, a.rdr_model, a.rdr_repo),
+                     None,
                      "UPOS-EWT tree; speed rerun timed"))
 
     # spaCy (exact UPOS on aligned subset).
     (res, skip, note) = leg_spacy(sents)
     if skip:
-        rows.append(("spacy-sm", None, 0, None, 0, None, skip))
+        rows.append(("spacy-sm", None, 0, None, 0, None, None, skip))
     else:
         pred, _, gkept = res
         ex = score_exact(pred, gkept)
         cn, cd = score_coarse(pred, gkept, coarse_upos)
         rows.append(("spacy-sm", ex / len(gkept), len(gkept),
-                     cn / cd, cd, None, note or "aligned subset"))
+                     cn / cd, cd, None, None, note or "aligned subset"))
 
     # TreeTagger (coarse only).
     (res, err) = leg_treetagger(sents, a.treetagger, a.tt_params)
     if err:
-        rows.append(("treetagger", None, 0, None, 0, None, err))
+        rows.append(("treetagger", None, 0, None, 0, None, None, err))
     else:
         pred, _ = res
         cn, cd = score_coarse(pred, gold, PTB_TO_UNI.get)
-        rows.append(("treetagger", None, 0, cn / cd, cd, None,
+        rows.append(("treetagger", None, 0, cn / cd, cd, None, None,
                      "Penn tags; research license, never vendored"))
 
     print(f"{'system':<16}{'exact-UPOS':>12}{'n':>7}"
-          f"{'coarse-12':>11}{'tok/s':>12}  note")
-    for name, ex, n, co, _cd, rate, note in rows:
+          f"{'coarse-12':>11}{'tok/s':>12}{'peak(MB)':>10}  note")
+    for name, ex, n, co, _cd, rate, peak, note in rows:
         exs = f"{ex:.4f}" if ex is not None else "      -"
         cos = f"{co:.4f}" if co is not None else "      -"
         rs = f"{rate:,.0f}" if rate else "       -"
-        print(f"{name:<16}{exs:>12}{n:>7}{cos:>11}{rs:>12}  {note}")
+        ps = f"{peak:,.0f}" if peak else "         -"
+        print(f"{name:<16}{exs:>12}{n:>7}{cos:>11}{rs:>12}{ps:>10}  {note}")
     if a.tsv:
         with open(a.tsv, "w", encoding="utf-8") as f:
-            f.write("system\texact\tn\tcoarse\ttok_per_s\tnote\n")
-            for name, ex, n, co, _cd, rate, note in rows:
-                f.write(f"{name}\t{ex}\t{n}\t{co}\t{rate}\t{note}\n")
+            f.write("system\texact\tn\tcoarse\ttok_per_s\tpeak_mb\tnote\n")
+            for name, ex, n, co, _cd, rate, peak, note in rows:
+                f.write(f"{name}\t{ex}\t{n}\t{co}\t{rate}\t{peak}\t{note}\n")
         print(f"wrote {a.tsv}")
 
 

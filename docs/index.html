@@ -127,10 +127,9 @@ with forensics.</p>
 <div class="charts">
 <div>
 <h4>EWT test UPOS, exact (%)</h4>
-<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Exact UPOS on EWT test: RDRPOSTagger 92.30, ours production 92.81, ours greedy 92.65">
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Exact UPOS on EWT test: RDRPOSTagger 92.30, ours 92.81">
 <text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="245" height="18" rx="3" class="dim"><title>RDRPOSTagger 92.30% exact UPOS (23,163 / 25,094)</title></rect>
-<text x="0" y="52">ours prod 92.81</text><rect x="150" y="39" width="300" height="18" rx="3"><title>ours production 92.81% (beam-2 + 14 rules, current code)</title></rect>
-<text x="0" y="86">ours greedy 92.65</text><rect x="150" y="73" width="283" height="18" rx="3" class="soft"><title>ours greedy 92.65%</title></rect>
+<text x="0" y="52">ours 92.81</text><rect x="150" y="39" width="300" height="18" rx="3"><title>ours 92.81% (beam-2 + 14 rules, current code)</title></rect>
 <text x="150" y="116" class="t2">axis 90–93 · same tagset+domain · blue ours</text>
 </svg>
 </div>
@@ -171,14 +170,14 @@ with forensics.</p>
 </table>
 <h4>Competitor shootout <span class="sub">EWT test · same hardware+data</span></h4>
 <table>
-<tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th></tr>
-<tr><td>Ours, production</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td></tr>
-<tr><td>Ours, greedy</td><td class="num">92.65</td><td class="num">94.84</td><td class="num">2.5M</td><td class="num">1.98 MB</td></tr>
-<tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td></tr>
-<tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td></tr>
-<tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td></tr>
-<tr><td>spaCy en_core_web_sm</td><td class="num">93.15 †</td><td class="num">95.43</td><td class="num">4.9k ‡</td><td class="num">15 MB</td></tr>
-<tr><td>TreeTagger + english.par</td><td>Penn/CLAWS mix</td><td class="num">89.52</td><td class="num">66k</td><td class="num">15 MB</td></tr>
+<tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th><th class="num">Peak RSS</th></tr>
+<tr><td>Ours, batch</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">119 MB</td></tr>
+<tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
+<tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td><td class="num">—</td></tr>
+<tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td><td class="num">260 MB</td></tr>
+<tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td><td class="num">369 MB</td></tr>
+<tr><td>spaCy en_core_web_sm</td><td class="num">93.15 †</td><td class="num">95.43</td><td class="num">4.9k ‡</td><td class="num">15 MB</td><td class="num">—</td></tr>
+<tr><td>TreeTagger + english.par</td><td>Penn/CLAWS mix</td><td class="num">89.52</td><td class="num">66k</td><td class="num">15 MB</td><td class="num">—</td></tr>
 </table>
 <p class="fine">Rerun it: <code>python3 scripts/bench-taggers.py --conllu
 /tmp/ud/ewt/en_ewt-ud-test.conllu --moby /tmp/moby.txt</code> for accuracy,
@@ -187,7 +186,11 @@ clock. Every absent competitor is skipped with an install hint; the standing
 record above is the 2026-10-07 full five-leg run (TSV beside the harness invocation). † spaCy scored on the 85.3% of gold words whose tokenization aligns; excluded sentences are the drifted ones, so 93.15 is not directly comparable to full-set numbers. Coarse-12 follows Petrov Table 1 literally (SYM→., PUNCT→.), which accounts for +0.16/+0.11 vs the 2026-10-06 probe that kept them split. ‡ spaCy speed is
 the full default pipeline (tokenize+tag+parse over the Moby body in one pipe),
 not tagger-only; TreeTagger times the binary on whitespace-split words.
-Sizes are on-disk artifacts (spaCy model pack, english.par + binary).</p>
+Sizes are on-disk artifacts (spaCy model pack, english.par + binary).
+Peak RSS is measured per task process on the Moby body: ours rows run
+the lint binary batch vs streaming (identical findings); NLTK/Pattern
+are isolated fresh-process peaks. RDR/spaCy/TreeTagger peaks are not
+yet measured in this harness.</p>
 <p class="fine">Transformer rows are single-thread CPU estimates for context, not
 measurements — they buy ~5 points of UPOS (97–98 vs 92.1) at 100–1000× the
 cost, which is why they stay offline-only oracles here. NLTK's perceptron is
