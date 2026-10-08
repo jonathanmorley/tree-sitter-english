@@ -170,6 +170,7 @@ with forensics.</p>
 <tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
 <tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">482</td><td class="num">266 MB</td><td class="num">621 MB</td></tr>
 <tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.39</td><td class="num">97.72</td><td class="num">451</td><td class="num">98.4 MB</td><td class="num">805 MB</td></tr>
+<tr><td>Muse Spark 1.3 (API, single run) §</td><td class="num">93.04</td><td class="num">94.52</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td><td class="num">—</td></tr>
 <tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td><td class="num">260 MB</td></tr>
 <tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td><td class="num">369 MB</td></tr>
@@ -192,7 +193,13 @@ on different bases (fp32: EWT-eval run; int8: short Moby run) —
 same `time -v` instrument, stated bases. The fp32 row reruns via
 `--distilbert` (opt-in: ~10 min EWT + ~12 min Moby on CPU); the int8
 row's export+quantize procedure lives in the DistilBERT AGENTS entry,
-not the harness.</p>
+not the harness. § Muse Spark 1.3 is a single non-rerunnable API run
+(tags vendored as <code>spark-ewt-test-tags.tsv</code>, no harness
+leg): exact 93.04 / coarse 94.52 on 25,076 aligned words
+(2076/2077 sents; sid 1907 excluded on a merged trailing emoticon),
+so it is not comparable head-to-head with full-set numbers;
+possible EWT train-data contamination is unknown. No tok/s (API
+wall time is not model speed), no size (no artifact).</p>
 <p class="fine">Transformer context, now measured not estimated: DistilBERT
 fp32 tags EWT test at 96.51 exact-UPOS but takes ~12 min over the
 Moby body (291 tok/s) at 255 MB on disk — ~7,200× our tag pass,
