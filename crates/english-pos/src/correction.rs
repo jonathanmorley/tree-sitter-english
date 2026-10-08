@@ -61,6 +61,20 @@
 //! base model's errors concentrate on the minority reading; future
 //! EWT checks must condition on the predicted tag, not just gold.
 //! Same class that killed unguarded attr-adj, twice confirmed.
+//!
+//! REJECTED (2026-10-07, zero code written): case-frequency titlecase
+//! rules from a 6.6M-token book-body rate table (Honnibal (c) probe).
+//! Pred-conditioned EWT-train tabulation (89 gated titlecase tokens
+//! past position 0): NOUN→PROPN fires 8:2 at rate ≥ 0.1 but 6:5 below
+//! it (55% — the tagger predicts NOUN exactly where noun evidence is
+//! strongest, color-adj all over again); PROPN→NOUN goes 8:17 against;
+//! PROPN→ADJ 11:17 against. Nothing near the 89:1-class bar the
+//! shipped shapes hold, and the book misses scatter across buckets
+//! (`sabbath` 0.95 vs `midnight` 0.03 — no threshold captures them
+//! without the breaks). Deeper lesson, generalizing OOV-list: book
+//! titlecase errors are domain-shift (unseen names), not EWT-shaped
+//! ambiguity — the rate table describes books well but the rule
+//! needs web-gated precision that isn't there. Probe deleted.
 
 use crate::Tag;
 use crate::lexicon::known_verb_form;
