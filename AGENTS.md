@@ -1826,6 +1826,34 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   green, zero rule breaks; `flies` holds; weights md5 untouched
   (rules never retrain). 15-for-28.
 
+## Correction probe refused: conj-verb (REJECTED 2026-10-08,
+  zero code written)
+
+- From the scope-rule evals (`sleep`/`land`/`drank` mistagged
+  NOUN after *and*): EWT-train probe, greedy tags, conditioned
+  on PREDICTED tags throughout (color-adj lesson). Pred-NOUN
+  in NOUN–CCONJ–x position is gold NOUN 763 vs VERB 39 —
+  the tagger is right 95% there (`cats and dogs` dominates),
+  so any flip fights a 20:1 base rate. Lexicon-gated split
+  (verbs.txt membership): NOUN 114 vs VERB 37 — still
+  3:1 NOUN-majority, and real destemming would only add
+  NOUN-side matches (the s-verb-lex precedent in miniature).
+  The three lint instances are the minority reading where
+  parallelism genuinely misleads; no EWT-majority sub-shape
+  separates them. Rejected without prototype. 15-for-29.
+- Wider audit of the ambiguity rules' pipeline misses (for the
+  record, none actionable): participle→ADJ overfire gains 2
+  instances (`delayed`, `annoyed` FNs — the deferred gap
+  stands); PROPN-scatter (`seas`/`spears`-PROPN,
+  `Charing`-VERB, `my`-PRON, `substitute`-ADJ, `notice`-NOUN)
+  has no cell above background; VERB overfire on nouns
+  (`winds`, `gratitude`) is n=2 across two shapes, below any
+  support bar. Coordination errors are symmetric in the
+  overlap study (conj ~110 both off-diagonals), so no arc-side
+  symmetry lever either. The harvestable demonstrative
+  (`those-pron`, rule 15) was already taken; this closes the
+  feedback audit.
+
 ## Docs sweep + Pages WASM demo (DONE 2026-10-07)
 
 - Docs sweep pushed (`61d7bcf`): pinned-CLI command, 16 abbreviations,
