@@ -168,8 +168,8 @@ with forensics.</p>
 <tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th><th class="num">Peak RSS</th></tr>
 <tr><td>Ours, batch</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">119 MB</td></tr>
 <tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
-<tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">291</td><td class="num">255 MB</td><td class="num">621 MB</td></tr>
-<tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.01</td><td class="num">97.47</td><td class="num">318</td><td class="num">66.8 MB</td><td class="num">640 MB</td></tr>
+<tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">482</td><td class="num">266 MB</td><td class="num">621 MB</td></tr>
+<tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.01</td><td class="num">97.47</td><td class="num">377</td><td class="num">66.8 MB</td><td class="num">640 MB</td></tr>
 <tr><td>RDRPOSTagger (UPOS-EWT)</td><td class="num">92.30</td><td class="num">94.70</td><td class="num">42k</td><td class="num">0.36 MB</td><td class="num">—</td></tr>
 <tr><td>NLTK perceptron (WSJ Penn)</td><td>out of domain</td><td class="num">87.24</td><td class="num">24k</td><td class="num">1.5 MB</td><td class="num">260 MB</td></tr>
 <tr><td>Pattern (WSJ Penn)</td><td>out of domain</td><td class="num">88.99</td><td class="num">11.9k</td><td class="num">67 MB</td><td class="num">369 MB</td></tr>
@@ -198,8 +198,10 @@ fp32 tags EWT test at 96.51 exact-UPOS but takes ~12 min over the
 Moby body (291 tok/s) at 255 MB on disk — ~7,200× our tag pass,
 which is why transformers stay offline-only oracles here (a 96.5
 oracle is queued for disagreement mining, never the keystroke
-path). NLTK's perceptron is WSJ-trained (out of domain); detail
-is in the shootout table above.</p>
+path). Graph-optimized artifacts (attention fusion, accuracy
+bit-identical on EWT: 96.51/96.01) run 482/377 tok/s on a 20k-word
+Moby sample and are the mining workhorses. NLTK's perceptron is
+WSJ-trained (out of domain); detail is in the shootout table above.</p>
 <h4>Parser shootout <span class="sub">EWT test · 25,094 tokens · punct counted both sides</span></h4>
 <table>
 <tr><th>System</th><th>Input tags</th><th class="num">UAS</th><th class="num">LAS</th><th class="num">Weights</th><th class="num">Parse tok/s</th><th class="num">Peak RSS</th></tr>

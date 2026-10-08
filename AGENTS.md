@@ -2304,6 +2304,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   int8 procedure stays in this entry (export+quant scripts
   /tmp-ephemeral). Beams doc note: tokenizer key drift is
   why all probe feeds are explicit.
+- Optimized 2026-10-08 (ORT attention fusion; accuracy
+  BIT-IDENTICAL both artifacts: 96.51/97.83 and 96.01/97.47):
+  opt-fp32 482 tok/s (+1.66×), opt-int8 377 tok/s (+1.19×, with
+  a producer-mismatch warning — fusion partially applied).
+  Irony recorded: optimized fp32 beats int8, so the mining
+  workhorse is opt-fp32 (266 MB), opt-int8 kept for size
+  (66.7 MB). Front rows carry opt speeds. Static quantization
+  stays queued behind (calibration might recover part of the
+  −0.50 int8 gap); int4 stays off (near-certain bar miss on
+  CPU, possibly slower). Probes deleted after use.
 
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
