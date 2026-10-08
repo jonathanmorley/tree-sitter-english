@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use english_lint::{
     ClauseComplexity, Hedge, Models, Nominalization, Passive, Rule, SentenceLength, Weasel,
-    line_col, lint,
+    line_col, lint_streaming,
 };
 
 fn main() -> ExitCode {
@@ -46,11 +46,15 @@ fn main() -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        for f in lint(&models, &source, &rules) {
+        // Streaming batch path: identical findings (pinned by
+        // tests/streaming.rs), bounded per-sentence residency.
+        let mut total_file = 0usize;
+        lint_streaming(&models, &source, &rules, &mut |f| {
             let (line, col) = line_col(&source, f.span.start);
             println!("{path}:{line}:{col} [{}] {}", f.rule, f.message);
-            total += 1;
-        }
+            total_file += 1;
+        });
+        total += total_file;
     }
     if total > 0 {
         eprintln!("english-lint: {total} finding(s)");

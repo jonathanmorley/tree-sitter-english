@@ -253,8 +253,69 @@ fn push_shape(raw_word: &str, feats: &mut Vec<u64>) {
     }
 }
 
+/// Dense rows (`feature id → [f32; 17]`) deserialized with zero
+/// intermediate maps; see [`Model::from_json`].
+#[derive(Default)]
+struct DenseRows(U64Map<[f32; 17]>);
+
+impl<'de> serde::Deserialize<'de> for DenseRows {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = U64Map<[f32; 17]>;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "map from feature id to tag-weight map")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut weights = U64Map::default();
+                while let Some(f) = map.next_key::<u64>()? {
+                    let mut arr = [0.0f32; 17];
+                    map.next_value_seed(RowSeed(&mut arr))?;
+                    weights.insert(f, arr);
+                }
+                Ok(weights)
+            }
+        }
+        d.deserialize_map(V).map(DenseRows)
+    }
+}
+
+/// Fills one dense row from `{tagcode: weight}` pairs, borrowing keys.
+struct RowSeed<'a>(&'a mut [f32; 17]);
+
+impl<'de> serde::de::DeserializeSeed<'de> for RowSeed<'_> {
+    type Value = ();
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+        struct V<'a>(&'a mut [f32; 17]);
+        impl<'de> serde::de::Visitor<'de> for V<'_> {
+            type Value = ();
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "map from tag code to weight")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                while let Some((code, w)) = map.next_entry::<&str, f32>()? {
+                    match tag_index(code) {
+                        Some(t) if t < self.0.len() => self.0[t] = w,
+                        _ => {
+                            return Err(serde::de::Error::custom(format!(
+                                "unknown tag code {code:?}"
+                            )));
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+        d.deserialize_map(V(self.0))
+    }
+}
 /// Greedy perceptron model: `weights[feature][tag_index]`.
-///
 /// Tags ride in a dense `[f32; 17]` in [`TAGS`] order, so decoding adds
 /// one array per active feature instead of one hash lookup per
 /// (feature, tag) pair. The map itself uses a trivial `u64` hasher
@@ -594,28 +655,30 @@ impl Model {
     /// Deserialize weights written by the trainer. Unknown tag codes are
     /// an error (fail loudly on a corrupt artifact, not silently sparse).
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-        let raw: std::collections::BTreeMap<u64, HashMap<String, f32>> =
-            serde_json::from_str::<serde_json::Value>(json)
-                .and_then(|v| serde_json::from_value(v["weights"].clone()))?;
-        let mut weights: U64Map<[f32; 17]> =
-            HashMap::with_capacity_and_hasher(raw.len(), BuildHasherDefault::default());
-        for (f, per_tag) in raw {
-            let mut arr = [0.0f32; 17];
-            for (code, w) in &per_tag {
-                match tag_index(code) {
-                    Some(t) => arr[t] = *w,
-                    None => {
-                        return Err(serde::de::Error::custom(format!(
-                            "unknown tag code {code:?}"
-                        )));
-                    }
-                }
+        // Deserialize straight into the final shapes — never through a
+        // generic Value DOM (the old double-parse spiked 30× file size
+        // transiently: 2 MB file, 60 MB peak) and never through a
+        // `BTreeMap<u64, HashMap<String, f32>>` stopover (per-row maps
+        // kept ~1M heap nodes alive mid-parse on the dep file: 590 MB
+        // transient). Rows land directly in the dense map; borrowed
+        // `&str` keys mean zero allocation while scanning.
+        #[derive(serde::Deserialize)]
+        struct File {
+            #[serde(default)]
+            weights: DenseRows,
+            #[serde(default)]
+            tagdict: Vec<(String, u8)>,
+        }
+        let raw: File = serde_json::from_str(json)?;
+        let mut tagdict: HashMap<String, u8, BuildHasherDefault<U64Hasher>> = HashMap::default();
+        for (w, t) in raw.tagdict {
+            if !w.is_empty() && (t as usize) < 17 {
+                tagdict.insert(w, t);
             }
-            weights.insert(f, arr);
         }
         Ok(Model {
-            weights,
-            tagdict: Self::parse_tagdict(&serde_json::from_str::<serde_json::Value>(json)?),
+            weights: raw.weights.0,
+            tagdict,
         })
     }
 
@@ -644,22 +707,6 @@ impl Model {
         for (w, (t, single)) in seen {
             if single {
                 out.insert(w, t as u8);
-            }
-        }
-        out
-    }
-
-    /// Parse the optional `tagdict` table (sorted `[[word, tagidx]]`
-    /// pairs); absent in weight files written before it existed.
-    fn parse_tagdict(v: &serde_json::Value) -> HashMap<String, u8, BuildHasherDefault<U64Hasher>> {
-        let mut out: HashMap<String, u8, BuildHasherDefault<U64Hasher>> = HashMap::default();
-        if let Some(arr) = v.get("tagdict").and_then(|t| t.as_array()) {
-            for pair in arr {
-                let w = pair.get(0).and_then(|w| w.as_str()).unwrap_or_default();
-                let t = pair.get(1).and_then(|t| t.as_u64()).unwrap_or(17) as usize;
-                if !w.is_empty() && t < 17 {
-                    out.insert(w.to_string(), t as u8);
-                }
             }
         }
         out

@@ -139,6 +139,26 @@ fn annotate_impl(
     for para in doc.paragraphs() {
         for sent in para.sentences() {
             let span = sent.span();
+            sentences.push(annotate_sentence(tagger, parser, labeler, &sent, span));
+        }
+    }
+    AnnotatedDoc {
+        source: source.to_string(),
+        sentences,
+    }
+}
+
+/// Annotate one parsed sentence, stamping the caller-supplied span
+/// (normally the sentence's own; the streaming path passes the
+/// pass-1 span so findings land on document bytes even when a lone
+/// re-parse trims leading trivia differently).
+fn annotate_sentence(
+    tagger: &PosModel,
+    parser: Option<&DepModel>,
+    labeler: Option<&LabelModel>,
+    sent: &english::Sentence,
+    span: std::ops::Range<usize>,
+) -> SentenceAnn {
             let tagged = tag_sentence(tagger, &sent);
             let pieces: Vec<String> = tagged.iter().map(|(w, _)| w.clone()).collect();
             let tags: Vec<Tag> = tagged.iter().map(|(_, t)| *t).collect();
@@ -157,7 +177,7 @@ fn annotate_impl(
             };
             let clauses = sent.clauses();
             let subords = clauses.iter().filter(|c| c.is_subordinate()).count();
-            sentences.push(SentenceAnn {
+            SentenceAnn {
                 span,
                 pieces,
                 tags,
@@ -165,13 +185,7 @@ fn annotate_impl(
                 rels,
                 clauses: clauses.len(),
                 subords,
-            });
-        }
-    }
-    AnnotatedDoc {
-        source: source.to_string(),
-        sentences,
-    }
+            }
 }
 
 /// Run every rule over one annotated document; findings sorted by
@@ -184,6 +198,114 @@ pub fn lint(models: &Models, source: &str, rules: &[&dyn Rule]) -> Vec<Finding> 
     }
     out.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.rule.cmp(b.rule)));
     out
+}
+
+/// Streaming lint: same findings as [`lint`], bounded memory.
+///
+/// Pass 1 parses the whole document for sentence spans only (the
+/// tree is dropped before any annotation exists). Each sentence is
+/// then re-parsed alone — token-identical to its in-document parse
+/// (measured 0/9973 divergences on Moby body) — annotated, ruled,
+/// and emitted before the next begins, so only one sentence's
+/// annotations plus the input text are ever resident. Sentence spans
+/// stamped on findings are the pass-1 document spans, hence
+/// byte-identical to batch output; span order is document order, so
+/// no re-sort is needed. Byte-splitting the input is NOT used: dash/
+/// colon-handoff arbitration absorbs blank lines into following
+/// sentences in ~1.4% of Moby paragraphs, which no byte splitter
+/// reproduces (see the streaming record in AGENTS.md).
+pub fn lint_streaming(
+    models: &Models,
+    source: &str,
+    rules: &[&dyn Rule],
+    emit: &mut dyn FnMut(Finding),
+) {
+    let spans: Vec<std::ops::Range<usize>> = {
+        let doc = english::Document::parse(source.to_string());
+        let mut out = Vec::new();
+        for para in doc.paragraphs() {
+            for sent in para.sentences() {
+                out.push(sent.span());
+            }
+        }
+        out
+    };
+    for span in spans {
+        let text = &source[span.clone()];
+        let sdoc = english::Document::parse(text.to_string());
+        let mut ann = AnnotatedDoc {
+            source: String::new(),
+            sentences: Vec::new(),
+        };
+        for para in sdoc.paragraphs() {
+            for sent in para.sentences() {
+                // Stamped with the pass-1 span (see fn docs); contents
+                // come from the lone re-parse.
+                ann.sentences.push(annotate_sentence(
+                    &models.tagger,
+                    Some(&models.parser),
+                    Some(&models.labeler),
+                    &sent,
+                    span.clone(),
+                ));
+            }
+        }
+        // Findings leave in lint() order (span start, ties by rule
+        // id): sentences arrive in span order with disjoint spans, so
+        // a per-sentence sort reproduces the global sort exactly.
+        let mut out = Vec::new();
+        for rule in rules {
+            out.extend(rule.check(&ann));
+        }
+        out.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.rule.cmp(b.rule)));
+        for f in out {
+            emit(f);
+        }
+    }
+}
+/// Shallow streaming lint (POS/grammar rules only): same shape as
+/// [`lint_streaming`] with [`annotate_shallow`] semantics (root heads,
+/// empty rels). The keystroke-capable batch path, now bounded-memory.
+pub fn lint_streaming_shallow(
+    tagger: &PosModel,
+    source: &str,
+    rules: &[&dyn Rule],
+    emit: &mut dyn FnMut(Finding),
+) {
+    let spans: Vec<std::ops::Range<usize>> = {
+        let doc = english::Document::parse(source.to_string());
+        let mut out = Vec::new();
+        for para in doc.paragraphs() {
+            for sent in para.sentences() {
+                out.push(sent.span());
+            }
+        }
+        out
+    };
+    for span in spans {
+        let text = &source[span.clone()];
+        let sdoc = english::Document::parse(text.to_string());
+        let mut ann = AnnotatedDoc {
+            source: String::new(),
+            sentences: Vec::new(),
+        };
+        for para in sdoc.paragraphs() {
+            for sent in para.sentences() {
+                ann.sentences.push(annotate_sentence(tagger, None, None, &sent, span.clone()));
+            }
+        }
+        // Findings leave in lint() order (span start, ties by rule
+        // id): sentences arrive in span order with disjoint spans, so
+        // a per-sentence sort reproduces the global sort exactly.
+        let mut out = Vec::new();
+        for rule in rules {
+            out.extend(rule.check(&ann));
+        }
+        out.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.rule.cmp(b.rule)));
+        for f in out {
+            emit(f);
+        }
+    }
 }
 
 /// 1-based `(line, column)` of a byte offset (column counts chars,
