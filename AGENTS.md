@@ -1723,6 +1723,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (breaks the path:line:col contract unless blank-preserving).
   No per-finding adjudication, no admission; revisit only with
   both.
+- Revisit DONE 2026-10-08, ADMITTED as opt-in `--markdown`
+  (probe deleted): the deferral's lost set came from dropping
+  list lines entirely. Rebuilt text-keeping + blank-preserving
+  (markers stripped in place, fences/tables → blank lines,
+  line count identical in/out) and adjudicated per finding:
+  14 lost (README 1 + AGENTS 13), EVERY ONE structural noise
+  (list telegraphese, headings, instruction + command lines,
+  telemetry fragments) — zero real prose findings lost
+  (`take moment`, `are windowed` survive), zero introduced,
+  all 9 rules' other findings stable. `pub fn markdown_filter`
+  + unit tests (blank-preservation, fences, tables, numbered
+  lists, plain passthrough) + CLI flag on both batch paths
+  (line numbers hold by construction); default path untouched.
+  Rules table unaffected (no rule changed).
 - Fragments add noise (expected — rules assume sentences; ERROR
   recovery still annotates, findings follow garbage-in). Not
   acted on: same contract as the grammar (recover, never refuse).
