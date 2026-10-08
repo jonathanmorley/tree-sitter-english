@@ -1582,6 +1582,54 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   correctly). Threshold rules can hit 1.0 recall on clean
   shapes — precision is where the calibration lives.
 
+## Vale alternative, rule 7: vague demonstratives (DONE 2026-10-08,
+  P 0.829 / R 0.967)
+
+- `syntax.vague-demonstrative`: sentence-initial `this/that/these/
+  those` with no clear antecedent. POS-only shallow path
+  (keystroke-capable, no parser weights) but NEEDS document
+  context — previous-sentence nominal count decides: exactly one
+  NOUN/PROPN anchor reads clear (silent), zero or two-plus reads
+  vague (fire). Mid-sentence demonstratives out of scope v1;
+  `it` out entirely (expletive/cleft needs its own eval).
+  Wired into native CLI + WASM demo; README latency cell
+  1.1 ms / 93 findings on Moby body (rules total ~18 ms).
+- Eval `tests/vague.rs`: 60 (context, target) PAIRS (not single
+  sentences — the single-sentence harness cannot supply
+  antecedents; target is the last sentence, finding must land
+  inside it): 1 book + 29 composed positives
+  (competing-antecedent shapes — books barely produce genuine
+  vagueness, same justification as nominal's composed
+  canonicals), 30 negatives (12 clear book pronominals with
+  real/composed contexts, 6 determiner gates, 1 contraction,
+  11 scope-boundary/plains). Bars 0.75/0.50 (nominal precedent).
+- Measured path: v1 tag-trust P 0.613 / R 0.633 → structural
+  demonstrative disambiguation (pronominal iff no complement
+  nominal leads the phrase; the tagger misreads demonstratives
+  BOTH ways — bare `This upset` → DET, `That inscrutable
+  thing` → PRON) P 0.700 / R 0.933 → identificational-copula
+  exemption (DET-led nominal or bare-PROPN predicate specifies
+  the referent: `is my advice`, `was my first kick`; lexical
+  verbs and bare adjectives do not; nominal must precede any
+  ADP so `for today` adjuncts don't count) + have-lemma fix
+  (`has been my motive` — perfect-of-be) + AUX-continue fix
+  (`been` tripped the clause-boundary break) → P 0.829 /
+  R 0.967. Two extensions, both principled
+  (specification-vs-predication; nominal-entry precedent) —
+  never fitting: every residual below is documented, none
+  special-cased.
+- All 8 misses arbitrated, gold stands: 1 FN (context `cook`→
+  VERB mistag undercounts to 1); 3 FPs pipeline-caused
+  (`notice`→NOUN, `my`→PRON + `substitute`→ADJ double mistag,
+  `Charing`→VERB name-split); 3 design residuals (quantifier
+  predicate `is all very proper`, free-relative `is what I
+  mean`, idiomatic `that's strange`). `-ed` participle guard
+  carries one known edge (`this wicked man` overfires).
+- Queued, not started: `dem-pron` correction rule (demonstrative
+  DET/PRON disambiguation needs EWT-majority measurement first);
+  vocative edge (`This, shipmates, this is...` reads DET via the
+  `shipmates` nominal — untested, noted not handled).
+
 ## Correction rule 14: quite-adv (ADMITTED 2026-10-07)
 
 - Found by the hedge lint eval (13/14 FNs): the tagger reads

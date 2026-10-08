@@ -6,8 +6,8 @@
 use std::process::ExitCode;
 
 use english_lint::{
-    ClauseComplexity, Hedge, Models, Nominalization, Passive, Rule, SentenceLength, Weasel,
-    line_col, lint, lint_streaming,
+    ClauseComplexity, Hedge, Models, Nominalization, Passive, Rule, SentenceLength,
+    VagueDemonstrative, Weasel, line_col, lint, lint_streaming,
 };
 
 fn main() -> ExitCode {
@@ -40,6 +40,7 @@ fn main() -> ExitCode {
     let complexity = ClauseComplexity::default();
     let weasel = Weasel;
     let hedge = Hedge;
+    let vague = VagueDemonstrative;
     let rules: Vec<&dyn Rule> = vec![
         &Passive,
         &Nominalization,
@@ -47,6 +48,7 @@ fn main() -> ExitCode {
         &complexity,
         &weasel,
         &hedge,
+        &vague,
     ];
     let mut total = 0usize;
     for path in &files {
