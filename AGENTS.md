@@ -1425,6 +1425,28 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   to confirm whenever counts look off; the numbers above are the
   confirmed run.
 
+## Vale alternative, rule 2 v1.3: Greek -sis plurals + WordNet
+  derivational verdict (DONE 2026-10-07, P 0.925 / R 0.902)
+
+- Closed 8-pair `-sis` plural list (`analyses`→`analysis` …),
+  NOUN-gated: single-`s` strip cannot reach them and mechanical
+  `-ses` reversal false-matches (`cases`→`casis`). Eval 71 → 73
+  (+2 composed positives, both fire, zero new FPs); EWT dev/test
+  provably untouched (zero listed forms occur). The WordNet lemma
+  table built for this (2,209 noun lemmas) changed the suffix
+  verdict on exactly 2 words — rejected as disproportionate,
+  removed entirely.
+- WordNet derivational gating REJECTED (would trade a
+  gold-endorsed TP for documented-accepted FPs): gating `-ment`
+  on verb links fixes `moment`×2 but silences `knowledge`
+  (no WordNet know→knowledge link — resource gap, not English),
+  which v1.2 deliberately counts TP. EWT-bounded table also
+  misses real positives (`measurements`, `compunction` fall
+  back to suffix anyway). Suffix + closed lists stand; external
+  morphology does not overrule hand-verified gold. This closes
+  the WordNet queue (lemmatizer table + derivational gate,
+  both measured).
+
 ## Correction rule 13: pass-by (ADMITTED 2026-10-07)
 
 - From the lint pilot's participle misses: predicted ADJ after a
