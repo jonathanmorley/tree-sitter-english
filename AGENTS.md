@@ -2002,6 +2002,38 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   hard-codes a chdir dance (enter from `pSCRDRtagger/`),
   DICT is the .RDR stem sibling.
 
+## Parser shootout: MaltParser leg (DONE 2026-10-08)
+
+- MaltParser 1.9.2 (BSD license, jar in /tmp, never vendored —
+  same shelf as TreeTagger) trained on EWT train (44 s/model,
+  arc-eager + liblinear — the linear family) and scored on EWT
+  test with the repo denominator (all 25,094 integer-ID tokens,
+  punct counted, full-label LAS — parity verified against the
+  trainer's own skip rules). Front table carries all three Malt
+  rows; rerun: `EWT=... WORK=... scripts/bench-parsers.sh`
+  (shfmt-clean, trains + tags + splices + parses + scores).
+- Numbers: full-feats gold 86.00/82.90; FORM+UPOS gold
+  85.06/82.12, +greedy-pred (ours, 92.65) 79.37/73.96 — against
+  ours beam4 gold 83.5/80.1, pred 77.8/71.3. Malt beats us
+  1.5–1.6 UAS with identical inputs (words+UPOS): their default
+  feature density > ours, honestly recorded. Cascade matches
+  (−5.7 Malt vs −6.1 ours): the pipeline tax is structural
+  across implementations. The retired-87 verdict HOLDS
+  (best linear predicted-tag: 79.37) — and sharpens: 87's
+  spirit needs gold tags even for Malt (86.00).
+- Pitfalls, all caught by verification not assumed: (1) default
+  features read POSTAG (= XPOS), not CPOSTAG — training with
+  XPOS blanked gives a FORM-only model, proven exactly
+  tag-invariant (0/25094 flips); the XPOS←UPOS mapping is
+  load-bearing; (2) splice hygiene (a stray newline corrupts
+  columns; symptom: POSTAG-symbol error); (3) pred tags are
+  GREEDY (`Model::tag`), matching the dep eval's +tagger
+  regime, not production; (4) spaCy excluded with reason (PTB
+  head scheme → 51.5 UAS vs UD gold measures scheme, not
+  parsing; no converter); UDPipe 2.0 row is published
+  (K18-2020, raw text, older EWT — same scale, not same
+  denominator).
+
 ## Pattern leg + poisoned-build lesson (DONE 2026-10-07)
 
 - Pattern (CLiPS, BSD) added as the blog's second real tagger
