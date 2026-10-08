@@ -549,6 +549,144 @@ impl Rule for Hedge {
     }
 }
 
+/// Vague demonstratives (`syntax.vague-demonstrative`):
+/// a sentence-initial demonstrative pronoun (`this/that/these/those`)
+/// with no clear antecedent. The pronominal/determiner call is
+/// STRUCTURAL, not tag-trust: the tagger misreads demonstratives in
+/// both directions (bare `This upset` → DET, `That inscrutable
+/// thing` → PRON — measured in-eval, noted as a `dem-pron`
+/// correction candidate, queued not started). A demonstrative is
+/// pronominal iff no NOUN/PROPN/NUM follows it before the clause's
+/// first VERB/AUX (`this man` → DET; `this is` → PRON; verbless
+/// fallthrough → PRON). Antecedent competition in the previous
+/// sentence decides: exactly one nominal head (NOUN/PROPN) reads as
+/// a clear anchor (silent); zero or two-plus reads as vague
+/// (fire). Mid-sentence demonstratives (`he said that was wrong`)
+/// are out of scope v1; `it` is out entirely (expletive/cleft
+/// disambiguation is its own eval). POS-only (keystroke path, no
+/// parser weights) but NEEDS document context — a standalone
+/// first sentence has no previous sentence and stays silent by
+/// design.
+pub struct VagueDemonstrative;
+
+impl Rule for VagueDemonstrative {
+    fn id(&self) -> &'static str {
+        "syntax.vague-demonstrative"
+    }
+
+    fn check(&self, doc: &AnnotatedDoc) -> Vec<Finding> {
+        const DEM: &[&str] = &["this", "that", "these", "those"];
+        let mut out = Vec::new();
+        for (si, sent) in doc.sentences.iter().enumerate() {
+            // First alphabetic piece (defensive: skip any stray
+            // quote/paren openers rather than indexing blindly).
+            let k = match sent
+                .pieces
+                .iter()
+                .position(|p| p.chars().next().is_some_and(|c| c.is_alphabetic()))
+            {
+                Some(k) => k,
+                None => continue,
+            };
+            if !DEM.contains(&sent.pieces[k].to_lowercase().as_str()) {
+                continue;
+            }
+            // Pronominal iff no complement nominal leads the phrase.
+            // The scan stops at anything that cannot appear inside a
+            // determiner phrase: DET starts a new nominal (`annoyed
+            // the crew` is verb+object, not determiner+noun), and
+            // `-ed` participles are predicative here, not attributive
+            // (else `delayed publication` reads as determiner+noun —
+            // the participle→ADJ overfire, same deferred gap as the
+            // passive rule's). Known edge: `-ed` adjectives
+            // (`this wicked man`) overfire; documented, not fitted.
+            let mut pronominal = true;
+            for (j, t) in sent.tags.iter().enumerate().skip(k + 1) {
+                match t {
+                    Tag::Noun | Tag::Propn | Tag::Num => {
+                        pronominal = false;
+                        break;
+                    }
+                    Tag::Adj => {
+                        if sent.pieces[j].to_lowercase().ends_with("ed") {
+                            break;
+                        }
+                    }
+                    Tag::Adv => continue,
+                    _ => break,
+                }
+            }
+            if !pronominal {
+                continue; // determiners (`this man`) are precise
+            }
+            let prev = match si.checked_sub(1).and_then(|p| doc.sentences.get(p)) {
+                Some(prev) => prev,
+                None => continue, // no context, no verdict
+            };
+            let heads = prev
+                .tags
+                .iter()
+                .filter(|t| matches!(t, Tag::Noun | Tag::Propn))
+                .count();
+            if heads == 1 {
+                continue; // single clear anchor
+            }
+            // Identificational copula (`this is my advice`, `that was
+            // my first kick`): a DET-led nominal or bare-PROPN
+            // predicate SPECIFIES the referent, so the sentence
+            // resolves its own vagueness — silent. Lexical verbs
+            // (`took all morning`) and bare adjectives (`was
+            // unacceptable`) do not specify: still fire. The nominal
+            // must precede any ADP (temporal adjuncts like `for
+            // today` are not predicates) and any further verb
+            // (relative-clause boundary).
+            let cop = sent
+                .tags
+                .iter()
+                .skip(k + 1)
+                .position(|t| matches!(t, Tag::Verb | Tag::Aux));
+            if let Some(rel) = cop {
+                let c = rel + k + 1;
+                if [
+                    "is", "was", "are", "were", "be", "been", "being", "am", "has", "have", "had",
+                ]
+                .contains(&sent.pieces[c].to_lowercase().as_str())
+                {
+                    let mut seen_det = false;
+                    let mut specified = false;
+                    for t in sent.tags.iter().skip(c + 1) {
+                        match t {
+                            Tag::Det | Tag::Pron => seen_det = true,
+                            Tag::Noun if seen_det => {
+                                specified = true;
+                                break;
+                            }
+                            Tag::Propn => {
+                                specified = true;
+                                break;
+                            }
+                            Tag::Adp | Tag::Verb => break,
+                            // AUX continues: perfect-of-be (`has been
+                            // my motive`) is still our copula; only a
+                            // lexical verb marks a new clause.
+                            _ => continue,
+                        }
+                    }
+                    if specified {
+                        continue;
+                    }
+                }
+            }
+            let w = sent.pieces[k].clone();
+            out.push(Finding {
+                rule: self.id(),
+                span: sent.cover(k, k),
+                message: format!("\"{w}\" has no clear antecedent — name what you mean"),
+            });
+        }
+        out
+    }
+}
 /// Light-verb nominalizations (`conduct an investigation`): a closed
 /// list of light verbs governing a `-tion`/`-ment`/`-ance`/`-ence`
 /// noun through `obj`/`obl`. Names the pair; no auto-rewrite v1
