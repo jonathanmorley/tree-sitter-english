@@ -344,7 +344,18 @@ interventions for opposite failure modes.
   forcing dict tags there might recover the dev −12, or cost
   the test +19; unknowable without measuring); (4) per-class
   weighting for rare-word identity rows (the census hands the
-  queued distillation idea a concrete target). Two implementation scars
+  queued distillation idea a concrete target).
+- Follow-up closures (DONE 2026-10-07, probes since deleted):
+  (1) 51+ flips are direct dict hits, all correct — no model bug,
+  no EWT quirk (spot-check confusion resolved: `different` is
+  58× ADJ in train, so NOUN→ADJ flips are memorization restored,
+  not damage). (2) Wrong flips (~2 dozen on 205k train tokens)
+  are cascade damage on ambiguous function words (`that`/`have`/
+  `of`/`in`/`'s`/`with`/`to`, 2–4 each, mixed with correct
+  cascades like `review`/`american` 3/3 and 2/2) — no guard
+  shape has EWT-majority support, so no code; the price stays
+  bounded and measured. Direct-vs-cascade split was the load-
+  bearing distinction (a first cut conflated them). Two implementation scars
 worth recording: (1) the first table was a sorted vec — binary
 search cost MORE than scoring on misses (tag pass 102→148 ms);
 a hash map fixed it; (2) the `U64Hasher::write` fallback REPLACED
