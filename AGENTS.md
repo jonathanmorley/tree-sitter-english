@@ -1888,3 +1888,51 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   stand (Pattern, RDR, spaCy, NLTK, TreeTagger unchanged).
   Their history-probe diff (train-only) is the cooperative
   upside of the same shared tree.
+
+## WordNet uses (QUEUED 2026-10-07)
+
+- WordNet 3.0 (permissive license, derived tables shippable)
+  resolves via NLTK data (note: `wordnet.zip` must be EXTRACTED —
+  3.14 `find` doesn't auto-resolve the bare zip; fixed in env).
+- (a) Lemmatizer table via morphy + exception lists (unblocks
+  TreeTagger harvest (b)): offline-built like `lexicon/verbs.txt`,
+  zero runtime deps. Consumers: passive participle identity,
+  nominalization deverbal gate.
+- (b) Nominalization via derivational links (NEW sub-item):
+  `arrangement`→`arrange` replaces suffix-guessing with real
+  morphology inside the existing light-verb government shape.
+  Bars: nominal eval precision/recall neutral-or-better.
+- Explicitly out: sense features for the tagger (UPOS coarser
+  than synsets; EWT-majority already beats lexicon lookup),
+  anything at runtime (10 MB+ database; offline tables only).
+
+## Streaming lint + weights-deser memory work (DONE 2026-10-07)
+
+- Staged peaks on Moby body (VmHWM): parse/tree 63.5, +shallow
+  annotations 136.7, +full dep 730 MiB. Attribution probe (per-sentence
+  HWM deltas, all ~0) proved the peak is NOT sentence work: weights
+  LOAD transient — tagger 2 MB file → 60.7 MiB, dep 36 MB → 652 MiB
+  (serde_json double-DOM + BTreeMap stopovers).
+- Fix, no new deps: direct-into-final-shapes deserialization, then
+  zero-intermediate visitors (borrowed `&str` keys) for tagger,
+  dep-parser, and labeler loaders. Load peaks: tagger 60.7→12.7
+  (−79%), dep 652→69.6 (−89%). Full pipeline 730→~200 MiB.
+  Behavior preserved (dep labels suite green; unknown-code errors
+  kept). Two scars: `U64Hasher::write` REPLACED state (all String
+  keys one bucket, 52µs/lookup — caught by bench, folding fixed,
+  226 ns); labeler visitor mixed map levels (caught by its own
+  roundtrip test).
+- `lint_streaming` (+ shallow twin) in english-lint: pass-1 grammar
+  sentence spans (tree dropped), per-sentence re-parse (token-identical
+  0/9973 on Moby), outer spans stamped on findings. Moby full-path:
+  8307/8307 findings byte-identical, peak 117.5→88.1 MiB (−25%),
+  time +4.4%. CLI batch path wired to it. Committed identity test
+  (tests/streaming.rs, adversarial inputs incl. dash-handoff blank
+  absorption). Bar recalibrated with reason: the 1/3-peak bar assumed
+  annotation retention dominated; the DOM transient did — fixed
+  separately. Residual: pass-1 tree transient (63 MB) bounds further
+  gains; per-sentence dep spikes are inherent (windowed, not removed).
+- Byte-splitter paragraph streaming REJECTED with mechanism:
+  dash/colon-handoff arbitration absorbs blank lines into following
+  sentences (~36 Moby paragraphs), so no byte splitter reproduces
+  grammar paragraphs. Temp probes deleted per discipline.

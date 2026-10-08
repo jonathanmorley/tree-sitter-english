@@ -447,6 +447,68 @@ fn best_legal(acc: &[f32; 4], legal: &[bool; 4]) -> usize {
     }
     best.expect("legal() always admits an action")
 }
+/// Dense rows (`feature id → [f32; 4]`) with zero intermediate maps;
+/// see the transient-peak record on [`Model::from_json`].
+#[derive(Default)]
+struct DenseRows(U64Map<[f32; 4]>);
+
+impl<'de> serde::Deserialize<'de> for DenseRows {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = U64Map<[f32; 4]>;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "map from feature id to action-weight map")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut weights = U64Map::default();
+                while let Some(f) = map.next_key::<u64>()? {
+                    let mut arr = [0.0f32; 4];
+                    map.next_value_seed(RowSeed(&mut arr))?;
+                    weights.insert(f, arr);
+                }
+                Ok(weights)
+            }
+        }
+        d.deserialize_map(V).map(DenseRows)
+    }
+}
+
+/// Fills one dense row from `{actioncode: weight}` pairs, borrowing keys.
+struct RowSeed<'a>(&'a mut [f32; 4]);
+
+impl<'de> serde::de::DeserializeSeed<'de> for RowSeed<'_> {
+    type Value = ();
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+        struct V<'a>(&'a mut [f32; 4]);
+        impl<'de> serde::de::Visitor<'de> for V<'_> {
+            type Value = ();
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "map from action code to weight")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                while let Some((code, w)) = map.next_entry::<&str, f32>()? {
+                    match Action::from_code(code) {
+                        Some(a) => self.0[action_index(a)] = w,
+                        _ => {
+                            return Err(serde::de::Error::custom(format!(
+                                "unknown action code {code:?}"
+                            )));
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+        d.deserialize_map(V(self.0))
+    }
+}
 
 /// Greedy arc-eager model: `weights[feature][action]`.
 #[derive(Debug, Default, Clone)]
@@ -1073,25 +1135,20 @@ impl Model {
     /// Deserialize weights written by the trainer. Unknown action
     /// codes are an error (fail loudly on a corrupt artifact).
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-        let raw: std::collections::BTreeMap<u64, HashMap<String, f32>> =
-            serde_json::from_str::<serde_json::Value>(json)
-                .and_then(|v| serde_json::from_value(v["weights"].clone()))?;
-        let mut weights: U64Map<[f32; 4]> = U64Map::default();
-        for (f, per_action) in raw {
-            let mut arr = [0.0f32; 4];
-            for (code, w) in &per_action {
-                match Action::from_code(code) {
-                    Some(a) => arr[action_index(a)] = *w,
-                    None => {
-                        return Err(serde::de::Error::custom(format!(
-                            "unknown action code {code:?}"
-                        )));
-                    }
-                }
-            }
-            weights.insert(f, arr);
+        // Direct into final shapes — never a generic Value DOM (the
+        // old double-parse spiked ~18× file size transiently), and
+        // never a BTreeMap stopover (per-row nodes kept ~1M heap
+        // objects alive mid-parse: 590 MB transient). Rows land
+        // straight in the dense map with borrowed `&str` keys.
+        #[derive(serde::Deserialize)]
+        struct File {
+            #[serde(default)]
+            weights: DenseRows,
         }
-        Ok(Model { weights })
+        let raw: File = serde_json::from_str(json)?;
+        Ok(Model {
+            weights: raw.weights.0,
+        })
     }
 
     /// Serialize weights for committing: compact JSON with sorted
@@ -1430,28 +1487,162 @@ impl LabelModel {
     /// Deserialize a labeler artifact. Unknown structure is an
     /// error (fail loudly on a corrupt artifact, same as heads).
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-        let v: serde_json::Value = serde_json::from_str(json)?;
-        let labels: Vec<String> = serde_json::from_value(v["labels"].clone()).map_err(|_| {
-            serde::de::Error::custom("labeler artifact missing string \"labels\" array")
-        })?;
-        let raw: std::collections::BTreeMap<u64, HashMap<String, f32>> =
-            serde_json::from_value(v["weights"].clone())?;
-        let mut weights: LabelRows = LabelRows::default();
-        for (f, per_label) in raw {
-            let mut row = vec![0.0f32; labels.len()];
-            for (code, wgt) in &per_label {
-                match labels.iter().position(|l| l == code) {
-                    Some(li) => row[li] = *wgt,
-                    None => {
-                        return Err(serde::de::Error::custom(format!(
-                            "unknown label code {code:?}"
-                        )));
+        // Direct into final shapes — never a generic Value DOM and
+        // never a BTreeMap stopover (see the parser `from_json` note
+        // on transient peaks). `labels` must precede `weights`, which
+        // `to_json` guarantees.
+        struct File {
+            labels: Vec<String>,
+            weights: LabelRows,
+        }
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = File;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "labeler artifact with labels array then weights map")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut labels: Vec<String> = Vec::new();
+                let mut weights: LabelRows = LabelRows::default();
+                while let Some(key) = map.next_key::<&str>()? {
+                    match key {
+                        "labels" => {
+                            labels = map.next_value()?;
+                            if labels.is_empty() {
+                                return Err(serde::de::Error::custom(
+                                    "labeler artifact missing string \"labels\" array",
+                                ));
+                            }
+                        }
+                        "weights" => {
+                            if labels.is_empty() {
+                                return Err(serde::de::Error::custom(
+                                    "labeler weights precede labels; rewrite with to_json",
+                                ));
+                            }
+                            map.next_value_seed(WeightsSeed {
+                                labels: &labels,
+                                weights: &mut weights,
+                            })?;
+                        }
+                        _ => {
+                            let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
+                Ok(File { labels, weights })
             }
-            weights.insert(f, row);
         }
-        Ok(LabelModel { labels, weights })
+        impl<'de> serde::Deserialize<'de> for File {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                d.deserialize_map(V)
+            }
+        }
+
+        /// Fills the weights map row by row against the already-read
+        /// labels (borrowed keys, one row `Vec` at a time — no map of
+        /// maps ever materializes).
+        struct WeightsSeed<'a> {
+            labels: &'a [String],
+            weights: &'a mut LabelRows,
+        }
+
+        impl<'de> serde::de::DeserializeSeed<'de> for WeightsSeed<'_> {
+            type Value = ();
+            fn deserialize<D: serde::Deserializer<'de>>(
+                self,
+                d: D,
+            ) -> Result<Self::Value, D::Error> {
+                struct W<'a> {
+                    labels: &'a [String],
+                    weights: &'a mut LabelRows,
+                }
+                impl<'de> serde::de::Visitor<'de> for W<'_> {
+                    type Value = ();
+                    fn expecting(
+                        &self,
+                        f: &mut std::fmt::Formatter,
+                    ) -> std::fmt::Result {
+                        write!(f, "map from feature id to label-weight map")
+                    }
+                    fn visit_map<A: serde::de::MapAccess<'de>>(
+                        self,
+                        mut map: A,
+                    ) -> Result<Self::Value, A::Error> {
+                        while let Some(f) = map.next_key::<u64>()? {
+                            let mut row = vec![0.0f32; self.labels.len()];
+                            map.next_value_seed(RowSeed {
+                                row: &mut row,
+                                labels: self.labels,
+                            })?;
+                            self.weights.insert(f, row);
+                        }
+                        Ok(())
+                    }
+                }
+                d.deserialize_map(W {
+                    labels: self.labels,
+                    weights: self.weights,
+                })
+            }
+        }
+
+        /// Fills one label row from `{labelcode: weight}` pairs against
+        /// the already-read labels (borrowed keys, no per-row map).
+        struct RowSeed<'a> {
+            row: &'a mut [f32],
+            labels: &'a [String],
+        }
+
+        impl<'de> serde::de::DeserializeSeed<'de> for RowSeed<'_> {
+            type Value = ();
+            fn deserialize<D: serde::Deserializer<'de>>(
+                self,
+                d: D,
+            ) -> Result<Self::Value, D::Error> {
+                struct R<'a> {
+                    row: &'a mut [f32],
+                    labels: &'a [String],
+                }
+                impl<'de> serde::de::Visitor<'de> for R<'_> {
+                    type Value = ();
+                    fn expecting(
+                        &self,
+                        f: &mut std::fmt::Formatter,
+                    ) -> std::fmt::Result {
+                        write!(f, "map from label code to weight")
+                    }
+                    fn visit_map<A: serde::de::MapAccess<'de>>(
+                        self,
+                        mut map: A,
+                    ) -> Result<Self::Value, A::Error> {
+                        while let Some((code, wgt)) = map.next_entry::<&str, f32>()? {
+                            match self.labels.iter().position(|l| l == code) {
+                                Some(li) if li < self.row.len() => self.row[li] = wgt,
+                                _ => {
+                                    return Err(serde::de::Error::custom(format!(
+                                        "unknown label code {code:?}"
+                                    )));
+                                }
+                            }
+                        }
+                        Ok(())
+                    }
+                }
+                d.deserialize_map(R {
+                    row: self.row,
+                    labels: self.labels,
+                })
+            }
+        }
+        let raw: File = serde_json::from_str(json)?;
+        Ok(LabelModel {
+            labels: raw.labels,
+            weights: raw.weights,
+        })
     }
 
     /// Serialize the labeler: sorted label set, sorted feature
