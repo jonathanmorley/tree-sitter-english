@@ -1262,12 +1262,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   gold inputs vs raw text — noted, not claimed). Full
   workspace + lint evals green; front table + dep chart
   updated (chart axis 65–86: 85.9 broke the old scale).
-  (d) parser weight packaging (QUEUED 2026-10-08): min-count=2
-  re-verdict at LaSO-4/v4 (v3 measurement: flat 78.8/79.3 at
-  11.5/9.3 MB vs 29 MB — pruning buys size, not UAS). Bar:
-  dev/test within ±0.2 of banked AND artifact ≤ ~12 MB → ship
-  min-count=2 weights (regeneration docs + md5 re-pin; weights
-  stay gitignored Tier-1, this only shrinks the lazy fetch).
+  (d) parser weight packaging (REJECTED 2026-10-08, weights
+  restored md5-verified, suite green): LaSO-4/min-count=2 gives
+  dev 85.55 (−0.35, outside the ±0.2 bar) / test 84.94 (−0.05)
+  at 20.2 MB (not ≤ ~12 MB). Both halves fail. Mechanism:
+  LaSO + trigram density retain far more features than v3-era
+  greedy (then 11.5 MB) — pruning buys little once the map is
+  dense with surviving averaged weights. Same verdict shape as
+  the tagger min-count=2 trial (pruning buys size, not UAS —
+  here it buys neither). Tier-1 fetch stays 31 MB.
   (e) Malt-silver distillation (QUEUED 2026-10-08,
   SPECULATIVE): joint-train on EWT gold + Malt-parsed book
   bodies (books tagged by our tagger first — silver heads,
