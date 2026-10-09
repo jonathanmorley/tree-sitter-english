@@ -990,9 +990,15 @@ determinism + latency where they apply).
 Blind-to-right investigation (the cross-cutting question): the
 model sees next-*word* (`0x12`) but never next-*tag* — blind to
 the right by construction, exactly where prep-chains and
-`that`-cascades resolve. Oracle probe first (gold right-tags
-visible: headroom measure), then item 4 below. If the oracle
-shows nothing, the whole right-context family is suspect.
+`that`-cascades resolve. Oracle probe DONE 2026-10-09 (offline
+Python, no code): word + gold-next-tag train-majority over
+greedy dev/test errors — dev 451/1603 fixable (1.79pt, 28% of
+errs), test 397/1478 (1.58pt, 27%); OOV 44-45%, top shapes
+SCONJ/ADP+VERB, PROPN/NOUN, ADJ/NOUN, ADP/PART — right context
+carries real signal. Bar was +1.0pt headroom to unblock item 4:
+PASS on both splits (optimistic upper bound — real decoder
+gains less; breaks uncounted). The right-context family is NOT
+suspect; item 4 proceeds with its own bars.
 
 1. Exact Viterbi decode (MEASURED AND REJECTED 2026-10-09):
    features depend only on (t-2, t-1, words), so second-order
@@ -1015,9 +1021,12 @@ shows nothing, the whole right-context family is suspect.
    (23558/23616), but the entrywise median matches it in one
    1.87 MB map (see Median combination above). The 30 MB vote
    never ships.
-4. Right-to-left re-decode: backward pass bringing next-tag
-   context (mirror decoder + combination rule); behind the
-   blind-to-right oracle probe above. Unbuilt.
+4. Right-to-left re-decode (UNBLOCKED 2026-10-09 by the oracle
+   probe above — 1.79/1.58pt headroom): backward pass bringing
+   next-tag context (mirror decoder + combination rule). Bars:
+   admit iff beats production (beam2+rules+17) on dev AND test,
+   all evals neutral-or-better, `flies` holds, keystroke
+   measured. Unbuilt.
 5. Reranking with global features: n-best paths rescored with
    agreement / gap-detection / parallelism features — the
    only clean vehicle for `that`-gap detection. Needs its own
