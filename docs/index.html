@@ -154,11 +154,11 @@ with forensics.</p>
 </div>
 <div>
 <h4>Dependencies: gold vs pipeline</h4>
-<svg viewBox="0 0 440 160" class="bars" role="img" aria-label="Dependencies: UAS gold 85.9, UAS pipeline 79.8, LAS gold 82.1, LAS pipeline 73.2">
+<svg viewBox="0 0 440 160" class="bars" role="img" aria-label="Dependencies: UAS gold 85.9, UAS pipeline 81.2, LAS gold 82.1, LAS pipeline 75.0">
 <text x="0" y="18">UAS gold 85.9</text><rect x="150" y="5" width="279" height="18" rx="3"><title>UAS with gold tags 85.9</title></rect>
-<text x="0" y="48">UAS pipe 79.8</text><rect x="150" y="35" width="197" height="18" rx="3" class="soft"><title>UAS with tagger tags 79.8 — the cascade tax</title></rect>
+<text x="0" y="48">UAS pipe 81.2</text><rect x="150" y="35" width="216" height="18" rx="3" class="soft"><title>UAS with tagger tags 81.2 — the cascade tax, narrowed by the ensemble tagger</title></rect>
 <text x="0" y="78">LAS gold 82.1</text><rect x="150" y="65" width="228" height="18" rx="3" class="alt"><title>LAS with gold tags 82.1</title></rect>
-<text x="0" y="108">LAS pipe 73.2</text><rect x="150" y="95" width="109" height="18" rx="3" class="alt"><title>LAS with tagger tags 73.2</title></rect>
+<text x="0" y="108">LAS pipe 75.0</text><rect x="150" y="95" width="134" height="18" rx="3" class="alt"><title>LAS with tagger tags 75.0</title></rect>
 <text x="150" y="146" class="t2">axis 65–86 · cascade is structural (joint program stopped)</text>
 </svg>
 </div>
@@ -219,8 +219,8 @@ WSJ-trained (out of domain); detail is in the shootout table above.</p>
 <tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>gold</td><td class="num">85.06</td><td class="num">82.12</td><td class="num">3.8 MB</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>UDPipe 2.0 (CoNLL-2018, raw text) †</td><td>own (95.4)</td><td class="num">85.01</td><td class="num">82.51</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>Ours (beam4, v5)</td><td>gold</td><td class="num">85.0</td><td class="num">81.3</td><td class="num">31 + 3.8 MB</td><td class="num">—</td><td class="num">—</td></tr>
-<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (92.65)</td><td class="num">79.37</td><td class="num">73.96</td><td class="num">3.8 MB</td><td class="num">18k</td><td class="num">204 MB</td></tr>
-<tr><td>Ours (beam4, v5)</td><td>greedy (92.65)</td><td class="num">79.6</td><td class="num">73.3</td><td class="num">31 + 3.8 MB</td><td class="num">42k ‡</td><td class="num">118 MB</td></tr>
+<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (93.74)</td><td class="num">81.09</td><td class="num">76.30</td><td class="num">3.8 MB</td><td class="num">18k</td><td class="num">204 MB</td></tr>
+<tr><td>Ours (beam4, v5)</td><td>greedy (93.74)</td><td class="num">80.7</td><td class="num">75.0</td><td class="num">31 + 3.8 MB</td><td class="num">42k ‡</td><td class="num">118 MB</td></tr>
 </table>
 <p class="fine">Rerun it: <code>EWT=/path/to/ewt WORK=/tmp/malt
 scripts/bench-parsers.sh</code> trains both Malt models (BSD jar, /tmp only,
@@ -236,8 +236,14 @@ PPs), so scoring it against UD gold measures scheme divergence (51.5 UAS),
 not parsing. The v5 trigrams closed the same-input gap to −0.07
 (Malt-lex 85.06 vs ours 85.0) and took the pipeline lead (+0.19:
 79.56 vs 79.37); Malt-full keeps +1.0 on feats alone (86.00).
-Cascade is consistent across implementations (gold→pred:
-ours −5.4, Malt −5.7), confirming the pipeline tax is structural.
+With ensemble tags (93.74) both climb — Malt converts harder
+(+1.72/+2.34 to 81.09/76.30 vs ours +1.08/+1.68 to 80.68/74.99),
+retaking the same-input lead in both cells (+0.41/+1.31): denser
+features exploit better tags harder, which sharpens the standing
+lesson that feature density (not the learner) is the gap.
+Cascade is consistent across implementations (gold→pred test UAS:
+ours −4.3, Malt −4.0), confirming the pipeline tax is structural
+even as better tags narrow it (dev −6.1→−4.7, test −5.4→−4.3).
 Size/speed/RSS run on the Moby body (same basis as the tagger table):
 ours parses 220k toks at ~42k tok/s beam4 (label pass adds ~136k tok/s
 over the same arcs — combined UAS+LAS ≈ 32k; 118 MB task peak incl.
