@@ -62,9 +62,23 @@ proved disagreement alone is not a selector (breaks 34 dev /
   per token (all history states live) — keystroke-fine
   (~3 ms/sent) but the full-book tag-pass number dies unless
   narrowed; k=5 + span-gating are the levers, measured then.
-- **Stage 2 — train reranker**: perceptron over train n-best.
-  Proceed iff beats production (beam2+rules+17 over median)
-  on dev AND test.
+- **Stage 2 — train reranker**: MEASURED AND REJECTED
+  2026-10-09 (temp `rerank` example + TEMP `tag_kbest`, both
+  deleted): Collins perceptron over fixed k=5 lists, iters=10,
+  single-model global features (0x30–0x34: relativizer reading
+  + verb-ahead, conjunction symmetry, chain runs; base score
+  fixed weight 1.0), 149 features, 3.7 KB, md5 `97027ea1`.
+  Result: reranked dev 92.25 / test 91.86 vs production 93.67 /
+  94.13 — net −357/−570, breaks 2× fixes (809/452,
+  979/409), worse than greedy 1-best. Mechanism: the global
+  features were never EWT-vetted per shape (unlike every
+  admitted correction rule) and outvote the 2 MB base model
+  everywhere; train updates flat ~2800/iter (no separation).
+  Stage 3 never starts. Item 5 CLOSES with data; the
+  mirror-as-rescoring-feature revisit (item 4's last path)
+  dies with it. Reopen only on EWT-vetted global shapes with
+  their own majorities (none queued) or a new combination
+  idea.
 - **Stage 3 — integration**: full bars — all book/chunk/lint
   evals neutral-or-better (sweep zero-breaks holds), `flies`
   holds on all paths, keystroke measured, determinism

@@ -1041,16 +1041,25 @@ suspect; item 4 proceeds with its own bars.
    regenerates the reversed inputs byte-identically (verified by
    diff) — retrain with `--iters 20 --min-count 1` for the mirror
    artifact.
-5. Reranking with global features (STAGE 2 UNBLOCKED 2026-10-09):
+5. Reranking with global features (MEASURED AND CLOSED 2026-10-09):
    n-best paths rescored with agreement / gap-detection /
-   parallelism features — the only clean vehicle for `that`-gap
-   detection. Scope: `docs/rerank-scope.md`. Stage 0 PASS
-   (prize census 349 dev tokens, 1.39pt, tight definitions);
-   Stage 1 PASS on corrected criterion (exact-path 81% missed
-   a misdesigned gate — compounds over 12-token sentences;
-   oracle-min-loss +4.62pt at k=10, +2.93pt at k=3; train at
-   k=5). Temp `kbest` probe kept for Stage 2 use, deleted at
-   its verdict. Stage 2 bars: beats production on dev AND test.
+   parallelism features. Scope: `docs/rerank-scope.md`. Stage 0
+   PASS (prize 349); Stage 1 PASS on corrected oracle criterion
+   (+4.62pt); Stage 2 REJECTED — Collins k=5/iters=10 over
+   unvetted global shapes scores 92.25/91.86 vs production
+   93.67/94.13 (breaks 2× fixes, worse than greedy 1-best;
+   updates flat, no separation). Code fully reverted, suite
+   green, weights untouched. Item 4's rescoring-feature revisit
+   dies with it; reopen only on EWT-vetted global shapes.
+   Vetting DONE 2026-10-09 (offline probe on dev candidate paths,
+   no rebuild): symmetry preference precision 0.088 (6 fixes /
+   62 breaks — gold prefers asymmetry 10:1), short-chain 0.211
+   (30/112), `which` zero path-disagreements (no prize), `that`
+   coin-flips in every gold (relword, ahead) cell (48–54% —
+   genuine ambiguity, no selector). Zero vetted shapes, zero
+   coverage vs the 150-token bar. Item 5 CLOSED permanently
+   (bars' own terms); no train rebuild. Spin-off noted for item
+   6: `which`→PRON is 94% in gold — rule-shaped, not rerank.
 6. Correction re-mining on current weights: the 19-actionable
    shapes predate the ensemble by three accuracy points; the
    gate zone has all-new occupants. Same unanimity discipline.
