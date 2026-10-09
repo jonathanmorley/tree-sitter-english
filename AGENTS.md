@@ -1021,12 +1021,23 @@ suspect; item 4 proceeds with its own bars.
    (23558/23616), but the entrywise median matches it in one
    1.87 MB map (see Median combination above). The 30 MB vote
    never ships.
-4. Right-to-left re-decode (UNBLOCKED 2026-10-09 by the oracle
-   probe above — 1.79/1.58pt headroom): backward pass bringing
-   next-tag context (mirror decoder + combination rule). Bars:
-   admit iff beats production (beam2+rules+17) on dev AND test,
-   all evals neutral-or-better, `flies` holds, keystroke
-   measured. Unbuilt.
+4. Right-to-left re-decode (MEASURED AND REJECTED 2026-10-09):
+   mirror model trained on reversed EWT (same templates/20/1,
+   fixed order — its `0x11`/prev-tags learn original
+   next-word/next-tags; md5 `50be014f`, 1.9 MB, /tmp-ephemeral).
+   Mirror alone is competent (dev 92.29 / test 92.81 greedy —
+   beats forward single 91.99/92.48); either-right bound is
+   +1.86/+1.74pt, so headroom is real. But the disagree +
+   forward-margin<2.0 selector breaks 34 dev (fixes 66, net
+   +32) and 8 sweep sentences (net +2) — the sweep zero-breaks
+   gate FAILS. Two-sided variant (mirror margin ≥ 2.0 added)
+   still breaks 30 dev: confidence does NOT separate fixes
+   from breaks (both directions guess confidently on `more`/
+   `European`/ADJ-NOUN-class shapes — fifth member of the
+   confident-mistag class). No local selector extracts the
+   bound; probes deleted, code fully reverted, suite re-greened.
+   Revisit only as a rescoring feature inside item 5, never as
+   a standalone override.
 5. Reranking with global features: n-best paths rescored with
    agreement / gap-detection / parallelism features — the
    only clean vehicle for `that`-gap detection. Needs its own
