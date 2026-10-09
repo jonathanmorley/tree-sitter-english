@@ -4,7 +4,8 @@
 //! multi-paragraph, empty/whitespace-only, CRLF).
 
 use english_lint::{
-    ClauseComplexity, Hedge, Rule, SentenceLength, Weasel, annotate_shallow, lint_streaming_shallow,
+    ClauseComplexity, Hedge, Rule, SentenceLength, VagueDemonstrative, Weasel, annotate_shallow,
+    lint_streaming_shallow,
 };
 
 fn rules() -> Vec<Box<dyn Rule>> {
@@ -13,6 +14,7 @@ fn rules() -> Vec<Box<dyn Rule>> {
         Box::new(ClauseComplexity::default()),
         Box::new(Weasel),
         Box::new(Hedge),
+        Box::new(VagueDemonstrative),
     ]
 }
 
@@ -52,8 +54,19 @@ fn streaming_matches_batch() {
         "   \n\n  \n",
         "Line one.\r\n\r\nLine two after CRLF blank.",
         "She laughed — and then she cried; it cost $5, so very good.",
+        // Document-context rule: the vague demonstrative in sentence
+        // two needs sentence one's nominals (streaming must carry
+        // the previous sentence, not isolate each span).
+        "She kept the letter and the photograph on the desk. This upset him.",
     ];
     for text in cases {
         assert_eq!(batch(text), streamed(text), "input: {text:?}");
     }
+    // The parity case above must actually exercise the rule (a
+    // vacuous pass with zero findings on both sides proves nothing).
+    let vague = "She kept the letter and the photograph on the desk. This upset him.";
+    assert!(
+        !batch(vague).is_empty(),
+        "parity case fires nothing even in batch"
+    );
 }

@@ -314,18 +314,18 @@ pub fn lint_streaming(
         }
         out
     };
+    // One sentence of carried history for document-context rules
+    // (see the loop body); bounded, never the document.
+    let mut prev: Option<SentenceAnn> = None;
     for span in spans {
         let text = &source[span.clone()];
         let sdoc = english::Document::parse(text.to_string());
-        let mut ann = AnnotatedDoc {
-            source: String::new(),
-            sentences: Vec::new(),
-        };
+        let mut fresh: Vec<SentenceAnn> = Vec::new();
         for para in sdoc.paragraphs() {
             for sent in para.sentences() {
                 // Stamped with the pass-1 span (see fn docs); contents
                 // come from the lone re-parse.
-                ann.sentences.push(annotate_sentence(
+                fresh.push(annotate_sentence(
                     &models.tagger,
                     Some(&models.parser),
                     Some(&models.labeler),
@@ -334,6 +334,26 @@ pub fn lint_streaming(
                 ));
             }
         }
+        // Document-context rules (`vague-demonstrative` reads the
+        // previous sentence's nominals) need one sentence of
+        // history: carry it, bounded (+1 sentence memory, never
+        // the document). Findings emit for current-span sentences
+        // only — spans are disjoint and ordered, so the carried
+        // sentence's own findings (emitted last iteration) filter
+        // out by span start. An empty re-parse leaves `prev`
+        // untouched (its sentence is still the correct previous).
+        let mut window: Vec<SentenceAnn> = Vec::with_capacity(fresh.len() + 1);
+        if !fresh.is_empty() {
+            if let Some(p) = prev.take() {
+                window.push(p);
+            }
+            prev = fresh.last().cloned();
+        }
+        window.extend(fresh);
+        let ann = AnnotatedDoc {
+            source: String::new(),
+            sentences: window,
+        };
         // Findings leave in lint() order (span start, ties by rule
         // id): sentences arrive in span order with disjoint spans, so
         // a per-sentence sort reproduces the global sort exactly.
@@ -343,7 +363,9 @@ pub fn lint_streaming(
         }
         out.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.rule.cmp(b.rule)));
         for f in out {
-            emit(f);
+            if f.span.start >= span.start {
+                emit(f);
+            }
         }
     }
 }
@@ -366,19 +388,38 @@ pub fn lint_streaming_shallow(
         }
         out
     };
+    // One sentence of carried history for document-context rules
+    // (see the loop body); bounded, never the document.
+    let mut prev: Option<SentenceAnn> = None;
     for span in spans {
         let text = &source[span.clone()];
         let sdoc = english::Document::parse(text.to_string());
-        let mut ann = AnnotatedDoc {
-            source: String::new(),
-            sentences: Vec::new(),
-        };
+        let mut fresh: Vec<SentenceAnn> = Vec::new();
         for para in sdoc.paragraphs() {
             for sent in para.sentences() {
-                ann.sentences
-                    .push(annotate_sentence(tagger, None, None, &sent, span.clone()));
+                fresh.push(annotate_sentence(tagger, None, None, &sent, span.clone()));
             }
         }
+        // Document-context rules (`vague-demonstrative` reads the
+        // previous sentence's nominals) need one sentence of
+        // history: carry it, bounded (+1 sentence memory, never
+        // the document). Findings emit for current-span sentences
+        // only — spans are disjoint and ordered, so the carried
+        // sentence's own findings (emitted last iteration) filter
+        // out by span start. An empty re-parse leaves `prev`
+        // untouched (its sentence is still the correct previous).
+        let mut window: Vec<SentenceAnn> = Vec::with_capacity(fresh.len() + 1);
+        if !fresh.is_empty() {
+            if let Some(p) = prev.take() {
+                window.push(p);
+            }
+            prev = fresh.last().cloned();
+        }
+        window.extend(fresh);
+        let ann = AnnotatedDoc {
+            source: String::new(),
+            sentences: window,
+        };
         // Findings leave in lint() order (span start, ties by rule
         // id): sentences arrive in span order with disjoint spans, so
         // a per-sentence sort reproduces the global sort exactly.
@@ -388,7 +429,9 @@ pub fn lint_streaming_shallow(
         }
         out.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.rule.cmp(b.rule)));
         for f in out {
-            emit(f);
+            if f.span.start >= span.start {
+                emit(f);
+            }
         }
     }
 }
