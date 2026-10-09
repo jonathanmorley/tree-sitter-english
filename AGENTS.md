@@ -944,6 +944,20 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   tagdicts cannot differ — order-independent by construction),
   mtime forensics confirmed the overwrite order; EWT members
   retrained, avg redone. Scale-up stops here (flat 9-15).
+  K=100 SCALE-UP (MEASURED AND STOPPED 2026-10-09): same
+  protocol, seeds 1-100 fixed upfront (members 1-15 verified;
+  16-100 trained). Curve: K=15 23563/23622 greedy,
+  K=100 23581/23621 — dev +18 but test -1 (flat since K=9:
+  23624/23622/23621, a ±3 noise band). Stage-1 bars (+10/+10
+  over K=15) FAIL on test → STOP, no stage 2, per
+  pre-registration. Dev creeping while test sits still is the
+  overfit smell the two-sided bar exists to catch. Mechanism
+  color: exact-zero cancellation shrinks the 100-mean to
+  5.64 MB (opposing ±1 votes annihilate — the ensemble
+  self-prunes symmetric disagreement). `wscore.rs` kept as
+  measurement harness (third recreation — deleting it again
+  would be ritual, not hygiene). Scale-up CLOSED with data:
+  shuffling gains saturate at K≈9; further scale is noise.
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
