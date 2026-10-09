@@ -803,6 +803,23 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   gazetteer, `-ness`/`-ous` vetoes, consulted only below margin τ
   (EWT-safe by construction, same argument as `lest`/`supposing`);
   expect +0.5, mostly Moby-side;
+  (verb list SHIPPED via `to-verb`'s `known_verb_form`;
+  `-ness`/`-ous` vetoes REJECTED with the morphology batch;
+  name gazetteer MEASURED AND REJECTED 2026-10-08: 3,700-type
+  inventory from EWT-train PROPN, dev-shape pred-NOUN +
+  titlecase + hit → gold PROPN 61 : NOUN 91 (+10 other) —
+  known-name forms read NOUN are mostly genuine NOUN
+  (ambiguity dominates: Will/Mark/Rose/Frank-class), and
+  train-count gating does not separate (cnt-1 20:38, cnt-2/4
+  19:27, cnt-5+ 22:26 — NOUN-majority or flips at every
+  level). No EWT-majority at any slice, so no prototype —
+  nothing to gate. Miss side confirms the scoping (pred-PROPN
+  + titlecase + miss → gold PROPN 470/547: OOV names are real,
+  never flip misses). Process scar: two bucket scripts silently
+  returned empty — later scripts split raw lines, leaving
+  `\n` on tags so every comparison failed; caught by the
+  contradiction with the stripped first query. Strip-then-split
+  is now the stated discipline for throwaway joins.)
   (4) beam-2 re-decode of low-margin spans only (DONE 2026-10-06:
   width-2 joint search over greedy runs below margin 2.0 (+2 left
   context, gaps ≤ 2 merged, cap 8; 20–22% of sents, ~6% of toks
