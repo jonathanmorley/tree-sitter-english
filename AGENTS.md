@@ -1957,6 +1957,42 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   conscientious`, `a duchess` — all gold-AUX infinitives,
   margins 1.0, in-gate); zero breaks; full workspace (49
   suites) green; `flies` holds; weights untouched. 17-for-31.
+- Round-3 confirmation (no new rule): shipped be-aux fires on
+  in-gate round-3 `to be` (`ought to be a perfect horsewoman`
+  → AUX on the production path); confident instances (`to be
+  all the more blamed`, margin ≥ τ) stay unreachable — the
+  measured mechanism, same honest scope as `quite-adv`.
+
+## Disagreement mining round 3: Eliot/Alcott/Meredith (DONE
+  2026-10-08, 112,617 diffs → 0 rules)
+
+- Tagger-vs-opt-fp32 on Middlemarch (317k) + Little Women (193k)
+  + Meredith Short Works (169k); same protocol/bars as round 2
+  (grammar sentences, greedy ours, DBERT 64-word blocks,
+  clean-words-only candidacy). Glued artifact repeats exactly
+  (44.1% vs 11.2% diff rate).
+- Triage (all EWT-train pred-conditioned): model right — used
+  97:3 (used+to 23:0 VERB), supposed 18:0, pretty 51:1
+  (+ADJ-next 42:0), last 118:0, want 213:0, feeling 60:0,
+  smell-set 92:1, back 173:10, need class; below bar — home
+  32:12, further 22:8, general 23:4; thin/absent — ought n=1,
+  accustomed/sir/miss/lively n=0, sudden n=2, being n≤6,
+  will-PROPN n=3, english+NOUN n=5, frank n=4, round n=4.
+  Standing verdicts re-confirmed without re-measure: had-VERB
+  (DBERT overfires AUX ×691), Miss (zero train support),
+  what+NOUN (78%), that-splits (gap class), quite/there/
+  participle/to-residuals (confident or singleton),
+  NOUN→PROPN lowercase names (encoder territory),
+  whole-token contractions (excluded class — don't/don't/
+  cannot/i'm diffs all land here).
+- Yield curve: Moby 28k→1, round-2 46k→1, round-3 113k→0.
+  The mine is now worked across 4 books + 3 sweep books
+  (~1.25M words); further books face steep diminishing
+  returns — mine again only on a new disagreement source
+  (new oracle, new tagger generation) or a consumer paying
+  per-rule.
+- Probes deleted (`mine_dbert/diff`, `ewt_cell2`,
+  `sent_words`); raw tags stay in /tmp.
 
 ## Correction probe refused: conj-verb (REJECTED 2026-10-08,
   zero code written)
