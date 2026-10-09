@@ -813,6 +813,22 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   strictly non-negative everywhere — admitted. Integer-margin
   discovery along the way: perceptron scores sum ±1 updates, so
   margins are integers (T≤1.0 catches ties only and scores −6).
+  Widths 3/4 MEASURED AND REJECTED 2026-10-08 (temp width param
+  + probe, fully reverted): stage-1 dev +2/test +1 (w3),
+  +1/±0 (w4) — strictly non-negative, so stage 2 ran: sweep
+  +2 (beam fixes 26→27, rule breaks still []), hard/genre/moby/
+  chunk/lint byte-identical, `flies` holds, ud gates green,
+  bench speed identical (rescores are ~6% of tokens — width is
+  in the noise). Adjudicated flips kill it anyway: w3 is 5
+  fixes / 2 gold-wrong breaks (`syd`→X, `as`→SCONJ), w4 is
+  6 / 5 — and wider search increasingly manufactures X
+  readings (`da`/`syd`/`a`/`together`→X, 2 at w3, 4 at w4),
+  the parser-beam lesson repeating (wider search finds
+  degenerate paths). +3 net sits inside tie-lottery noise
+  with identified breaks — the attr-adj precedent (test +3 +
+  known break = reject) decides it, not the bars (all met).
+  Width stays 2; do not reopen without a non-degenerate
+  widening idea (none queued).
   Not to do: wider dense features without data
   (`w+t-1` overfit repeats), tagdict behavior change, averaging
   (falsified), morphology-without-lexicon rules (both Brill rules
