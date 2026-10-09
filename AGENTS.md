@@ -1864,6 +1864,16 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   admitted on its own gates anyway (EWT +2, zero harm). Hedge
   recall recalibrates 0.65 → 0.50 on measured-mechanism
   (confident-mistag class, genre/sweep-chunk precedent).
+- WIDENED 2026-10-08 (τ=2.0→20.0): answers the confident-class
+  question for this shape — τ=99 sweep shows dev/test never
+  present it above margin 2.0 (one standing fire), so widening
+  moves EWT ±0 by measurement; train in-shape breaks zero
+  (DET-gold `quite` is DET-next-only, guard-excluded). Hedge
+  recall 0.567→0.800 (+7 TP, FP still 1; remaining FNs are
+  neighbor-mistags, `quite-a` abstains, or margins > 20).
+  Full workspace green. be-aux widening measured the same day
+  and REJECTED (5 known train breaks, same surface shape —
+  the s-verb-lex precedent decides it).
 
 ## Correction rule 15: those-pron (ADMITTED 2026-10-08)
 

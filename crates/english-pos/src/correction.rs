@@ -217,7 +217,7 @@ pub const RULES: &[Rule] = &[
     },
     Rule {
         name: "quite-adv",
-        threshold: 2.0,
+        threshold: 20.0,
         test: quite_adv,
     },
     Rule {
@@ -451,6 +451,15 @@ fn pass_by(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
 /// `quite` FNs sit at margins 9–18, unreachable below any gate —
 /// the hedge-recall bar recalibrates to measured-mechanism on that
 /// account); this rule's gates stand on their own.
+/// WIDENED 2026-10-08 (τ=2.0→20.0): the τ=99 sweep shows dev/test
+/// never present this shape above margin 2.0 (one standing fire,
+/// correct) — widening moves EWT ±0 by measurement, not by hope.
+/// Train in-shape breaks: zero (DET-gold `quite` is DET-next-only,
+/// excluded by the guard; the lone NOUN-next DET abstains the same
+/// way). Hedge eval recall 0.567→0.800 (+7 TP: bashful, certain,
+/// essential, impossible, happy, nervous, lame; FP unchanged at 1;
+/// remaining FNs are neighbor-mistags, `quite-a`-guard abstains,
+/// or margins > 20 — other mechanisms). Full workspace green.
 /// Sentence-final locative `there`/`here` (`water-gazers
 /// there`): pred-PRON at the last two positions is gold ADV 22:0
 /// in EWT train (existentials lead sentences; trailers locate).
