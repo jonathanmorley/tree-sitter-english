@@ -1457,6 +1457,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   but the doc comment now says so explicitly. No lint rule
   reads beam margins; nothing else changes.
 
+## Parse-validation probe (REJECTED 2026-10-08, probe deleted)
+
+- Question: do low dep attach margins mark mistagged sentences
+  (parse failure as tag validation)? Temp `margcorr` example
+  (since deleted): beam4 min-attach-margin per dev sentence,
+  parsed with OUR tags (pipeline regime; greedy tok-err 7.86%
+  reproduces the banked 92.14, methodology sound — after
+  catching a whole-line-vs-tag comparison bug that read 100%
+  error, fixed before measuring). Pre-registered bars:
+  enrichment ≥2× plus capture ≥0.2 at margin < 2.0, else STOP.
+- Measured: sent-err base rate 0.494; at <2.0 enrichment 1.35×
+  with capture 0.456 — capture passes, enrichment misses by a
+  mile, and the curve is flat across thresholds (0.0→5.0 all
+  ~1.34×: no separation anywhere, median margin 19.8).
+  Parse uncertainty barely predicts tag errors — the fourth
+  confirmation that remaining tagger errors are confident
+  (chunk 22/22, eval-margin 244, capture 0.139, now 1.35×).
+  Parse-validation stops with the joint program; no gate reads
+  dep margins. Do not reopen without a new coupling idea.
+
 ## Accuracy by reading level (MEASURED 2026-10-07)
 
 - Question: is the tagger better on easy texts? Answer: NO —
