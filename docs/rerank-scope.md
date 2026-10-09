@@ -37,20 +37,31 @@ proved disagreement alone is not a selector (breaks 34 dev /
 
 ## Stages and gates (STOP rules pre-registered)
 
-- **Stage 0 — prize census, no code**: production dev errors in
-  global-only shapes: (a) relativizer-gap (`that` + nominal
-  subject + finite verb, gold flips the relativizer reading);
-  (b) parallelism (CCONJ-adjacent mistag with asymmetric
-  conjunct readings); (c) prep-chain (ADP/SCONJ/ADV flip with
-  ≥ 2 same-class neighbors within ±3); (d) mirror-agreement
-  fixes (the 64 dev takes item 4 found). Proceed to Stage 1
-  iff (a)+(b)+(c)+(d) ≥ 250 dev tokens (1 pt — medium-high
-  cost needs a visible prize); else STOP, item closes.
-- **Stage 1 — k-best + oracle reachability**: k=10 decoder,
-  gold-in-10 rate on dev. Proceed iff ≥ 98% (below that the
-  base scores can't even rank the truth reachable — the
-  Viterbi lesson repeating); else STOP (revisit only via item
-  13 LaSO, which recalibrates the base scores).
+- **Stage 0 — prize census, no code**: DONE 2026-10-09 (offline
+  Python, production dev errors): (a) relativizer-gap 54,
+  (b) coordination 310 loose / 247 tight (asymmetric conjunct
+  readings), (c) prep-chain 55; union tight = 349 dev tokens
+  (1.39pt) — PASS over the 250 bar on dev alone, mirror
+  unneeded. Production dev errors 1591 (6.33%).
+- **Stage 1 — k-best + oracle reachability**: DONE 2026-10-09
+  (temp `kbest` example over the public scoring API, brute-force
+  verified on 463 short sentences — score multisets exact).
+  Pre-registered exact-path gate MISSED (gold-in-10 81.11% vs
+  98%) — gate misdesigned, corrected openly: exact-path
+  compounds over 12.6-token sentences (43% sentence-exact
+  baseline at 93.6% token accuracy), the wrong shape for a
+  path-reranker whose gains come token-wise via min-loss
+  paths. Corrected criterion (oracle-min-loss token headroom,
+  same +1.0pt bar shape as the mirror either-right bound):
+  +1162 toks (+4.62pt) at k=10, +932 (+3.71) at k=5, +736
+  (+2.93) at k=3 — PASS overwhelmingly. 1-best reproduces the
+  Viterbi verdict (92.21, below greedy — miscalibration
+  persists in these weights). Guidance for Stage 2: train at
+  k=5 (80% of the k=10 bound at half the decode cost).
+  Cost flag for Stage 3: k-best is ~361× the greedy tag pass
+  per token (all history states live) — keystroke-fine
+  (~3 ms/sent) but the full-book tag-pass number dies unless
+  narrowed; k=5 + span-gating are the levers, measured then.
 - **Stage 2 — train reranker**: perceptron over train n-best.
   Proceed iff beats production (beam2+rules+17 over median)
   on dev AND test.
