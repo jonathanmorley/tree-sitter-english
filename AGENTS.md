@@ -1041,13 +1041,16 @@ suspect; item 4 proceeds with its own bars.
    regenerates the reversed inputs byte-identically (verified by
    diff) — retrain with `--iters 20 --min-count 1` for the mirror
    artifact.
-5. Reranking with global features (SCOPED 2026-10-09, unbuilt):
+5. Reranking with global features (STAGE 2 UNBLOCKED 2026-10-09):
    n-best paths rescored with agreement / gap-detection /
    parallelism features — the only clean vehicle for `that`-gap
-   detection. Scope: `docs/rerank-scope.md` (k-best Viterbi,
-   Collins perceptron rerank, Stages 0–3 with STOP rules:
-   Stage-0 prize census ≥ 250 dev tokens or STOP before any
-   code; gold-in-10 ≥ 98% or STOP; dev AND test to admit).
+   detection. Scope: `docs/rerank-scope.md`. Stage 0 PASS
+   (prize census 349 dev tokens, 1.39pt, tight definitions);
+   Stage 1 PASS on corrected criterion (exact-path 81% missed
+   a misdesigned gate — compounds over 12-token sentences;
+   oracle-min-loss +4.62pt at k=10, +2.93pt at k=3; train at
+   k=5). Temp `kbest` probe kept for Stage 2 use, deleted at
+   its verdict. Stage 2 bars: beats production on dev AND test.
 6. Correction re-mining on current weights: the 19-actionable
    shapes predate the ensemble by three accuracy points; the
    gate zone has all-new occupants. Same unanimity discipline.
