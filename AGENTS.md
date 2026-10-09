@@ -1037,7 +1037,10 @@ suspect; item 4 proceeds with its own bars.
    confident-mistag class). No local selector extracts the
    bound; probes deleted, code fully reverted, suite re-greened.
    Revisit only as a rescoring feature inside item 5, never as
-   a standalone override.
+   a standalone override. Recipe kept: `scripts/reverse-conllu.py`
+   regenerates the reversed inputs byte-identically (verified by
+   diff) — retrain with `--iters 20 --min-count 1` for the mirror
+   artifact.
 5. Reranking with global features: n-best paths rescored with
    agreement / gap-detection / parallelism features — the
    only clean vehicle for `that`-gap detection. Needs its own
