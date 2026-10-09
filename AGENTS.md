@@ -893,6 +893,32 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   Moby parity re-holds 8874/8874); front table/charts +
   ARCHITECTURE + READMEs rebuilt from them; wasm bundle
   rebuilt twice (5.06 MB dense, 3.15 MB pruned).
+  (6) oracle-joint on the ensemble protocol (MEASURED AND
+  REJECTED 2026-10-09): pool = EWT train + oracle 01+02
+  (354 tok), shuffled together per member (same seeds 1–3;
+  zero code changes — concatenated corpus dir). Baseline
+  reproduces committed to the digit (23171/23250 — the joint
+  protocol is sound). Members +90…+125/+19…+95, avg greedy
+  +37/+17 over EWT-only-avg (23480/23539 — the oracle effect
+  transfers additively); pruned production dev +29 / test +17
+  over shipped (23509/23545), PUD +29, sweep +14/+18, moby −1,
+  genre −2, coordscope +2TP, weasel +1TP — every bar passes.
+  Forensics reject anyway (attr-adj precedent: gates pass +
+  systematic break): 25× verb-particle `up` (+9 others)
+  flipped ADP→ADV against EWT gold — Moby-domain particle
+  habits corrupting the UD convention (the P1/P2-protected
+  family); 36 name-overfires against the +65 name fixes;
+  coarse −14 while exact +17; Moby vague fires −13 (eval
+  identical); chunk-sent −3, hard −4toks, nominal +1FP.
+  Churn/noise ratio kills it: 627 tokens move (2.5%) for +17
+  net. The oracle batches themselves tag particles ADP
+  (8/8) — the damage is order-resolution luck on ambiguous
+  shapes, not oracle labels, which makes it worse (no guard
+  can target it; reseeding to dodge it would be test-fitting).
+  EWT-only ensemble weights stand (md5-verified restore);
+  no defense of the +17 survives the convention damage.
+  Do not reopen: the only fix (particle-shape rule) is
+  P1/P2-rejected ground.
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
@@ -2637,6 +2663,21 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   stand (Pattern, RDR, spaCy, NLTK, TreeTagger unchanged).
   Their history-probe diff (train-only) is the cooperative
   upside of the same shared tree.
+- SECOND LESSON 2026-10-09 (stale-embedded-weights, hardened the
+  rule): release EXAMPLE binaries silently serve stale embedded
+  weights across rapid swaps — cargo's freshness check can miss
+  a weights-file `cp` immediately followed by `cargo build`
+  (1.6s "Finished" with no recompile), so `tag_tokens`
+  measured pruned-EWT numbers (23528) while the file held
+  oracle weights, and two coarse runs read 24027 vs 24013 off
+  the same bytes. Caught by contradiction + a triple-build
+  experiment (three forced full rebuilds byte-identical;
+  the stale binary 712 flips away). Hardened rule: after
+  swapping weights, `touch` a consumer, confirm a `Compiling`
+  line, and cross-check output against an independent path
+  (`ud_gates` agreed with fresh binaries to the digit: 23545).
+  Debug-suite numbers were never at risk (full rebuilds), only
+  release examples.
 
 ## WordNet uses (QUEUED 2026-10-07)
 
