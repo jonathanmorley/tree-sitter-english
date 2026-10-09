@@ -1232,7 +1232,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   flat (78.8/79.3, 11.5/9.3 MB — pruning buys size, not UAS);
   iters-40 flat (78.7/79.0 — converged). Width gains halve
   (+2.3, +0.85); width-8 REJECTED without running (projects
-  ~+0.4 at 2× decode cost on an already-4s pass).
+  ~+0.4 at 2× decode cost on an already-4s pass) —
+  then MEASURED 2026-10-09 at user request and rejected
+  anyway (LaSO-8, same 20/1 hparams): test gold +43 (+0.17),
+  test tagger +78 (+0.31), dev gold +8 (+0.03), dev tagger
+  −9 (−0.04) — best cell below projection, dev tagger
+  regresses, cost doubles. Weights restored md5-verified
+  (an averaged-control run in between overwrote the file; the
+  pre-beam8 backup is the restore point — another reason
+  every weights-writing run logs its md5).
 - Averaging reversal vs the tagger, kept as measurement:
   Collins averaging was FALSIFIED for tagging (33% vs 88%
   pilot) but wins +7.1 here — tagger data converges fast and
