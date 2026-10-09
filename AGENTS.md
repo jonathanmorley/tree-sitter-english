@@ -1416,6 +1416,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   gold inputs vs raw text — noted, not claimed). Full
   workspace + lint evals green; front table + dep chart
   updated (chart axis 65–86: 85.9 broke the old scale).
+- Lemma-features screen (MEASURED AND REJECTED 2026-10-09,
+  code fully reverted): offline (form, tag)→lemma/FEATS table
+  (18,003 entries, 97.8% unanimous, dev hit 78.7%;
+  `scripts/lemma-table.sh` kept, table stays /tmp) wired as
+  four single templates (`0x5e`/`0x5f` lemma s0/b0,
+  `0x73`/`0x74` FEATS, exact-only, table-None bit-identical —
+  verified by unit tests + refactor). Screen ran BOTH learners:
+  plain +1.05/+1.50 (passes +0.5 in isolation), averaged
+  −10/−5 (dev 21186 vs 21196, test 21070 vs 21075) — the
+  binding scale FAILS. Averaging already pools (or smooths
+  into noise) whatever lemma singles add; no LaSO verdict
+  (`train_beam_lemma` never built). Along the way the v5
+  screen's learner was recovered: banked 84.29/83.98
+  reproduces EXACTLY under averaged control, so v5 screened
+  averaged and my plain control (80.44) was never comparable
+  — screen vehicles must match the admission vehicle's
+  learner, recorded as discipline.
+  Revisit triggers: conjunctions (separate experiment, needs
+  its own screen) or a consumer paying for the full
+  LaSO-at-width verdict.
 - v6 forensics (DONE 2026-10-08 — no v6): re-ran the overlap
   2×2 with v5 weights (Malt-lex2 85.06 vs ours 84.99):
   malt-only 1,375 / ours-only 1,357 — net −18 tokens, symmetric.
