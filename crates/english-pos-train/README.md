@@ -388,47 +388,50 @@ an assert that once caught a real contamination (oracle-pool
 members mixed into an EWT averaging set: same-pool tagdicts
 cannot differ, so the failure proved mislabeled inputs, and
 mtime forensics confirmed the overwrite order).
-Committed: K=15 (seeds 1–15), iters=20, min-count=1, EWT train
-only — no oracle data; pruned at |w|<0.34 (prune tolerance
-shrinks with K — 0.67 holds at K=3 but costs −15/−14 greedy at
-K=15, where minority-agreement weights carry signal; 0.50 also
-fails at −14 test, so 0.34 ships). Reruns are md5-identical
-(verified by re-run, including a cross-implementation check:
-single-15-run Rust average scores identically).
-Yield curve by K (greedy; members alone +76…+195): K=1 91.99 /
-K=3 93.22 / K=9 93.63 / K=15 93.70 dev (test 92.48 / 93.74 /
-94.14 / 94.10) — steep 1→3→9, flat 9→15 (test −2): scale-up
-stops here (next would be bootstrap diversity, not more
-shuffles — unscoped).
+Committed (2026-10-09 evening): entrywise MEDIAN of K=15
+(seeds 1–15), iters=20, min-count=1, EWT train only — no
+oracle data, no prune step (medians cancel symmetric
+disagreement exactly, so the map is naturally sparse at
+1.87 MB). Recipe: members via `ensemble`, combination via
+`scripts/average-members.py --median` (both md5-verified
+end to end). Median ignores outlier members the way a vote
+does: per-token-majority vote over the 15 greedy decodes
+measured +115/+69 over the mean with identical test score
+to the median (23558/23616 vs 23545/23616) — the map ships,
+the 30 MB vote does not.
+Yield curve by K (greedy; members alone +59…+195): K=1 91.99 /
+K=3 93.22 / K=9 93.63 / K=15-mean 93.70 / K=15-median 93.63
+dev (test 92.48 / 93.74 / 94.14 / 94.10 / 94.11) — the median
+trades a hair of dev for the mean (-19) at identical test.
+Superseded same day: mean+prune-0.34 (shipped that morning:
+93.77/94.16 prod, md5 `eeb87c81…`; prune tolerance shrinks
+with K — 0.67 costs −15/−14 at K=15, 0.50 fails too).
 Member pairwise dev disagreement ~5.4% (the variance being
-averaged out is real, not identity).
+combined out is real, not identity).
 
 | setup (greedy) | EWT dev | EWT test |
 |---|---|---|
 | fixed order (EWT-only) | 23133 (91.99%) | 23206 (92.48%) |
-| shuffled members | +76…+133 | +51…+125 |
+| shuffled members (15) | +59…+195 | +30…+191 |
 | entrywise mean of 3 | 23443 (93.22%, +310) | 23522 (93.74%, +316) |
 | entrywise mean of 15 | 23563 (93.70%, +430) | 23622 (94.13%, +416) |
+| entrywise median of 15 | 23545 (93.63%, +412) | 23616 (94.11%, +410) |
 
-Production (beam-2 + 17 rules) for committed K=15 pruned (|w|<0.34):
-dev 23581 (93.77%), test 23628 (94.16%, coarse 96.11); PUD test
-19775/21180 (93.37%, +99 over K=3 — still generalizing
-cross-domain). Books: sweep greedy 1893 / production 1902
-(+5/+15 over K=3), hard 0.9083, Moby/genre miss counts hold
-(21/15), chunk sent/token mixed within noise (sweep token +78
-kept, sent -0; genre sent -1), lint bars all hold (coordscope
-+1TP/-1FP and passive +1TP better than K=3; nominal +1FP and
-hard -4toks the other way, all inside bars).
-Known breaks carry over from the K=3 ledger (5 adjudicated
-lint mistags + 2 bounded-unattributed); flip census K=15 vs
-committed: 612 fixes / 274 breaks, spread with no
-concentration (titlecase churn both ways nets positive).
-Averaged-15 weights md5 `88d3e9dc3c4f04b81e0eec7354096a9a`,
-pruned md5 `eeb87c81741477fb325bbe68af413a3e` — the committed
-file (3.52 MB); Moby batch/stream parity re-holds 8881/8881;
-site numbers/table rebuilt from them (94.16/96.11, wasm
-bundle ~4.1 MB). Queued, not started: oracle-joint on top of
-the ensemble protocol (one variable at a time).
+Production (beam-2 + 17 rules) for committed median: dev
+23557 (93.67%), test 23622 (94.13%, coarse 95.99); PUD test
+19759/21180 (93.29%). Books: sweep greedy 1896 / production
+1902 (+8/+15 over mean-shipped), hard 0.9064, Moby/genre miss
+counts 21/14, chunk sent/token mixed within noise, lint bars
+all hold with five TP/FP improvements over mean-shipped
+(coordscope +1TP/−1FP, passive +1TP, vague −1FP, weasel +1TP,
+nominal +1TP; hard +6toks too — nothing moves backwards). Flip census vs committed:
+624 fixes / 292 breaks, no concentration, X at background
+rate. Median weights md5
+`ca29d68ca32d2febdc8257c9bcfc0668` — the committed file
+(1.87 MB); Moby batch/stream parity 8881/8881; site
+numbers/table rebuilt from them (94.13/95.99, wasm bundle
+2.4 MB). Queued, not started: oracle-joint on top of the
+ensemble protocol (one variable at a time).
 
 ## Cross-genre standing (GUM test, gold)
 

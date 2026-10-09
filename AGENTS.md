@@ -958,6 +958,88 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   measurement harness (third recreation — deleting it again
   would be ritual, not hygiene). Scale-up CLOSED with data:
   shuffling gains saturate at K≈9; further scale is noise.
+  Median combination (ADMITTED 2026-10-09, same day): per-token
+  majority vote over the 15 greedy decodes scores +115/+94 over
+  the mean (23558/23616, test tied) — nonlinear combination
+  beats averaging, but 15 models (30 MB) break every size tier.
+  Entrywise MEDIAN in one map matches the vote (23545/23616:
+  dev −13, test ±0, noise) at 1.87 MB: medians ignore outlier
+  members the way votes do, and symmetric disagreements cancel
+  exactly (no prune step needed). Stage 2: production dev +77
+  / test +94 over mean-shipped (23557/23622), PUD +83 (19759),
+  sweep +8/+15, hard +6toks, coordscope +1TP/−1FP, passive
+  +1TP, vague −1FP, weasel +1TP, nominal +1TP — every book/lint
+  eval holds or improves, zero regressions anywhere; ud gates
+  pass; `flies` holds; Moby parity 8881/8881; bench identical;
+  flip census 624/292 with no concentration and X at
+  background rate. Recipe: members via `ensemble`,
+  `scripts/average-members.py --median` (kept, md5-verified
+  end to end); new pin `ca29d68ca32d2febdc8257c9bcfc0668`.
+  Supersedes mean+prune-0.34 the same day it shipped (no
+  mourning: +94 test and −1.65 MB).
+
+## Accuracy program, round 2 (QUEUED 2026-10-09 — ceiling and
+ROI suspended by owner request; bars still required per item)
+
+Techniques never exhausted, roughly by expected value. Shipped
+or measured-closed items stay closed; these are all unbuilt.
+Each needs its own bars before work (the standing pattern:
+EWT dev/test, all evals neutral-or-better, `flies` holds,
+determinism + latency where they apply).
+
+Blind-to-right investigation (the cross-cutting question): the
+model sees next-*word* (`0x12`) but never next-*tag* — blind to
+the right by construction, exactly where prep-chains and
+`that`-cascades resolve. Oracle probe first (gold right-tags
+visible: headroom measure), then item 4 below. If the oracle
+shows nothing, the whole right-context family is suspect.
+
+1. Exact Viterbi decode (STARTED 2026-10-09): features depend
+   only on (t-2, t-1, words), so the global-best path is exact
+   in O(n·17³); dominates beam-2 spans (capped, merged,
+   dropped) by construction. Temp path + dev/test scoring;
+   admit iff beats production (beam2+rules+17) on dev AND
+   test, then integration form by keystroke measurement.
+2. Posterior (minimum-risk) decode: forward-backward
+   marginals + per-position argmax; literature +0.1–0.2 over
+   Viterbi, attacks confident ties. Unbuilt.
+3. Vote-decode the 15: per-token majority over member
+   decodes (nonlinear combination, unlike weight averaging);
+   members on disk, no retraining. DONE 2026-10-09 — and
+   superseded same day: vote scores +115/+94 over the mean
+   (23558/23616), but the entrywise median matches it in one
+   1.87 MB map (see Median combination above). The 30 MB vote
+   never ships.
+4. Right-to-left re-decode: backward pass bringing next-tag
+   context (mirror decoder + combination rule); behind the
+   blind-to-right oracle probe above. Unbuilt.
+5. Reranking with global features: n-best paths rescored with
+   agreement / gap-detection / parallelism features — the
+   only clean vehicle for `that`-gap detection. Needs its own
+   scope (medium-high cost). Unbuilt.
+6. Correction re-mining on current weights: the 19-actionable
+   shapes predate the ensemble by three accuracy points; the
+   gate zone has all-new occupants. Same unanimity discipline.
+   Unbuilt.
+7. Soft-target distillation: all five failures used hard
+   labels (shared-prior yank); distilling DBERT *distributions*
+   preserves teacher uncertainty — different mechanism.
+   Needs posteriors + soft-update trainer. Unbuilt.
+8. Collins-averaging pilot re-exam: 33%-vs-88% smells broken,
+   not settled — and decided "no averaging" for the tagger
+   while the parser measured +7.1 for it. Cheap redo.
+   Unbuilt.
+9. PA/MIRA updates: different online rule, same features.
+   Small code. Unbuilt.
+10. Punctuation-context features: commas delimit our hardest
+    clauses, but hidden punctuation is excluded from tagger
+    input by construction — unreachable without wire
+    plumbing. Unbuilt (blocked on the plumbing, not evidence).
+11. Iters 25–30 / min-count 0: trivial grid around (20, 1).
+    Likely flat, nearly free. Unbuilt.
+12. Bootstrap diversity: members see ~63% unique sentences
+    each (vs full-data shuffles). Weak prior (stable learner
+    + less data each + K-curve flat). Unbuilt, lowest.
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
