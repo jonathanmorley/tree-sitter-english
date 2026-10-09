@@ -84,3 +84,41 @@ can move them; neutral-or-better), full workspace green,
 `flies` holds (POS untouched, but the pipeline feeds the
 linters — verify, don't assume). Weights stay gitignored
 Tier-1; md5 hygiene per retrain.
+
+## 5. Revisit 2026-10-09: uncertainty-gated coupling (measured,
+   program stays stopped)
+
+The one untested coupling idea since the stop: gate label
+features on labeler margin — couple only confident labels
+(margin ≥ T), back off to arc-only features below. Unlike A/B/C
+it concedes the mismatch instead of fighting it: confident
+labels are mostly right, so the tax applies where it costs
+least. Pre-registered bars: capture P(margin<T | label error)
+≥ 0.5 AND precision P(correct | margin≥T) ≥ 0.97 — else the
+gate cannot reach enough errors cleanly enough to matter.
+
+Measured (temp `labelmarg` probe, since deleted; pipeline
+regime throughout — our tags, beam4 heads, correct heads
+only so head errors don't pollute label separability; EWT
+dev, 20,495 tokens, 1,476 label errors): capture 0.035 at
+T<1, 0.094 at T<2, 0.236 at T<5; precision 0.930–0.943
+against a 0.928 base rate. Both bars miss by miles — label
+errors are confident too (76% sit above margin 5), the fourth
+member of the confident-mistag class (tags 0.139, chunk 22/22,
+eval-margin 244, now labels 0.236). Even perfect gating
+captures a quarter of the errors to fix a subset that is
+barely above base rate: expected value ≈ +0.1 for decoder
+surgery plus a retrain, below any admission bar ever set
+here. No stage, no code, probe deleted.
+
+Program stays stopped. The full menu is now exhausted — 0a/0b
+(greedy joint), B (joint beam, parked behind evidence that
+never arrived), C (unified, rejected upfront), uncertainty
+gating (this section) — all measured or refused with reason.
+Reopen triggers, and only these: (1) a label-quality
+breakthrough that moves the confident mass (nothing queued —
+pred-tags labeler went the wrong way); (2) a consumer that
+funds a decoder stage regardless of expected value (the
+UAS-87 lesson: numbers, not hunches, and the number here
+rounds to zero). Do not relitigate the mismatch without one
+of the two.

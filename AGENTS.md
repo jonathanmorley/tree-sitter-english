@@ -1390,7 +1390,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   LaSO run, option B stays parked. v5 weights restored
   (md5-verified) and suite re-greened after revert. Scope doc
   stands as the record; backlog (b) overlap and (c) v5-DONE
-  unaffected.
+  unaffected. Revisit 2026-10-09 (`docs/joint-arc-label.md`
+  §5): the one untested coupling — uncertainty-gated labels —
+  measured and stopped too (label-margin capture 0.035–0.236
+  vs 0.5 bar, precision 0.93–0.94 vs 0.97 bar; label errors
+  are confident, fourth member of the confident-mistag class).
+  Full menu exhausted; reopen only on a label-quality
+  breakthrough or a funded decoder stage.
   (b) error-overlap study (DONE 2026-10-08, probe deleted):
   ours-beam4-gold vs Malt-lex2-gold on EWT test: both-right
   19,634 / ours-only 1,327 / malt-only 1,711 / neither 2,422.
