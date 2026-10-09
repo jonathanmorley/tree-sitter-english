@@ -2613,6 +2613,25 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (NF=9 — same sanitize fixes it); both verified malformed=0
   before the full run. Probe deleted after use.
 
+## Dep pipeline refresh (DONE 2026-10-09)
+
+- Banked +tagger numbers were measured with the old tagger, so
+  the ensemble weights refresh them for free (no parser/labeler
+  change): dev UAS 79.8→81.17 (+1.4), LAS 73.2→75.02 (+1.8);
+  test UAS 79.6→80.68 (+1.1), LAS 73.3→74.99 (+1.7). Gold
+  cells reproduce exactly (85.90/82.07 dev, 84.99/81.27 test —
+  methodology sound). Cascade narrows but stays structural
+  (dev −6.1→−4.7, test −5.4→−4.3). Front dep chart + parser
+  table carry the new pipeline cells.
+- Malt lex2 pred leg rerun with new greedy tags (touch+rebuild
+  per the stale-binary rule, pred artifacts deleted first,
+  2.8 s parse): 79.37/73.96 → 81.09/76.30 (+1.72/+2.34).
+  Malt converts better tags harder than ours (+1.08/+1.68),
+  retaking the same-input lead in both cells (+0.41/+1.31) —
+  denser features exploit tagger gains harder, which sharpens
+  (not softens) the standing lesson that feature density, not
+  the learner, is the gap. Table carries both rerun cells.
+
 ## DistilBERT look (MEASURED 2026-10-08, probes deleted)
 
 - Purpose-built model found:
