@@ -1051,6 +1051,15 @@ suspect; item 4 proceeds with its own bars.
    updates flat, no separation). Code fully reverted, suite
    green, weights untouched. Item 4's rescoring-feature revisit
    dies with it; reopen only on EWT-vetted global shapes.
+   Vetting DONE 2026-10-09 (offline probe on dev candidate paths,
+   no rebuild): symmetry preference precision 0.088 (6 fixes /
+   62 breaks — gold prefers asymmetry 10:1), short-chain 0.211
+   (30/112), `which` zero path-disagreements (no prize), `that`
+   coin-flips in every gold (relword, ahead) cell (48–54% —
+   genuine ambiguity, no selector). Zero vetted shapes, zero
+   coverage vs the 150-token bar. Item 5 CLOSED permanently
+   (bars' own terms); no train rebuild. Spin-off noted for item
+   6: `which`→PRON is 94% in gold — rule-shaped, not rerank.
 6. Correction re-mining on current weights: the 19-actionable
    shapes predate the ensemble by three accuracy points; the
    gate zone has all-new occupants. Same unanimity discipline.
