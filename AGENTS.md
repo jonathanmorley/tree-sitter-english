@@ -2676,6 +2676,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   annotation retention dominated; the DOM transient did — fixed
   separately. Residual: pass-1 tree transient (63 MB) bounds further
   gains; per-sentence dep spikes are inherent (windowed, not removed).
+- Streaming context bug FOUND AND FIXED 2026-10-09 (tripped over
+  during weights measurements, pre-existing since rule 7):
+  `lint_streaming` built single-sentence docs, so the vague rule's
+  `si.checked_sub(1)` hit `None` on EVERY sentence — streaming
+  silently dropped all 93 vague-demonstrative findings on Moby
+  (batch 8835 vs stream 8742; every other rule identical). The
+  committed identity test never caught it (grammar-span cases
+  only; Moby parity last measured pre-rule-7). Fix: carry one
+  annotated previous sentence across spans in both streaming
+  paths (+1 sentence memory, span-filtered emit so carried
+  findings never duplicate; empty re-parse leaves `prev`
+  untouched). TDD first (batch-fires/stream-silent parity case
+  + non-vacuity guard — a zero/zero pass proves nothing).
+  Moby parity re-measured byte-identical at 8883/8883 with
+  vague 86 in both; stream peak 87.9 (carry costs nothing);
+  full workspace green. Standing lesson, second instance
+  (after the tagdict-behavior door): parity claims cover the
+  ruleset that existed when measured — new document-context
+  rules must extend the identity test or stream in the blind
+  spot.
 - Byte-splitter paragraph streaming REJECTED with mechanism:
   dash/colon-handoff arbitration absorbs blank lines into following
   sentences (~36 Moby paragraphs), so no byte splitter reproduces
