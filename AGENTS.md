@@ -994,12 +994,17 @@ the right by construction, exactly where prep-chains and
 visible: headroom measure), then item 4 below. If the oracle
 shows nothing, the whole right-context family is suspect.
 
-1. Exact Viterbi decode (STARTED 2026-10-09): features depend
-   only on (t-2, t-1, words), so the global-best path is exact
-   in O(n·17³); dominates beam-2 spans (capped, merged,
-   dropped) by construction. Temp path + dev/test scoring;
-   admit iff beats production (beam2+rules+17) on dev AND
-   test, then integration form by keystroke measurement.
+1. Exact Viterbi decode (MEASURED AND REJECTED 2026-10-09):
+   features depend only on (t-2, t-1, words), so second-order
+   Viterbi is exact in O(n·17³). Correctness proven by
+   per-sentence model-score audit (0 violations on dev: the
+   global optimum is genuinely found), yet it scores 92.52 vs
+   greedy 93.69. Mechanism: perceptron updates calibrate
+   within-state rankings, not cross-path scores — global
+   search accumulates the noise into degenerate chains (same
+   signature as the parser's beam-2-of-greedy collapse).
+   Spans survive (short, anchored); the globe dies. Probe
+   deleted; item 13 is the training-side fix.
 2. Posterior (minimum-risk) decode: forward-backward
    marginals + per-position argmax; literature +0.1–0.2 over
    Viterbi, attacks confident ties. Unbuilt.
@@ -1040,6 +1045,14 @@ shows nothing, the whole right-context family is suspect.
 12. Bootstrap diversity: members see ~63% unique sentences
     each (vs full-data shuffles). Weak prior (stable learner
     + less data each + K-curve flat). Unbuilt, lowest.
+13. LaSO beam training for the tagger (QUEUED 2026-10-09, from
+    the Viterbi verdict above): the fix global search needs —
+    teach cross-path calibration the way the parser's LaSO
+    license does (early-update beam training, same weights
+    shape). Nothing in current weights supports global search;
+    no decoder extracts what training never put in. Needs its
+    own bars (dev/test + evals + `flies` + determinism) before
+    work. Unbuilt.
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
