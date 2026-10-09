@@ -369,8 +369,51 @@ state instead of folding, collapsing all String keys into one
 bucket (52µs/lookup); folding fixed it (226 ns). Both caught by
 bench, not review. `finetune`/`finetune_frozen` clear the table
 (weight updates can move a word off its dict tag); smoke tests
-pin the placeholder-margin contract deliberately. New weights
-md5 `0b72993e`; site wasm bundle rebuilt from them.
+pin the placeholder-margin contract deliberately.
+
+## Ensemble-averaged weights (committed 2026-10-09)
+
+Training is fully deterministic (zero init, fixed data order, no
+RNG) — so a single run bakes in its file order's recency bias.
+`examples/ensemble.rs` (kept as the committed recipe) trains one
+baseline plus K members on LCG-shuffled orders (Fisher-Yates,
+`6364136223846793005`/`1442695040888963407`, seeds fixed) and
+averages the member maps entrywise at the JSON level into ONE map
+(same decode shapes, ~4.53 MB — averaging destroys sparsity, so
+the union runs ~2.3× the single-model bytes; Tier-1 single-digit
+budget holds). Tagdicts are order-independent by construction
+(first-seen tag only sticks when unanimous) and asserted equal.
+Committed: K=3 (seeds 1–3), iters=20, min-count=1, EWT train
+only — no oracle data. Reruns are md5-identical (verified by
+re-run); a second seed set (4–6) reproduces the magnitude.
+Member pairwise dev disagreement ~5.4% (the variance being
+averaged out is real, not identity).
+
+| setup (greedy) | EWT dev | EWT test |
+|---|---|---|
+| fixed order (EWT-only) | 23133 (91.99%) | 23206 (92.48%) |
+| shuffled members | +76…+133 | +51…+125 |
+| entrywise mean of 3 | 23443 (93.22%, +310) | 23522 (93.74%, +316) |
+
+Production (beam-2 + 17 rules): dev 23472 (93.34%, +285 vs old
+production), test 23536 (93.79%, +246); PUD test 19676/21180
+(92.90%, +280 — generalizes cross-domain, the opposite of
+distillation drift). Books: sweep greedy +49 / production +31,
+hard +2.8pts, Moby −7 misses, genre −4, chunk sent/token up
+everywhere (sweep 4→11 sent), hedge +2TP, vague −2FP. Known
+breaks, all documented: 5 adjudicated lint mistags (Long→ADV,
+Queequeg→NOUN, brisk→X, land→NOUN, to→PART) + 2 bounded
+unattributed, coordscope −3TP, nominal −1, weasel −1; sweep
+production trails greedy by 3 under the new weights (beam −3
+net — beam-2 itself stands on EWT +29/+14, no revisit).
+Flips spread across all hard classes both directions (4.3% of
+tokens move); no concentration, no `-ness` pathology, no
+X-manufacturing vs committed (14/9 vs 11/9). New weights md5
+`567da687014af4e94182b423079ee334`; site numbers/table rebuilt
+from them. Queued, not started: oracle-joint on top of the
+ensemble protocol (one variable at a time); small-magnitude
+pruning of the averaged map (density buyback, needs its own
+gates).
 
 ## Cross-genre standing (GUM test, gold)
 

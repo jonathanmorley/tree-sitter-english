@@ -851,6 +851,43 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   (falsified), morphology-without-lexicon rules (both Brill rules
   rejected with measurements). Each step: EWT dev/test + Moby,
   canonical-`flies` veto, eval-before-model-change, md5 hygiene.
+  (5) cross-seed ensemble average (ADMITTED 2026-10-09 — the
+  largest single accuracy jump in project history, and the first
+  weights replacement since the joint protocol): training is
+  fully deterministic (zero init, fixed order, no RNG), so a
+  single run bakes in its file order's recency bias. Three
+  members on LCG-shuffled orders, maps averaged entrywise at
+  the JSON level into ONE map (same decode shapes, 4.53 MB —
+  averaging destroys sparsity; Tier-1 single-digit budget
+  holds; the ≤2MB neatness bar falls openly, budgets never
+  capped there). Recipe kept as `english-pos-train` example
+  `ensemble` (seeds/iters pinned; reruns md5-identical).
+  EWT-only, no oracle — and still beats oracle-joint weights
+  everywhere: greedy dev +310 / test +316 over the EWT-only
+  single (members alone +76…+133/+51…+125 — shuffling itself
+  is half the story: file order is pathological), production
+  dev +285 / test +246 over committed production (93.34 /
+  93.79), PUD +280 (+1.32pts — generalizes cross-domain, the
+  opposite of distillation drift, which is why this mechanism
+  survives where silver died: variance reduction, not prior
+  yank). Books: sweep greedy +49 / production +31, hard
+  +2.8pts, Moby −7 misses, genre −4, chunk sent/token up on
+  all three evals (sweep 4→11 sent), hedge +2TP, vague −2FP.
+  Diversity 5.4% pairwise (mechanism real); second seed set
+  reproduces magnitude; control (probe scorer on committed
+  weights) reproduces banked greedy to the digit. Flips spread
+  across all hard classes both directions (4.3% of tokens);
+  no concentration, no `-ness` pathology, no X-manufacturing
+  (14/9 vs committed 11/9). Known breaks, documented:
+  5 adjudicated lint mistags + 2 bounded-unattributed,
+  coordscope −3TP (FPs −2 — mistag-fixes), nominal −1,
+  weasel −1; sweep production trails greedy by 3 (beam −3 net
+  under the new weights — beam-2 stands on EWT +29/+14, no
+  revisit); all 49 suites + ud gates (release, ewt+pud) +
+  `flies` green. New weights md5
+  `567da687014af4e94182b423079ee334`; front table/charts +
+  ARCHITECTURE + READMEs rebuilt from them; wasm bundle
+  rebuilt (bundle grows ~2.5 MB with the weights).
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →

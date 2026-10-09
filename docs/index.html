@@ -128,10 +128,10 @@ with forensics.</p>
 <div class="charts">
 <div>
 <h4>EWT test UPOS, exact (%)</h4>
-<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Exact UPOS on EWT test: RDRPOSTagger 92.30, ours 92.81">
-<text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="245" height="18" rx="3" class="dim"><title>RDRPOSTagger 92.30% exact UPOS (23,163 / 25,094)</title></rect>
-<text x="0" y="52">ours 92.81</text><rect x="150" y="39" width="300" height="18" rx="3"><title>ours 92.81% (beam-2 + 16 rules, current code)</title></rect>
-<text x="150" y="116" class="t2">axis 90–93 · same tagset+domain · blue ours</text>
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Exact UPOS on EWT test: RDRPOSTagger 92.30, ours 93.79">
+<text x="0" y="18">RDRPOSTagger 92.30</text><rect x="150" y="5" width="166" height="18" rx="3" class="dim"><title>RDRPOSTagger 92.30% exact UPOS (23,163 / 25,094)</title></rect>
+<text x="0" y="52">ours 93.79</text><rect x="150" y="39" width="272" height="18" rx="3"><title>ours 93.79% (beam-2 + 17 rules over ensemble-averaged weights, current code)</title></rect>
+<text x="150" y="116" class="t2">axis 90–94 · same tagset+domain · blue ours</text>
 </svg>
 </div>
 <div>
@@ -145,10 +145,10 @@ with forensics.</p>
 </div>
 <div>
 <h4>Weights size (MB)</h4>
-<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Weights size in megabytes: ours 1.98, RDR 0.36, NLTK 1.5">
-<text x="0" y="18">ours 1.98</text><rect x="150" y="5" width="277" height="18" rx="3"><title>ours 1.98 MB weights JSON (incl. tagdict)</title></rect>
-<text x="0" y="52">RDR 0.36</text><rect x="150" y="39" width="50" height="18" rx="3" class="dim"><title>RDRPOSTagger 0.36 MB measured (.RDR + .DICT) — exception trees share structure</title></rect>
-<text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="211" height="18" rx="3" class="dim"><title>NLTK perceptron 1.5 MB</title></rect>
+<svg viewBox="0 0 440 130" class="bars" role="img" aria-label="Weights size in megabytes: ours 4.53, RDR 0.36, NLTK 1.5">
+<text x="0" y="18">ours 4.53</text><rect x="150" y="5" width="272" height="18" rx="3"><title>ours 4.53 MB weights JSON (incl. tagdict; ensemble-averaged 3 members)</title></rect>
+<text x="0" y="52">RDR 0.36</text><rect x="150" y="39" width="22" height="18" rx="3" class="dim"><title>RDRPOSTagger 0.36 MB measured (.RDR + .DICT) — exception trees share structure</title></rect>
+<text x="0" y="86">NLTK 1.5</text><rect x="150" y="73" width="90" height="18" rx="3" class="dim"><title>NLTK perceptron 1.5 MB</title></rect>
 <text x="150" y="116" class="t2">RDR wins on size — exception trees share structure · blue ours</text>
 </svg>
 </div>
@@ -166,8 +166,8 @@ with forensics.</p>
 <h4>Competitor shootout <span class="sub">EWT test · same hardware+data</span></h4>
 <table>
 <tr><th>System</th><th class="num">Exact UPOS</th><th class="num">Coarse-12</th><th class="num">Tag tok/s</th><th class="num">Size</th><th class="num">Peak RSS</th></tr>
-<tr><td>Ours, batch</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">119 MB</td></tr>
-<tr><td>Ours, streaming</td><td class="num">92.81</td><td class="num">94.99</td><td class="num">2.5M</td><td class="num">1.98 MB</td><td class="num">89 MB</td></tr>
+<tr><td>Ours, batch</td><td class="num">93.79</td><td class="num">95.76</td><td class="num">2.5M</td><td class="num">4.53 MB</td><td class="num">119 MB</td></tr>
+<tr><td>Ours, streaming</td><td class="num">93.79</td><td class="num">95.76</td><td class="num">2.5M</td><td class="num">4.53 MB</td><td class="num">89 MB</td></tr>
 <tr><td>DistilBERT fp32 (UPOS-EWT)</td><td class="num">96.51</td><td class="num">97.83</td><td class="num">482</td><td class="num">266 MB</td><td class="num">621 MB</td></tr>
 <tr><td>DistilBERT int8 (UPOS-EWT)</td><td class="num">96.39</td><td class="num">97.72</td><td class="num">451</td><td class="num">98.4 MB</td><td class="num">805 MB</td></tr>
 <tr><td>Muse Spark 1.3 (API, single run) §</td><td class="num">93.04</td><td class="num">94.52</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
