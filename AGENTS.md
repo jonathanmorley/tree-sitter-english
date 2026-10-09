@@ -919,6 +919,31 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   no defense of the +17 survives the convention damage.
   Do not reopen: the only fix (particle-shape rule) is
   P1/P2-rejected ground.
+  K=15 SCALE-UP (ADMITTED 2026-10-09): same protocol, seeds 1-15
+  fixed upfront (members 1-6 already on disk; 7-15 trained).
+  Curve: K=1 91.99 / K=3 93.22 / K=9 93.63 / K=15 93.70 dev
+  (test 92.48 / 93.74 / 94.14 / 94.10) — steep 1-3-9, flat
+  9-15 (test -2): stage-1 bars (+10/+10 over K=3) pass at
+  +120/+100 greedy. Stage 2: production dev +101 / test +100
+  over shipped (23581/23628), PUD +99 (19775 — cross-domain
+  holds again), sweep +5/+15, hard +9toks, coordscope +1TP/-1FP
+  and passive +1TP better, nominal +1FP / hard -4toks / chunk-sent
+  -3 the other way (all bars hold); ud gates pass; `flies`
+  holds; Moby parity re-holds 8881/8881; bench identical.
+  Prune tolerance shrinks with K (0.67 holds at K=3, costs
+  -15/-14 at K=15 where minority agreement carries signal;
+  0.50 fails too — 0.34 ships at 3.52 MB, dev/test -1/-8).
+  Flip census vs committed: 612/274, no concentration, no
+  X-manufacturing. Determinism: single-15-seed rerun scores
+  identically + member md5s match; byte-reproducibility proven
+  end to end (re-derive avg md5 + re-derive pruned md5, both
+  match shipped). New pins: avg `88d3e9dc3c4f04b81e0eec7354096a9a`,
+  pruned `eeb87c81741477fb325bbe68af413a3e` (3.52 MB).
+  Contamination save: the tagdict-equality assert caught
+  oracle-pool members mixed into the EWT set (same-pool
+  tagdicts cannot differ — order-independent by construction),
+  mtime forensics confirmed the overwrite order; EWT members
+  retrained, avg redone. Scale-up stops here (flat 9-15).
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →

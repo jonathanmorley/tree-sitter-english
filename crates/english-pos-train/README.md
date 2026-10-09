@@ -371,7 +371,7 @@ bench, not review. `finetune`/`finetune_frozen` clear the table
 (weight updates can move a word off its dict tag); smoke tests
 pin the placeholder-margin contract deliberately.
 
-## Ensemble-averaged weights (committed 2026-10-09)
+## Ensemble-averaged weights (committed 2026-10-09, K=15 since)
 
 Training is fully deterministic (zero init, fixed data order, no
 RNG) — so a single run bakes in its file order's recency bias.
@@ -379,13 +379,27 @@ RNG) — so a single run bakes in its file order's recency bias.
 baseline plus K members on LCG-shuffled orders (Fisher-Yates,
 `6364136223846793005`/`1442695040888963407`, seeds fixed) and
 averages the member maps entrywise at the JSON level into ONE map
-(same decode shapes, ~4.53 MB — averaging destroys sparsity, so
-the union runs ~2.3× the single-model bytes; Tier-1 single-digit
-budget holds). Tagdicts are order-independent by construction
-(first-seen tag only sticks when unanimous) and asserted equal.
-Committed: K=3 (seeds 1–3), iters=20, min-count=1, EWT train
-only — no oracle data. Reruns are md5-identical (verified by
-re-run); a second seed set (4–6) reproduces the magnitude.
+(same decode shapes; kept recipe steps: members via `ensemble`,
+mean via `scripts/average-members.py`, prune via
+`scripts/prune-weights.py`; every step re-derived md5-identical).
+Tagdicts are order-independent by construction
+(first-seen tag only sticks when unanimous) and asserted equal —
+an assert that once caught a real contamination (oracle-pool
+members mixed into an EWT averaging set: same-pool tagdicts
+cannot differ, so the failure proved mislabeled inputs, and
+mtime forensics confirmed the overwrite order).
+Committed: K=15 (seeds 1–15), iters=20, min-count=1, EWT train
+only — no oracle data; pruned at |w|<0.34 (prune tolerance
+shrinks with K — 0.67 holds at K=3 but costs −15/−14 greedy at
+K=15, where minority-agreement weights carry signal; 0.50 also
+fails at −14 test, so 0.34 ships). Reruns are md5-identical
+(verified by re-run, including a cross-implementation check:
+single-15-run Rust average scores identically).
+Yield curve by K (greedy; members alone +76…+195): K=1 91.99 /
+K=3 93.22 / K=9 93.63 / K=15 93.70 dev (test 92.48 / 93.74 /
+94.14 / 94.10) — steep 1→3→9, flat 9→15 (test −2): scale-up
+stops here (next would be bootstrap diversity, not more
+shuffles — unscoped).
 Member pairwise dev disagreement ~5.4% (the variance being
 averaged out is real, not identity).
 
@@ -394,30 +408,27 @@ averaged out is real, not identity).
 | fixed order (EWT-only) | 23133 (91.99%) | 23206 (92.48%) |
 | shuffled members | +76…+133 | +51…+125 |
 | entrywise mean of 3 | 23443 (93.22%, +310) | 23522 (93.74%, +316) |
+| entrywise mean of 15 | 23563 (93.70%, +430) | 23622 (94.13%, +416) |
 
-Production (beam-2 + 17 rules): dev 23472 (93.34%, +285 vs old
-production), test 23536 (93.79%, +246); PUD test 19676/21180
-(92.90%, +280 — generalizes cross-domain, the opposite of
-distillation drift). Books: sweep greedy +49 / production +31,
-hard +2.8pts, Moby −7 misses, genre −4, chunk sent/token up
-everywhere (sweep 4→11 sent), hedge +2TP, vague −2FP. Known
-breaks, all documented: 5 adjudicated lint mistags (Long→ADV,
-Queequeg→NOUN, brisk→X, land→NOUN, to→PART) + 2 bounded
-unattributed, coordscope −3TP, nominal −1, weasel −1; sweep
-production trails greedy by 3 under the new weights (beam −3
-net — beam-2 itself stands on EWT +29/+14, no revisit).
-Flips spread across all hard classes both directions (4.3% of
-tokens move); no concentration, no `-ness` pathology, no
-X-manufacturing vs committed (14/9 vs 11/9). Averaged weights md5
-`567da687014af4e94182b423079ee334`; pruned (|w|<0.67 via kept
-`scripts/prune-weights.py`, compact serde encoding) md5
-`41e0bff602f125bdf5b6233c57bc6666` — the committed file
-(2.62 MB; greedy dev +9 / test ±0 over dense, production dev +8 /
-test −8, suite bars hold save nominal/vague −1 micro each, Moby
-batch/stream parity re-holds 8874/8874); site numbers/table
-rebuilt from them (93.76/95.75, wasm bundle 3.15 MB). Queued,
-not started: oracle-joint on top of the ensemble protocol (one
-variable at a time).
+Production (beam-2 + 17 rules) for committed K=15 pruned (|w|<0.34):
+dev 23581 (93.77%), test 23628 (94.16%, coarse 96.11); PUD test
+19775/21180 (93.37%, +99 over K=3 — still generalizing
+cross-domain). Books: sweep greedy 1893 / production 1902
+(+5/+15 over K=3), hard 0.9083, Moby/genre miss counts hold
+(21/15), chunk sent/token mixed within noise (sweep token +78
+kept, sent -0; genre sent -1), lint bars all hold (coordscope
++1TP/-1FP and passive +1TP better than K=3; nominal +1FP and
+hard -4toks the other way, all inside bars).
+Known breaks carry over from the K=3 ledger (5 adjudicated
+lint mistags + 2 bounded-unattributed); flip census K=15 vs
+committed: 612 fixes / 274 breaks, spread with no
+concentration (titlecase churn both ways nets positive).
+Averaged-15 weights md5 `88d3e9dc3c4f04b81e0eec7354096a9a`,
+pruned md5 `eeb87c81741477fb325bbe68af413a3e` — the committed
+file (3.52 MB); Moby batch/stream parity re-holds 8881/8881;
+site numbers/table rebuilt from them (94.16/96.11, wasm
+bundle ~4.1 MB). Queued, not started: oracle-joint on top of
+the ensemble protocol (one variable at a time).
 
 ## Cross-genre standing (GUM test, gold)
 
