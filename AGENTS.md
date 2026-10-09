@@ -1939,6 +1939,14 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   a train 15:9 AUX majority (`have it done`-class) — shipped
   rule stays (dev/test gates green), needs its own dev/test
   measurement before any narrowing.
+  CLOSED 2026-10-08 (measured): dev/test have-verb fires total
+  2, both PRON-next, both gold-VERB correct (`to have it`,
+  `have it` — margin 1.0, in-gate), zero breaks. The margin
+  gate selects genuinely-torn instances where gold is VERB, so
+  the train majority never materializes as fire-precision loss
+  — the inverse of the color-adj lesson, same principle (gates
+  over shapes). No narrowing; revisit only on a dev/test
+  break.
 - Probes deleted (`mine_dbert/diff`, `ewt_cell`, `drill`,
   `margin_words`, `sent_words`); raw tags stay in /tmp.
 
