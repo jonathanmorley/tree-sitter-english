@@ -14,17 +14,20 @@ parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT (EWT:
 UD_English-EWT contributors, CC BY-SA 4.0,
 <https://github.com/UniversalDependencies/UD_English-EWT>):
-dev 93.22%, test 93.74% greedy (4.53 MB with the tagdict table,
+dev 93.26%, test 93.74% greedy (2.62 MB with the tagdict table,
 whole-number weights serialize as integers). Weights are the
 entrywise mean of three perceptrons trained on deterministically
 shuffled train orders (LCG seeds 1–3, `english-pos-train` example
-`ensemble` — the committed recipe, md5-identical reruns);
+`ensemble` — the committed recipe, md5-identical reruns),
+pruned at |w|<0.67 (`scripts/prune-weights.py` — drops the
+member-idiosyncratic ±1/3 tail, −37% bytes, dev/test move
++9/±0 greedy);
 EWT-only, no oracle data. Production decodes
 through a width-2 beam re-decode plus seventeen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
 participle repair — each admitted with EWT-majority and gate
-deltas, 17-for-31 with rejections recorded): dev 93.34%,
-test 93.79%. Tagger weights embed a 14,563-word tagdict (words
+deltas, 17-for-31 with rejections recorded): dev 93.37%,
+test 93.76%. Tagger weights embed a 14,563-word tagdict (words
 seen under one tag in training) for the inference fast path —
 byte-identical decode is measured per weights/rules change,
 never assumed (see the train README probe record).

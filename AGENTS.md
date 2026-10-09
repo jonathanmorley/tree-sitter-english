@@ -884,10 +884,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   weasel −1; sweep production trails greedy by 3 (beam −3 net
   under the new weights — beam-2 stands on EWT +29/+14, no
   revisit); all 49 suites + ud gates (release, ewt+pud) +
-  `flies` green. New weights md5
-  `567da687014af4e94182b423079ee334`; front table/charts +
+  `flies` green. Averaged weights md5
+  `567da687014af4e94182b423079ee334`, pruned (|w|<0.67,
+  `scripts/prune-weights.py`, compact serde encoding) md5
+  `41e0bff602f125bdf5b6233c57bc6666` — the committed file
+  (2.62 MB; dev +9 / test ±0 greedy over dense, production
+  dev +8 / test −8, evals hold save nominal/vague −1 micro,
+  Moby parity re-holds 8874/8874); front table/charts +
   ARCHITECTURE + READMEs rebuilt from them; wasm bundle
-  rebuilt (bundle grows ~2.5 MB with the weights).
+  rebuilt twice (5.06 MB dense, 3.15 MB pruned).
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →

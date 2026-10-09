@@ -408,12 +408,16 @@ production trails greedy by 3 under the new weights (beam −3
 net — beam-2 itself stands on EWT +29/+14, no revisit).
 Flips spread across all hard classes both directions (4.3% of
 tokens move); no concentration, no `-ness` pathology, no
-X-manufacturing vs committed (14/9 vs 11/9). New weights md5
-`567da687014af4e94182b423079ee334`; site numbers/table rebuilt
-from them. Queued, not started: oracle-joint on top of the
-ensemble protocol (one variable at a time); small-magnitude
-pruning of the averaged map (density buyback, needs its own
-gates).
+X-manufacturing vs committed (14/9 vs 11/9). Averaged weights md5
+`567da687014af4e94182b423079ee334`; pruned (|w|<0.67 via kept
+`scripts/prune-weights.py`, compact serde encoding) md5
+`41e0bff602f125bdf5b6233c57bc6666` — the committed file
+(2.62 MB; greedy dev +9 / test ±0 over dense, production dev +8 /
+test −8, suite bars hold save nominal/vague −1 micro each, Moby
+batch/stream parity re-holds 8874/8874); site numbers/table
+rebuilt from them (93.76/95.75, wasm bundle 3.15 MB). Queued,
+not started: oracle-joint on top of the ensemble protocol (one
+variable at a time).
 
 ## Cross-genre standing (GUM test, gold)
 
