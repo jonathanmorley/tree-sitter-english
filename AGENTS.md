@@ -1041,10 +1041,13 @@ suspect; item 4 proceeds with its own bars.
    regenerates the reversed inputs byte-identically (verified by
    diff) — retrain with `--iters 20 --min-count 1` for the mirror
    artifact.
-5. Reranking with global features: n-best paths rescored with
-   agreement / gap-detection / parallelism features — the
-   only clean vehicle for `that`-gap detection. Needs its own
-   scope (medium-high cost). Unbuilt.
+5. Reranking with global features (SCOPED 2026-10-09, unbuilt):
+   n-best paths rescored with agreement / gap-detection /
+   parallelism features — the only clean vehicle for `that`-gap
+   detection. Scope: `docs/rerank-scope.md` (k-best Viterbi,
+   Collins perceptron rerank, Stages 0–3 with STOP rules:
+   Stage-0 prize census ≥ 250 dev tokens or STOP before any
+   code; gold-in-10 ≥ 98% or STOP; dev AND test to admit).
 6. Correction re-mining on current weights: the 19-actionable
    shapes predate the ensemble by three accuracy points; the
    gate zone has all-new occupants. Same unanimity discipline.
