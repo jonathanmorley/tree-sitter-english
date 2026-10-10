@@ -1115,8 +1115,18 @@ suspect; item 4 proceeds with its own bars.
    within-bar churn, documented). README averaging theory
    rewritten; tagdict count corrected 14,563 → 14,538 (measured
    identical on both files — stale drift).
-9. PA/MIRA updates: different online rule, same features.
-   Small code. Unbuilt.
+9. PA/MIRA updates (MEASURED AND CLOSED 2026-10-09): PA-I (C=1.0,
+   fixed, not swept) on same features/order/20/1 — dev 90.84 /
+   test 91.44 (−288/−259 vs plain), iters=60 worse still
+   (90.63/91.25, oscillates like plain-25/30 with nothing to
+   settle it). Different update rule, same features: no edge at
+   any horizon, 2.7pt short of committed averaged. MIRA buried
+   with it (same family, needs the deleted k-best decoder, no
+   independent promise). Code fully reverted.
+   Process scar: a stale median backup was briefly restored over
+   committed averaged weights mid-turn; caught by git-diff +
+   md5, repaired to HEAD-bit-identical, stale backup deleted —
+   backups refresh every turn now, git is the backstop.
 10. Punctuation-context features: commas delimit our hardest
     clauses, but hidden punctuation is excluded from tagger
     input by construction — unreachable without wire
