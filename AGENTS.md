@@ -3196,6 +3196,19 @@ per item; linear family stays closed)
   be post-hoc fitting; dev/test gates are the change-detection).
   Weights stay /tmp until admission. NEXT: Stage-1 accuracy gates
   (full dev/test + book evals in Rust).
+- R3-1 Stage-1 accuracy gates (DONE 2026-10-10, PR #121):
+  `examples/eval_ud.rs` (dev-time only, /tmp weights + out-of-repo
+  UD): Rust dev 23597/25148 = 93.83 / test 23616/25094 = 94.11 —
+  reproduces torch run-2 to the token (dev +1 our way), vs committed
+  greedy 93.58/94.23 (dev +70, test −30, inside run-wobble).
+  `tests/sweep.rs` (mechanically ported table — generator
+  verify-then-write: 120 arrays, alternation, closed tags, 2079
+  tokens matching the banked denominator): neural greedy 1894/2079
+  = 0.9110 vs perceptron greedy 1898 / production 1895 — tied.
+  Speed measured for Stage 2: ~2k tok/s release naive (25 s / 50k
+  toks, per-sentence allocs, f64 sums) vs dep-batch ~44k — Stage-2
+  bar ≥20k (dep-batch class) with the usual playbook, set from this
+  number never assumed. Weights stay /tmp. NEXT: Stage 2 (speed).
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE
