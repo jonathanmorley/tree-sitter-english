@@ -3334,10 +3334,15 @@ per item; linear family stays closed)
   data (drift risk per the distillation record — queued, not
   started, needs its own bars). RDR-port stays parked (vote would
   need it and still fails sweep).
-- R3-5 joint neural tag-parse, biaffine shared encoder (QUEUED,
-  parked until R3-1 exists): the only addressed-to-cause cascade fix;
-  shares R3-1's encoder. Needs decoder/features/evals scope like dep
-  stage 1 had.
+- R3-5 joint neural tag-parse, biaffine shared encoder (SCOPE DONE
+  2026-10-10, PR #130 — `docs/joint-neural-scope.md`): multi-task
+  shared encoder (R3-1 architecture) with UPOS + biaffine arc/label
+  heads (Malt lesson: labels inform arcs, +3.1); staged bars
+  (tag-neutral-or-better, pipeline-above-banked, gold-holds ±0.2
+  per split, PUD/books/`flies`, Tier-1 size, batch speed vs
+  tag+parse sum, score-gating). Stopped-program verdicts stay
+  closed (margin coupling, linear joint arc+label, UAS-87).
+  NEXT: Stage-0 offline screen (/tmp torch multi-task).
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural
