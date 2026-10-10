@@ -3257,6 +3257,11 @@ per item; linear family stays closed)
   0.87 bar). OPEN: artifact pick (recommend i8: 6.7 MB
   single-digit + zero damage + 10.5k batch-viable; f32 stays /tmp
   speed reference) → vendor Tier-1 + front table/charts + READMEs.
+- R3-1 Stage 4 ADMITTED 2026-10-10 (PR #126, i8 per owner pick):
+  vendored weights; quant gates on vendored (no skips save parity
+  band); front row (94.16/96.04/10.5k/6.7 MB/61 MB ¶) + chart bars;
+  ARCHITECTURE + README lines. R3-1 closes; revisit sweep on
+  material change per the standing rule.
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE
