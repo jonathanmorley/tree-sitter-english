@@ -1,0 +1,372 @@
+//! Batch/save-pass neural POS tagger (BiLSTM over words + char-BiLSTM).
+//!
+//! Never the keystroke path — the averaged perceptron in `english-pos`
+//! keeps that. This crate decodes whole sentences through dense
+//! contextual representations (the R3-1 screen: dev 93.86 / test
+//! 94.19 with zero tuning) and reports margins for the same gated
+//! correction discipline.
+//!
+//! Inference backend is a trait: [`HandRolled`] (zero-dep f32, ships
+//! first) implements [`RecurrentBackend`]; a candle backend may
+//! implement it later behind a feature flag. Weights are Tier-1 lazy
+//! assets (gitignored when admitted); the trainer stays /tmp Python.
+
+use english_pos::Tag;
+use std::collections::HashMap;
+
+fn sigmoid(x: f32) -> f32 {
+    1.0 / (1.0 + (-x).exp())
+}
+
+/// One directed single-layer LSTM pass over `xs` (T × input dim).
+/// Weight layout matches torch `nn.LSTM`: `w_ih` is (4H × in),
+/// `w_hh` (4H × H), biases length 4H, gates ordered i,f,g,o.
+fn lstm_dir(xs: &[Vec<f32>], p: &LstmParams<'_>) -> Vec<Vec<f32>> {
+    let hidden = p.hidden;
+    let input = xs[0].len();
+    let order: Vec<usize> = if p.reverse {
+        (0..xs.len()).rev().collect()
+    } else {
+        (0..xs.len()).collect()
+    };
+    let mut h = vec![0.0f32; hidden];
+    let mut c = vec![0.0f32; hidden];
+    let mut out = vec![vec![0.0f32; hidden]; xs.len()];
+    let mut gates = vec![0.0f32; 4 * hidden];
+    for &t in &order {
+        for g in 0..4 * hidden {
+            let row_ih = &p.w_ih[g * input..(g + 1) * input];
+            let row_hh = &p.w_hh[g * hidden..(g + 1) * hidden];
+            // f64 accumulation: oneDNN blocks/fuses f32 sums in an
+            // order we cannot replicate, so sum wide and cast once —
+            // near-tie logits then flip far less often.
+            let mut s = (p.b_ih[g] + p.b_hh[g]) as f64;
+            for (a, b) in row_ih.iter().zip(xs[t].iter()) {
+                s += *a as f64 * *b as f64;
+            }
+            for (a, b) in row_hh.iter().zip(h.iter()) {
+                s += *a as f64 * *b as f64;
+            }
+            gates[g] = s as f32;
+        }
+        for j in 0..hidden {
+            let i = sigmoid(gates[j]);
+            let f = sigmoid(gates[hidden + j]);
+            let g = gates[2 * hidden + j].tanh();
+            let o = sigmoid(gates[3 * hidden + j]);
+            c[j] = f * c[j] + i * g;
+            h[j] = o * c[j].tanh();
+        }
+        out[t] = h.clone();
+    }
+    out
+}
+
+/// Directed LSTM layer parameters (borrows the weight tables).
+/// Bundled so the [`RecurrentBackend`] method stays lean — and so a
+/// future quantized backend can carry scales alongside the tables.
+pub struct LstmParams<'a> {
+    pub w_ih: &'a [f32],
+    pub w_hh: &'a [f32],
+    pub b_ih: &'a [f32],
+    pub b_hh: &'a [f32],
+    pub hidden: usize,
+    pub reverse: bool,
+}
+
+/// Recurrent inference backend (f32). One implementor ships
+/// ([`HandRolled`]); candle may follow behind a feature flag.
+pub trait RecurrentBackend {
+    /// Directed LSTM layer; direction rides in `params`.
+    fn lstm_layer(&self, xs: &[Vec<f32>], params: &LstmParams<'_>) -> Vec<Vec<f32>>;
+}
+
+/// Zero-dependency f32 backend (ships first).
+pub struct HandRolled;
+
+impl RecurrentBackend for HandRolled {
+    fn lstm_layer(&self, xs: &[Vec<f32>], params: &LstmParams<'_>) -> Vec<Vec<f32>> {
+        lstm_dir(xs, params)
+    }
+}
+
+fn get_f32(params: &HashMap<String, Vec<f32>>, name: &str) -> Result<Vec<f32>, String> {
+    params
+        .get(name)
+        .cloned()
+        .ok_or_else(|| format!("missing param {name}"))
+}
+
+fn json_to_f32(v: &serde_json::Value, out: &mut Vec<f32>) {
+    match v {
+        serde_json::Value::Number(n) => out.push(n.as_f64().unwrap_or(0.0) as f32),
+        serde_json::Value::Array(a) => {
+            for x in a {
+                json_to_f32(x, out);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// BiLSTM tagger. Load from the export JSON
+/// (`scripts`-side recipe, /tmp until admission); weights are
+/// Tier-1 and score-gated, never md5-gated.
+pub struct Model<B = HandRolled> {
+    backend: B,
+    tags: Vec<Tag>,
+    words: HashMap<String, usize>,
+    chars: HashMap<char, usize>,
+    wemb: Vec<f32>,
+    wemb_dim: usize,
+    cemb: Vec<f32>,
+    cemb_dim: usize,
+    cenc_ih_f: Vec<f32>,
+    cenc_hh_f: Vec<f32>,
+    cenc_bih_f: Vec<f32>,
+    cenc_bhh_f: Vec<f32>,
+    cenc_ih_r: Vec<f32>,
+    cenc_hh_r: Vec<f32>,
+    cenc_bih_r: Vec<f32>,
+    cenc_bhh_r: Vec<f32>,
+    cenc_h: usize,
+    wenc_ih_f: Vec<f32>,
+    wenc_hh_f: Vec<f32>,
+    wenc_bih_f: Vec<f32>,
+    wenc_bhh_f: Vec<f32>,
+    wenc_ih_r: Vec<f32>,
+    wenc_hh_r: Vec<f32>,
+    wenc_bih_r: Vec<f32>,
+    wenc_bhh_r: Vec<f32>,
+    wenc_h: usize,
+    out_w: Vec<f32>,
+    out_b: Vec<f32>,
+    n_tags: usize,
+    max_chars: usize,
+}
+
+impl Model<HandRolled> {
+    /// Load from the export JSON text.
+    pub fn from_json(text: &str) -> Result<Self, String> {
+        Self::from_json_with(text, HandRolled)
+    }
+}
+
+impl<B: RecurrentBackend> Model<B> {
+    pub fn from_json_with(text: &str, backend: B) -> Result<Self, String> {
+        let v: serde_json::Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+        let tags: Vec<Tag> = v["tags"]
+            .as_array()
+            .ok_or("missing tags")?
+            .iter()
+            .map(|t| Tag::from_upos(t.as_str().unwrap_or("")).ok_or_else(|| format!("bad tag {t}")))
+            .collect::<Result<_, _>>()?;
+        let words: HashMap<String, usize> = v["words"]
+            .as_object()
+            .ok_or("missing words")?
+            .iter()
+            .map(|(k, n)| (k.clone(), n.as_u64().unwrap_or(1) as usize))
+            .collect();
+        let chars: HashMap<char, usize> = v["chars"]
+            .as_object()
+            .ok_or("missing chars")?
+            .iter()
+            .filter_map(|(k, n)| {
+                k.chars()
+                    .next()
+                    .map(|c| (c, n.as_u64().unwrap_or(1) as usize))
+            })
+            .collect();
+        let mut params: HashMap<String, Vec<f32>> = HashMap::new();
+        for (k, val) in v["params"].as_object().ok_or("missing params")? {
+            let mut flat = Vec::new();
+            json_to_f32(val, &mut flat);
+            params.insert(k.clone(), flat);
+        }
+        let arch = &v["arch"];
+        let wemb_dim = arch["wemb"].as_u64().ok_or("arch.wemb")? as usize;
+        let cemb_dim = arch["cemb"].as_u64().ok_or("arch.cemb")? as usize;
+        let cenc_h = arch["cenc"].as_u64().ok_or("arch.cenc")? as usize;
+        let wenc_h = arch["wenc"].as_u64().ok_or("arch.wenc")? as usize;
+        let n_tags = tags.len();
+        let wemb = get_f32(&params, "wemb.weight")?;
+        let cemb = get_f32(&params, "cemb.weight")?;
+        let out_w = get_f32(&params, "out.weight")?;
+        let out_b = get_f32(&params, "out.bias")?;
+        Ok(Model {
+            backend,
+            tags,
+            words,
+            chars,
+            wemb,
+            wemb_dim,
+            cemb,
+            cemb_dim,
+            cenc_ih_f: get_f32(&params, "cenc.weight_ih_l0")?,
+            cenc_hh_f: get_f32(&params, "cenc.weight_hh_l0")?,
+            cenc_bih_f: get_f32(&params, "cenc.bias_ih_l0")?,
+            cenc_bhh_f: get_f32(&params, "cenc.bias_hh_l0")?,
+            cenc_ih_r: get_f32(&params, "cenc.weight_ih_l0_reverse")?,
+            cenc_hh_r: get_f32(&params, "cenc.weight_hh_l0_reverse")?,
+            cenc_bih_r: get_f32(&params, "cenc.bias_ih_l0_reverse")?,
+            cenc_bhh_r: get_f32(&params, "cenc.bias_hh_l0_reverse")?,
+            cenc_h,
+            wenc_ih_f: get_f32(&params, "wenc.weight_ih_l0")?,
+            wenc_hh_f: get_f32(&params, "wenc.weight_hh_l0")?,
+            wenc_bih_f: get_f32(&params, "wenc.bias_ih_l0")?,
+            wenc_bhh_f: get_f32(&params, "wenc.bias_hh_l0")?,
+            wenc_ih_r: get_f32(&params, "wenc.weight_ih_l0_reverse")?,
+            wenc_hh_r: get_f32(&params, "wenc.weight_hh_l0_reverse")?,
+            wenc_bih_r: get_f32(&params, "wenc.bias_ih_l0_reverse")?,
+            wenc_bhh_r: get_f32(&params, "wenc.bias_hh_l0_reverse")?,
+            wenc_h,
+            out_w,
+            out_b,
+            n_tags,
+            max_chars: 24,
+        })
+    }
+
+    fn embed_row(table: &[f32], dim: usize, id: usize) -> Vec<f32> {
+        table[id * dim..(id + 1) * dim].to_vec()
+    }
+
+    /// Logits per token (T × 17).
+    pub fn logits(&self, words: &[&str]) -> Vec<Vec<f32>> {
+        // Char vectors: truncate like training, pad per-sentence to max
+        // (torch ran padded PAD steps — replicate, don't skip).
+        let mut ch_ids: Vec<Vec<usize>> = words
+            .iter()
+            .map(|w| {
+                let mut ids: Vec<usize> = w
+                    .chars()
+                    .take(self.max_chars)
+                    .map(|c| *self.chars.get(&c).unwrap_or(&1))
+                    .collect();
+                if ids.is_empty() {
+                    ids.push(0);
+                }
+                ids
+            })
+            .collect();
+        let clen = ch_ids.iter().map(Vec::len).max().unwrap_or(1);
+        for ids in &mut ch_ids {
+            ids.resize(clen, 0);
+        }
+        let mut word_vecs = Vec::with_capacity(words.len());
+        for (w, cids) in words.iter().zip(ch_ids.iter()) {
+            let lower = w.to_lowercase();
+            let wid = *self.words.get(&lower).unwrap_or(&1);
+            let cseq: Vec<Vec<f32>> = cids
+                .iter()
+                .map(|&c| Self::embed_row(&self.cemb, self.cemb_dim, c))
+                .collect();
+            let f = self.backend.lstm_layer(
+                &cseq,
+                &LstmParams {
+                    w_ih: &self.cenc_ih_f,
+                    w_hh: &self.cenc_hh_f,
+                    b_ih: &self.cenc_bih_f,
+                    b_hh: &self.cenc_bhh_f,
+                    hidden: self.cenc_h,
+                    reverse: false,
+                },
+            );
+            let r = self.backend.lstm_layer(
+                &cseq,
+                &LstmParams {
+                    w_ih: &self.cenc_ih_r,
+                    w_hh: &self.cenc_hh_r,
+                    b_ih: &self.cenc_bih_r,
+                    b_hh: &self.cenc_bhh_r,
+                    hidden: self.cenc_h,
+                    reverse: true,
+                },
+            );
+            let mut cv = f[clen - 1].clone();
+            cv.extend_from_slice(&r[0]);
+            let mut wv = Self::embed_row(&self.wemb, self.wemb_dim, wid);
+            wv.extend(cv);
+            word_vecs.push(wv);
+        }
+        let hf = self.backend.lstm_layer(
+            &word_vecs,
+            &LstmParams {
+                w_ih: &self.wenc_ih_f,
+                w_hh: &self.wenc_hh_f,
+                b_ih: &self.wenc_bih_f,
+                b_hh: &self.wenc_bhh_f,
+                hidden: self.wenc_h,
+                reverse: false,
+            },
+        );
+        let hr = self.backend.lstm_layer(
+            &word_vecs,
+            &LstmParams {
+                w_ih: &self.wenc_ih_r,
+                w_hh: &self.wenc_hh_r,
+                b_ih: &self.wenc_bih_r,
+                b_hh: &self.wenc_bhh_r,
+                hidden: self.wenc_h,
+                reverse: true,
+            },
+        );
+        let width = 2 * self.wenc_h;
+        word_vecs
+            .iter()
+            .enumerate()
+            .map(|(t, _)| {
+                let mut h = hf[t].clone();
+                h.extend_from_slice(&hr[t]);
+                (0..self.n_tags)
+                    .map(|k| {
+                        let row = &self.out_w[k * width..(k + 1) * width];
+                        row.iter()
+                            .zip(h.iter())
+                            .map(|(a, b)| *a as f64 * *b as f64)
+                            .sum::<f64>() as f32
+                            + self.out_b[k]
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn best_two(logits: &[f32]) -> (usize, f32) {
+        let mut b0 = 0usize;
+        let mut b1 = 1usize;
+        if logits[1] > logits[0] {
+            b0 = 1;
+            b1 = 0;
+        }
+        for (i, &s) in logits.iter().enumerate().skip(2) {
+            if s > logits[b0] {
+                b1 = b0;
+                b0 = i;
+            } else if s > logits[b1] {
+                b1 = i;
+            }
+        }
+        (b0, logits[b0] - logits[b1])
+    }
+
+    /// Greedy tags.
+    pub fn tag(&self, words: &[&str]) -> Vec<Tag> {
+        self.logits(words)
+            .iter()
+            .map(|l| self.tags[Self::best_two(l).0])
+            .collect()
+    }
+
+    /// Greedy tags with best-minus-runner-up margins (feeds the
+    /// same gated correction discipline as `english-pos`).
+    pub fn tag_margins(&self, words: &[&str]) -> Vec<(Tag, f32)> {
+        self.logits(words)
+            .iter()
+            .map(|l| {
+                let (b, m) = Self::best_two(l);
+                (self.tags[b], m)
+            })
+            .collect()
+    }
+}

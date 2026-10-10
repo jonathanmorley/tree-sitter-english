@@ -28,6 +28,11 @@ path unconditionally — this crate never touches it.
 - Speed: batch tok/s measured against the dep batch precedent
   (~44k tok/s); bar set from the f32 measurement before quant
   work, never assumed.
+- Veto: no flies-VERB pin on the neural path (decided Stage 1:
+  the veto guards perceptron suffix-memorization over EWT's single
+  VERB "flies"; the BiLSTM reads NOUN 6.96 vs VERB 5.17 — pinning
+  one ambiguous token would be post-hoc fitting; dev/test gates
+  are the change-detection).
 - Size: quantized artifact single-digit MB (f32 export is
   28.5 MB — the quant stage must be accuracy-neutral).
 - Determinism: single-thread inference, fixed reduction order;
