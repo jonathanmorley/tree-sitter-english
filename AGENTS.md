@@ -738,6 +738,26 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   format + runtime (train in torch, ship without it; int8 quant,
   graph fusion; `ort` Rust crate over C++ ~15MB).
 
+- Laya survey (DONE 2026-10-10, no code/weights — four crates, two
+  name-colliding projects, all v0.1.x with at most 330 downloads
+  and zero reverse deps): `laya` (aovestdipaperino, Apache-2.0,
+  candle + ModernBERT-large + RL head, ~847 MB weights, ticket
+  choice/score questions) is dead on every budget line above at
+  far beyond the rejected DistilBERT-fp32 size, and answers
+  document-level decisions, not per-token tags — no mappable task
+  for oracle mining either (mine stopped with its own stop rule:
+  new disagreement source only). `laya-core` 0.1.0 (Apache-2.0
+  in-crate, repo gone — orphaned) audited from the published
+  tarball (~1.8k lines): the portable part is `calibrate.rs`,
+  textbook max-shifted softmax + temperature + normalized-entropy
+  confidence with ticket-fitted constants — nothing our margins
+  do not already do, no consumer for it; the rest is
+  ticket-domain email/prompt/question/lang-table machinery
+  (another product). `laya-rs` same verdict by construction;
+  `laya-rust` (17 downloads, no repo) ignored as unauditable.
+  Nothing installs, nothing ports. Revisit only if a Laya model
+  ships a per-token tagging head with its own EWT numbers (none).
+
 - Accuracy roadmap 92→95, SOTA 97 out of scope (AGREED 2026-09-27):
   ceiling for a linear discrete-feature model is ~94.5-95.5; the last
   ~2 points need a context-sensitive encoder that breaks every budget
