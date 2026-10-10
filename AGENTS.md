@@ -1081,6 +1081,17 @@ suspect; item 4 proceeds with its own bars.
    lead dies too (pred-DET 21:0 + pred-PRON 323:0, model right
    both ways — zero prize). Singles (`tenant`, `Horner`,
    `pistol`, …) stay below support. Repeat only on new weights.
+   ROUND 2 DONE 2026-10-09 on averaged weights (trigger fired):
+   355 misses (54 actionable at 0<m<2.0, 0 ties — fractional
+   averaged scores rarely tie exactly — 301 confident). Actionable
+   tripled on margin shrinkage alone: zero new occupants. All 10
+   EWT pred-conditioned cells fail: have/had 123:0; `as`-ADV by
+   prev (START 13/9/1 coin-flip, NOUN 45:2, VERB 26:0); `that`-DET
+   +PUNCT-prev n=3; to-PART→ADP mirror 8:4:1 (62%, sub-unanimity
+   flipper class — refused); every-one-of n=0; `all` n=5 ADV;
+   `this` n=2 PRON; `next` n=0; participle be-prev 107:6.
+   0 admitted. Standing rejections hold sight-unseen (particles,
+   imperatives, names, attr-swarm, subconj edges).
 7. Soft-target distillation: all five failures used hard
    labels (shared-prior yank); distilling DBERT *distributions*
    preserves teacher uncertainty — different mechanism.
