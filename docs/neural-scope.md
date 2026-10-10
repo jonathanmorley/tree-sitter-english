@@ -54,7 +54,10 @@ path unconditionally — this crate never touches it.
   bar ≥20k (dep-batch class) via the inference-optimization playbook
   (buffer reuse, batched char encode, f32 sums re-gated by parity,
   sentence batching, then quant). Bar set from the measurement,
-  never assumed.
+  never assumed. OUTCOME (PR #122): 11.9k single / 19.5k scoped-x2
+  — bar missed by 2.5%, held open. No arch intrinsics (`std::simd`
+  unstable; default build SSE2-only for portable prebuilts). Stage 3
+  arbitrates: int8 gets 16 SSE2 lanes vs f32's 4.
 - Stage 3 — size: int8 quant of matmuls (embeddings stay
   higher precision first), accuracy-neutral re-gate. Damage →
   narrower quant, never accuracy spend.

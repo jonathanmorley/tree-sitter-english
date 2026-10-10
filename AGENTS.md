@@ -3209,6 +3209,19 @@ per item; linear family stays closed)
   toks, per-sentence allocs, f64 sums) vs dep-batch ~44k — Stage-2
   bar ≥20k (dep-batch class) with the usual playbook, set from this
   number never assumed. Weights stay /tmp. NEXT: Stage 2 (speed).
+- R3-1 Stage 2 (MEASURED 2026-10-10, PR #122 — bar narrowly missed,
+  19.5k vs ≥20k, held open not fudged): f32 sums (parity holds),
+  4-accumulator `dot` via `chunks_exact` (bounds checks were the
+  drag: 2.6k → 7.3k), caller-kept `WordCache` (embed+charvec by
+  surface form; `Model` stays `Sync`) + `tag_cached` (7.3k →
+  11.9k single), scoped×2 threads (→ 19.5k). Index-Vec removal:
+  zero gain (compute-bound, as predicted). `std::simd` still
+  unstable on this toolchain (E0658) — no arch intrinsics (would
+  fork the parity gate per platform). Default build is SSE2-only
+  (portable prebuilts). Standing analysis: int8 (Stage 3) gets
+  16 lanes where f32 gets 4 under SSE2 autovec — quant likely
+  clears the bar without any multiversion build, so no AVX2
+  dispatch work starts before the quant measurement arbitrates.
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE
