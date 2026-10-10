@@ -20,20 +20,23 @@ confident-drift class). PASS on both pre-registered bars
 teacher is uncertain AND mostly right — exactly where soft
 labels hedge noise that hard labels would bake in.
 
-## Stage 1a — soft trainer on EWT (unbuilt)
+## Stage 1a — soft trainer on EWT (MEASURED AND REJECTED
+2026-10-09): soft-averaged perceptron (fire iff model-argmax ≠
+teacher-argmax, delta = q − onehot, η=1.0, timestamp averaging,
+gold history; posteriors extracted once over EWT train, 12,544
+lines word-verified, /tmp-ephemeral; deterministic md5-verified
+retrain). Result: production dev 23581 (+25) / test 23603 (−68
+vs 23671) — STOP, no book text touched. Mechanism: smoothing
+absorbs teacher habits that disagree with EWT-test conventions
+(same drift signature as the five hard failures, now
+in-domain); the Stage-0 in-zone hedging is outweighed by
+confident-drift teaching everywhere the model and teacher
+differ. Softness dials drift, nothing resolves it — as scoped.
+Code fully reverted (train_soft + --soft + prodscore deleted),
+suite green, weights untouched.
 
-Tests machinery + regularization prize with zero drift risk
-(teacher/gold agree ~96.5% in-domain). Soft-averaged perceptron:
-same features/order/20/1/averaging as the committed protocol,
-but the update fires iff model-argmax ≠ teacher-argmax with
-delta = q_teacher − onehot(model-argmax), η=1.0 (one
-configuration — no η sweep; η-variants are not queued).
-Posteriors extracted once with the Stage-0 procedure over EWT
-train (~7 min at 482 tok/s, /tmp-ephemeral like all training
-data). Bars: admit Stage 1b iff beats averaged production on
-dev AND test; else STOP (no book text touched).
-
-## Stage 1b — soft book batches (unbuilt, gated on 1a)
+## Stage 1b — soft book batches (NEVER STARTED: 1a failed its
+bars — correctly, per the pre-registration).
 
 Small batches (≤1k sentences, micro-06 scale) of book-domain
 text with teacher posteriors, EWT-gates discipline (dev/test
