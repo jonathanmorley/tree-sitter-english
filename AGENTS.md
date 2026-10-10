@@ -3196,7 +3196,7 @@ per item; linear family stays closed)
   be post-hoc fitting; dev/test gates are the change-detection).
   Weights stay /tmp until admission. NEXT: Stage-1 accuracy gates
   (full dev/test + book evals in Rust).
-- R3-1 Stage-1 accuracy gates (DONE 2026-10-10, PR #120):
+- R3-1 Stage-1 accuracy gates (DONE 2026-10-10, PR #121):
   `examples/eval_ud.rs` (dev-time only, /tmp weights + out-of-repo
   UD): Rust dev 23597/25148 = 93.83 / test 23616/25094 = 94.11 —
   reproduces torch run-2 to the token (dev +1 our way), vs committed

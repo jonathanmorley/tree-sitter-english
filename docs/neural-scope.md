@@ -46,7 +46,7 @@ path unconditionally — this crate never touches it.
   hand-rolled forward (embed + char-BiLSTM + word-BiLSTM +
   linear + softmax/margins), pinned-sample parity, then full
   dev/test + book evals + `flies`. Parity miss → STOP.
-  DONE 2026-10-10 (PRs #118/#120): parity 0/50; Rust dev
+  DONE 2026-10-10 (PRs #118/#121): parity 0/50; Rust dev
   93.83 / test 94.11 (torch run-2 to the token); sweep 0.9110
   (tied with perceptron greedy/production); flies-veto
   deliberately not ported (see Veto below).
