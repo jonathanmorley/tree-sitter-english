@@ -757,6 +757,24 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   `laya-rust` (17 downloads, no repo) ignored as unauditable.
   Nothing installs, nothing ports. Revisit only if a Laya model
   ships a per-token tagging head with its own EWT numbers (none).
+  Shootout attempt DONE 2026-10-10 at owner request (single-run,
+  no table row — 1% coverage, non-comparable): one 17-way UPOS
+  choice per token, bare-label options, focus + occurrence counts
+  in instructions, batched per sentence through `laya-serve`
+  (typed-decisions weights, /tmp-only, 808 MB + 8-min candle
+  build). Stratified 36-sent subset: 23 scored / 1 excluded
+  (49-tok sentence timed out) / 12 unrun — stopped early when
+  the mechanism proved absent, not weak. Result: exact
+  11/213 = 5.2%, coarse 11.7% (below the always-NOUN baseline).
+  Failure mode: per-sentence single-label runs (VERB-everywhere,
+  all-NOUN, all-ADV), IDENTICAL for batched and single-question
+  requests (deterministic across reps), with maxed confidence
+  (1.0/0.999) on wrong answers — ticket-fitted calibration does
+  not transfer. Cost: ~55–85 s/sentence on 2 CPUs (full test
+  ≈ 40–50 h — infeasible on this box regardless of outcome).
+  Raw JSONL stays /tmp-ephemeral (prompts embed EWT text: same
+  redistribution bar as Spark tags). The pre-registered
+  objections stand, now with a number.
 
 - Accuracy roadmap 92→95, SOTA 97 out of scope (AGREED 2026-09-27):
   ceiling for a linear discrete-feature model is ~94.5-95.5; the last
