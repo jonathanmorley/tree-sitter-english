@@ -219,8 +219,8 @@ WSJ-trained (out of domain); detail is in the shootout table above.</p>
 <tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>gold</td><td class="num">85.06</td><td class="num">82.12</td><td class="num">3.8 MB</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>UDPipe 2.0 (CoNLL-2018, raw text) †</td><td>own (95.4)</td><td class="num">85.01</td><td class="num">82.51</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>Ours (beam4, v5)</td><td>gold</td><td class="num">85.0</td><td class="num">81.3</td><td class="num">31 + 3.8 MB</td><td class="num">—</td><td class="num">—</td></tr>
-<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (93.74)</td><td class="num">81.09</td><td class="num">76.30</td><td class="num">3.8 MB</td><td class="num">18k</td><td class="num">204 MB</td></tr>
-<tr><td>Ours (beam4, v5)</td><td>greedy (93.74)</td><td class="num">80.7</td><td class="num">75.0</td><td class="num">31 + 3.8 MB</td><td class="num">42k ‡</td><td class="num">118 MB</td></tr>
+<tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (94.23)</td><td class="num">80.88</td><td class="num">76.15</td><td class="num">3.8 MB</td><td class="num">18k</td><td class="num">204 MB</td></tr>
+<tr><td>Ours (beam4, v5)</td><td>greedy (94.23)</td><td class="num">80.7</td><td class="num">75.0</td><td class="num">31 + 3.8 MB</td><td class="num">42k ‡</td><td class="num">118 MB</td></tr>
 </table>
 <p class="fine">Rerun it: <code>EWT=/path/to/ewt WORK=/tmp/malt
 scripts/bench-parsers.sh</code> trains both Malt models (BSD jar, /tmp only,
@@ -236,14 +236,16 @@ PPs), so scoring it against UD gold measures scheme divergence (51.5 UAS),
 not parsing. The v5 trigrams closed the same-input gap to −0.07
 (Malt-lex 85.06 vs ours 85.0) and took the pipeline lead (+0.19:
 79.56 vs 79.37); Malt-full keeps +1.0 on feats alone (86.00).
-With ensemble tags (93.74) both climb — Malt converts harder
-(+1.72/+2.34 to 81.09/76.30 vs ours +1.08/+1.68 to 80.68/74.99),
-retaking the same-input lead in both cells (+0.41/+1.31): denser
-features exploit better tags harder, which sharpens the standing
-lesson that feature density (not the learner) is the gap.
-Cascade is consistent across implementations (gold→pred test UAS:
-ours −4.3, Malt −4.0), confirming the pipeline tax is structural
-even as better tags narrow it (dev −6.1→−4.7, test −5.4→−4.3).
+With averaged tags (94.23, +30 over the last refresh) the two
+implementations diverge: ours ticks up to 80.72/75.00 (+10/+3
+tokens) while Malt drops to 80.88/76.15 (−54/−39) — denser
+features amplify this tagger's churn both ways, so the conversion
+lesson now cuts both directions (the tagger's net +30 exact
+converts to spread flips, and Malt's conjunctions catch the
+churn harder). Same-input lead narrows to +0.16/+1.15.
+Cascade across implementations (gold→pred test UAS: ours −4.27,
+Malt −4.18) stays consistent, confirming the pipeline tax is
+structural (dev −5.0: 85.90→80.89; test −4.3: 84.99→80.72).
 Size/speed/RSS run on the Moby body (same basis as the tagger table):
 ours parses 220k toks at ~42k tok/s beam4 (label pass adds ~136k tok/s
 over the same arcs — combined UAS+LAS ≈ 32k; 118 MB task peak incl.
