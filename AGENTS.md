@@ -981,6 +981,15 @@ against a deleted scanner. Delete it if CLI results look suspicious.
 ## Accuracy program, round 2 (QUEUED 2026-10-09 — ceiling and
 ROI suspended by owner request; bars still required per item)
 
+Revisit sweep on material change (AGREED 2026-10-09): every
+weights/decoder/rule admission ships a revisit scan of prior
+verdicts touching the changed component — TRIGGERED
+(pre-registered triggers fire, e.g. re-mining on new weights),
+STALE-REFRESH (standing downstream measurements re-run, e.g.
+dep pipeline on new tags), QUEUED-CHEAP (low-cost re-measures),
+STAYING-CLOSED (with an explicit reason, never silence). No
+prior verdict is silently invalidated by a material change.
+
 Techniques never exhausted, roughly by expected value. Shipped
 or measured-closed items stay closed; these are all unbuilt.
 Each needs its own bars before work (the standing pattern:
