@@ -77,7 +77,7 @@
 //! needs web-gated precision that isn't there. Probe deleted.
 
 use crate::Tag;
-use crate::lexicon::known_verb_form;
+use crate::lexicon::{is_oov, known_verb_form, nn_tag};
 
 /// A correction rule: a name plus a predicate over the token stream.
 /// Predicates see current predicted tags, lowercased surface pieces,
@@ -234,6 +234,11 @@ pub const RULES: &[Rule] = &[
         name: "be-aux",
         threshold: 2.0,
         test: be_aux,
+    },
+    Rule {
+        name: "oov-nn",
+        threshold: 2.0,
+        test: oov_nn,
     },
 ];
 
@@ -485,6 +490,27 @@ fn be_aux(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     (i > 0 && low[i - 1] == "to").then_some(Tag::Aux)
+}
+
+/// Out-of-vocabulary neighbor tag: pre-lowered `low[i]` never seen in
+/// EWT train takes the EWT-majority tag of its nearest GloVe-50
+/// neighbor among train-vocab targets (R3-3: dev +21 / test +14 net
+/// at τ=2.0, both splits positive — the first consistently-positive
+/// backoff; fires only when the neighbor tag differs, so agreement
+/// is a no-op). Last in RULES: the 17 shipped rules keep priority.
+/// `-ing` words stay out: participles/gerunds need clausal barrier
+/// analysis this vote cannot see (the deferred participle gap —
+/// `pass-by` covers be-prev only), and the damage is measured
+/// (sweep `plodding` VERB→ADJ plus 2 EWT breaks against 6 forgone
+/// fixes, documented cost).
+fn oov_nn(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if !is_oov(&low[i]) || low[i].ends_with("ing") {
+        return None;
+    }
+    match nn_tag(&low[i]) {
+        Some(t) if t != tags[i] => Some(t),
+        _ => None,
+    }
 }
 
 fn quite_adv(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
