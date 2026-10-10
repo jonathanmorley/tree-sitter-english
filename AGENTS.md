@@ -1103,6 +1103,10 @@ suspect; item 4 proceeds with its own bars.
    drift signature in-domain; softness dials, never resolves).
    1b never started per the pre-registration. Item joins silver
    at 0-for-6 on distillation drift (new mechanism, same grave).
+   Recipe kept, bytes refused: `scripts/dbert-posteriors.py`
+   regenerates the posteriors from the pinned model id (verified
+   argmax-identical); the 34 MB JSONL stays out (surface text +
+   dead weight for a closed item).
 8. Collins averaging (ADMITTED 2026-10-09 — overturns the pilot):
    faithful timestamp averaging over token steps (`train_averaged`,
    `--averaged`; lazy math pinned by a naive-vs-lazy toy proof that
