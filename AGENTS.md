@@ -3172,7 +3172,13 @@ per item; linear family stays closed)
   model-agnostic correction rules. NEXT: scope the Rust port
   (hand-rolled quantized matmul vs candle Tier-1) with its own bars.
   Tiny-transformer fine-tune stays the fallback leg (DistilBERT
-  96.51 measured here).
+  96.51 measured here). Retrain variance (run 2, same seeds:
+  93.83/94.11 — ±0.2 test wobble from oneDNN/thread nondeterminism):
+  neural weights take score-gating, never md5-gating. Process scars:
+  import-guard on the screen script (an export import retrained from
+  scratch over the epoch-10 ckpt — restored by retrain), no `pkill -f`
+  on script names (matches own shell), versioned per-epoch ckpts,
+  transient host SIGILLs (retry-to-pass).
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE
