@@ -61,6 +61,11 @@ path unconditionally — this crate never touches it.
 - Stage 3 — size: int8 quant of matmuls (embeddings stay
   higher precision first), accuracy-neutral re-gate. Damage →
   narrower quant, never accuracy spend.
+  DONE 2026-10-10 (PR #123): `QModel`, per-row absmax, 6.72 MB,
+  dev/test ±3 toks, sweep 0.9105, parity band 0/1166. Speed
+  regressed (10.5k vs 19.5k f32) — the lane-density hypothesis
+  failed on this toolchain; two artifacts stand (f32 speed,
+  i8 size).
 - Stage 4 — admission: production comparison (neural greedy +
   portable correction rules + beam-equivalent if earned),
   front table + chart + READMEs, weights vendored as Tier-1

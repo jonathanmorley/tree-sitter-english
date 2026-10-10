@@ -18,10 +18,25 @@ fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
 
-/// Dot product with four accumulators (ILP-friendly on any arch;
-/// `std::simd` is still unstable on this toolchain, and explicit
-///arch intrinsics would fork the parity gate per platform).
+/// Dot product: runtime-detected AVX 8-wide path on x86_64 (this
+/// box has AVX but not AVX2 — `std::simd` is unstable and AVX2
+/// intrinsics would be dead weight here), portable chunked path
+/// everywhere else. Both orders re-gate the 0-diff parity test.
 fn dot(a: &[f32], b: &[f32]) -> f32 {
+    #[cfg(target_arch = "x86_64")]
+    {
+        use std::sync::OnceLock;
+        static HAS_AVX: OnceLock<bool> = OnceLock::new();
+        if *HAS_AVX.get_or_init(|| std::arch::is_x86_feature_detected!("avx")) {
+            return unsafe { dot_avx(a, b) };
+        }
+    }
+    dot_scalar(a, b)
+}
+
+/// Portable fallback (also the aarch64 path): `chunks_exact` (no
+/// bounds checks) + four accumulators.
+fn dot_scalar(a: &[f32], b: &[f32]) -> f32 {
     // `chunks_exact` (no bounds checks) + four accumulators.
     let mut acc = [0.0f32; 4];
     for (x, y) in a.chunks_exact(4).zip(b.chunks_exact(4)) {
@@ -36,6 +51,32 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
         s += x * y;
     }
     s
+}
+
+/// AVX 8-wide dot (x86_64 with runtime detection; single accumulator
+/// pair keeps the summation shape close to scalar).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx")]
+unsafe fn dot_avx(a: &[f32], b: &[f32]) -> f32 {
+    use core::arch::x86_64::*;
+    unsafe {
+        let mut acc = _mm256_setzero_ps();
+        let mut i = 0;
+        while i + 8 <= a.len() {
+            let x = _mm256_loadu_ps(a.as_ptr().add(i));
+            let y = _mm256_loadu_ps(b.as_ptr().add(i));
+            acc = _mm256_add_ps(acc, _mm256_mul_ps(x, y));
+            i += 8;
+        }
+        let mut buf = [0.0f32; 8];
+        _mm256_storeu_ps(buf.as_mut_ptr(), acc);
+        let mut s: f32 = buf.iter().sum();
+        while i < a.len() {
+            s += a[i] * b[i];
+            i += 1;
+        }
+        s
+    }
 }
 
 /// One directed single-layer LSTM pass over `xs` (T × input dim).
@@ -104,6 +145,13 @@ pub struct LstmParams<'a> {
 pub trait RecurrentBackend {
     /// Directed LSTM layer; direction rides in `params`.
     fn lstm_layer(&self, xs: &[Vec<f32>], params: &LstmParams<'_>) -> Vec<Vec<f32>>;
+    /// Directed LSTM layer over int8 weights with per-row scales;
+    /// activations quantize per vector (Stage 3). Falls back to the
+    /// f32 path by default; [`HandRolled`] implements it natively.
+    fn lstm_layer_q(&self, xs: &[Vec<f32>], params: &QLstmParams<'_>) -> Vec<Vec<f32>> {
+        let _ = (xs, params);
+        unimplemented!("quantized forward not implemented for this backend");
+    }
 }
 
 /// Zero-dependency f32 backend (ships first).
@@ -113,6 +161,106 @@ impl RecurrentBackend for HandRolled {
     fn lstm_layer(&self, xs: &[Vec<f32>], params: &LstmParams<'_>) -> Vec<Vec<f32>> {
         lstm_dir(xs, params)
     }
+
+    fn lstm_layer_q(&self, xs: &[Vec<f32>], params: &QLstmParams<'_>) -> Vec<Vec<f32>> {
+        qlstm_dir(xs, params)
+    }
+}
+
+/// Symmetric per-vector int8 quantization (absmax/127); zero vectors
+/// take scale epsilon so the dequant stays finite.
+fn quantize_row(x: &[f32]) -> (Vec<i8>, f32) {
+    let mut mx = 0.0f32;
+    for v in x {
+        let a = v.abs();
+        if a > mx {
+            mx = a;
+        }
+    }
+    let s = (mx / 127.0).max(1e-9);
+    (
+        x.iter()
+            .map(|v| (v / s).round().clamp(-128.0, 127.0) as i8)
+            .collect(),
+        s,
+    )
+}
+
+/// int8×int8 dot with i32 accumulation (autovec-friendly narrow lane
+/// density: 16 int8 lanes where f32 gets 4 under SSE2).
+fn qdot(w: &[i8], sw: f32, x: &[i8], sx: f32) -> f32 {
+    let mut acc = [0i32; 4];
+    for (a, b) in w.chunks_exact(4).zip(x.chunks_exact(4)) {
+        acc[0] += a[0] as i32 * b[0] as i32;
+        acc[1] += a[1] as i32 * b[1] as i32;
+        acc[2] += a[2] as i32 * b[2] as i32;
+        acc[3] += a[3] as i32 * b[3] as i32;
+    }
+    let mut s = acc[0] + acc[1] + acc[2] + acc[3];
+    let cut = w.len() - w.len() % 4;
+    for (a, b) in w[cut..].iter().zip(x[cut..].iter()) {
+        s += *a as i32 * *b as i32;
+    }
+    s as f32 * sw * sx
+}
+
+/// Directed LSTM layer over per-row-quantized weights (Stage 3).
+/// Input/hidden vectors quantize once per step and are reused across
+/// all 4H gate rows; states stay f32.
+fn qlstm_dir(xs: &[Vec<f32>], p: &QLstmParams<'_>) -> Vec<Vec<f32>> {
+    let hidden = p.hidden;
+    let input = xs[0].len();
+    let mut h = vec![0.0f32; hidden];
+    let mut c = vec![0.0f32; hidden];
+    let mut out = vec![vec![0.0f32; hidden]; xs.len()];
+    let mut gates = vec![0.0f32; 4 * hidden];
+    let mut t = if p.reverse { xs.len() - 1 } else { 0 };
+    loop {
+        let (xq, sx) = quantize_row(&xs[t]);
+        let (hq, sh) = quantize_row(&h);
+        for g in 0..4 * hidden {
+            let base_ih = g * input;
+            let base_hh = g * hidden;
+            let mut s = p.b_ih[g] + p.b_hh[g];
+            s += qdot(&p.w_ih[base_ih..base_ih + input], p.s_ih[g], &xq, sx);
+            s += qdot(&p.w_hh[base_hh..base_hh + hidden], p.s_hh[g], &hq, sh);
+            gates[g] = s;
+        }
+        for j in 0..hidden {
+            let i = sigmoid(gates[j]);
+            let f = sigmoid(gates[hidden + j]);
+            let g = gates[2 * hidden + j].tanh();
+            let o = sigmoid(gates[3 * hidden + j]);
+            c[j] = f * c[j] + i * g;
+            h[j] = o * c[j].tanh();
+        }
+        out[t] = h.clone();
+        if p.reverse {
+            if t == 0 {
+                break;
+            }
+            t -= 1;
+        } else {
+            t += 1;
+            if t == xs.len() {
+                break;
+            }
+        }
+    }
+    out
+}
+
+/// Directed quantized-LSTM parameters: int8 tables with per-row f32
+/// scales (offline per-row absmax, same recipe as the preview).
+pub struct QLstmParams<'a> {
+    pub w_ih: &'a [i8],
+    pub s_ih: &'a [f32],
+    pub w_hh: &'a [i8],
+    pub s_hh: &'a [f32],
+    pub b_ih: &'a [f32],
+    pub b_hh: &'a [f32],
+    pub hidden: usize,
+    pub reverse: bool,
 }
 
 fn get_f32(params: &HashMap<String, Vec<f32>>, name: &str) -> Result<Vec<f32>, String> {
@@ -414,6 +562,303 @@ impl<B: RecurrentBackend> Model<B> {
 
     /// Greedy tags with best-minus-runner-up margins (feeds the
     /// same gated correction discipline as `english-pos`).
+    pub fn tag_margins(&self, words: &[&str]) -> Vec<(Tag, f32)> {
+        self.logits(words)
+            .iter()
+            .map(|l| {
+                let (b, m) = Self::best_two(l);
+                (self.tags[b], m)
+            })
+            .collect()
+    }
+}
+
+fn json_to_i8(v: &serde_json::Value, out: &mut Vec<i8>) {
+    match v {
+        serde_json::Value::Number(n) => out.push(n.as_i64().unwrap_or(0) as i8),
+        serde_json::Value::Array(a) => {
+            for x in a {
+                json_to_i8(x, out);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Quantized BiLSTM tagger (Stage 3): per-row int8 weights with f32
+/// scales (offline absmax recipe), f32 biases and states, per-vector
+/// activation quantization. Same API as [`Model`]; accuracy re-gates
+/// every change (dev/test within run-wobble, sweep ≥ 0.87).
+pub struct QModel<B = HandRolled> {
+    backend: B,
+    tags: Vec<Tag>,
+    words: HashMap<String, usize>,
+    chars: HashMap<char, usize>,
+    wemb_q: Vec<i8>,
+    wemb_s: Vec<f32>,
+    wemb_dim: usize,
+    cemb_q: Vec<i8>,
+    cemb_s: Vec<f32>,
+    cemb_dim: usize,
+    cenc: [QDir; 2],
+    wenc: [QDir; 2],
+    cenc_h: usize,
+    wenc_h: usize,
+    out_q: Vec<i8>,
+    out_s: Vec<f32>,
+    out_b: Vec<f32>,
+    n_tags: usize,
+    max_chars: usize,
+}
+
+/// One direction's quantized tables: int8 weights + per-row scales +
+/// f32 biases.
+pub struct QDir {
+    pub w_ih: Vec<i8>,
+    pub s_ih: Vec<f32>,
+    pub w_hh: Vec<i8>,
+    pub s_hh: Vec<f32>,
+    pub b_ih: Vec<f32>,
+    pub b_hh: Vec<f32>,
+}
+
+fn get_q(
+    qp: &serde_json::Map<String, serde_json::Value>,
+    name: &str,
+) -> Result<(Vec<i8>, Vec<f32>), String> {
+    let e = qp
+        .get(name)
+        .ok_or_else(|| format!("missing qparam {name}"))?;
+    let mut q = Vec::new();
+    json_to_i8(&e["q"], &mut q);
+    let mut s = Vec::new();
+    json_to_f32(&e["s"], &mut s);
+    Ok((q, s))
+}
+
+impl QModel<HandRolled> {
+    /// Load from the quantized export JSON text.
+    pub fn from_json(text: &str) -> Result<Self, String> {
+        Self::from_json_with(text, HandRolled)
+    }
+}
+
+impl<B: RecurrentBackend> QModel<B> {
+    pub fn from_json_with(text: &str, backend: B) -> Result<Self, String> {
+        let v: serde_json::Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+        let tags: Vec<Tag> = v["tags"]
+            .as_array()
+            .ok_or("missing tags")?
+            .iter()
+            .map(|t| Tag::from_upos(t.as_str().unwrap_or("")).ok_or_else(|| format!("bad tag {t}")))
+            .collect::<Result<_, _>>()?;
+        let words: HashMap<String, usize> = v["words"]
+            .as_object()
+            .ok_or("missing words")?
+            .iter()
+            .map(|(k, n)| (k.clone(), n.as_u64().unwrap_or(1) as usize))
+            .collect();
+        let chars: HashMap<char, usize> = v["chars"]
+            .as_object()
+            .ok_or("missing chars")?
+            .iter()
+            .filter_map(|(k, n)| {
+                k.chars()
+                    .next()
+                    .map(|c| (c, n.as_u64().unwrap_or(1) as usize))
+            })
+            .collect();
+        let qp = v["qparams"].as_object().ok_or("missing qparams")?;
+        let bias = v["bias"].as_object().ok_or("missing bias")?;
+        let arch = &v["arch"];
+        let wemb_dim = arch["wemb"].as_u64().ok_or("arch.wemb")? as usize;
+        let cemb_dim = arch["cemb"].as_u64().ok_or("arch.cemb")? as usize;
+        let cenc_h = arch["cenc"].as_u64().ok_or("arch.cenc")? as usize;
+        let wenc_h = arch["wenc"].as_u64().ok_or("arch.wenc")? as usize;
+        // Torch names reverse-direction tables
+        // `{base}.weight_ih_l0_reverse` (flat, not nested).
+        let dir = |base: &str, rev: &str| -> Result<QDir, String> {
+            let (w_ih, s_ih) = get_q(qp, &format!("{base}.weight_ih_l0{rev}"))?;
+            let (w_hh, s_hh) = get_q(qp, &format!("{base}.weight_hh_l0{rev}"))?;
+            let mut bih = Vec::new();
+            let mut bhh = Vec::new();
+            json_to_f32(
+                bias.get(&format!("{base}.bias_ih_l0{rev}"))
+                    .ok_or("bias_ih")?,
+                &mut bih,
+            );
+            json_to_f32(
+                bias.get(&format!("{base}.bias_hh_l0{rev}"))
+                    .ok_or("bias_hh")?,
+                &mut bhh,
+            );
+            Ok(QDir {
+                w_ih,
+                s_ih,
+                w_hh,
+                s_hh,
+                b_ih: bih,
+                b_hh: bhh,
+            })
+        };
+        let (out_q, out_s) = get_q(qp, "out.weight")?;
+        let mut out_b = Vec::new();
+        json_to_f32(bias.get("out.bias").ok_or("out.bias")?, &mut out_b);
+        let n_tags = tags.len();
+        let (wemb_q, wemb_s) = get_q(qp, "wemb.weight")?;
+        let (cemb_q, cemb_s) = get_q(qp, "cemb.weight")?;
+        Ok(QModel {
+            backend,
+            tags,
+            words,
+            chars,
+            wemb_q,
+            wemb_s,
+            wemb_dim,
+            cemb_q,
+            cemb_s,
+            cemb_dim,
+            cenc: [dir("cenc", "")?, dir("cenc", "_reverse")?],
+            wenc: [dir("wenc", "")?, dir("wenc", "_reverse")?],
+            cenc_h,
+            wenc_h,
+            out_q,
+            out_s,
+            out_b,
+            n_tags,
+            max_chars: 24,
+        })
+    }
+
+    fn embed_row(table: &[i8], scales: &[f32], dim: usize, id: usize) -> Vec<f32> {
+        let s = scales[id];
+        table[id * dim..(id + 1) * dim]
+            .iter()
+            .map(|q| *q as f32 * s)
+            .collect()
+    }
+
+    fn qparams<'s>(d: &'s QDir, hidden: usize, reverse: bool) -> QLstmParams<'s> {
+        QLstmParams {
+            w_ih: &d.w_ih,
+            s_ih: &d.s_ih,
+            w_hh: &d.w_hh,
+            s_hh: &d.s_hh,
+            b_ih: &d.b_ih,
+            b_hh: &d.b_hh,
+            hidden,
+            reverse,
+        }
+    }
+
+    /// Logits per token (T × 17).
+    pub fn logits(&self, words: &[&str]) -> Vec<Vec<f32>> {
+        self.logits_cached(&mut WordCache::new(), words)
+    }
+
+    /// Logits with a caller-kept [`WordCache`] across sentences.
+    pub fn logits_cached(&self, cache: &mut WordCache, words: &[&str]) -> Vec<Vec<f32>> {
+        let mut ch_ids: Vec<Vec<usize>> = words
+            .iter()
+            .map(|w| {
+                let mut ids: Vec<usize> = w
+                    .chars()
+                    .take(self.max_chars)
+                    .map(|c| *self.chars.get(&c).unwrap_or(&1))
+                    .collect();
+                if ids.is_empty() {
+                    ids.push(0);
+                }
+                ids
+            })
+            .collect();
+        let clen = ch_ids.iter().map(Vec::len).max().unwrap_or(1);
+        for ids in &mut ch_ids {
+            ids.resize(clen, 0);
+        }
+        let mut word_vecs = Vec::with_capacity(words.len());
+        for (w, cids) in words.iter().zip(ch_ids.iter()) {
+            if let Some(hit) = cache.map.get(*w) {
+                word_vecs.push(hit.clone());
+                continue;
+            }
+            let lower = w.to_lowercase();
+            let wid = *self.words.get(&lower).unwrap_or(&1);
+            let cseq: Vec<Vec<f32>> = cids
+                .iter()
+                .map(|&c| Self::embed_row(&self.cemb_q, &self.cemb_s, self.cemb_dim, c))
+                .collect();
+            let f = self
+                .backend
+                .lstm_layer_q(&cseq, &Self::qparams(&self.cenc[0], self.cenc_h, false));
+            let r = self
+                .backend
+                .lstm_layer_q(&cseq, &Self::qparams(&self.cenc[1], self.cenc_h, true));
+            let mut cv = f[clen - 1].clone();
+            cv.extend_from_slice(&r[0]);
+            let mut wv = Self::embed_row(&self.wemb_q, &self.wemb_s, self.wemb_dim, wid);
+            wv.extend(cv);
+            cache.map.insert((*w).to_string(), wv.clone());
+            word_vecs.push(wv);
+        }
+        let hf = self.backend.lstm_layer_q(
+            &word_vecs,
+            &Self::qparams(&self.wenc[0], self.wenc_h, false),
+        );
+        let hr = self
+            .backend
+            .lstm_layer_q(&word_vecs, &Self::qparams(&self.wenc[1], self.wenc_h, true));
+        let width = 2 * self.wenc_h;
+        word_vecs
+            .iter()
+            .enumerate()
+            .map(|(t, _)| {
+                let mut h = hf[t].clone();
+                h.extend_from_slice(&hr[t]);
+                let (hq, sh) = quantize_row(&h);
+                (0..self.n_tags)
+                    .map(|k| {
+                        let base = k * width;
+                        qdot(&self.out_q[base..base + width], self.out_s[k], &hq, sh)
+                            + self.out_b[k]
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn best_two(logits: &[f32]) -> (usize, f32) {
+        let mut b0 = 0usize;
+        let mut b1 = 1usize;
+        if logits[1] > logits[0] {
+            b0 = 1;
+            b1 = 0;
+        }
+        for (i, &s) in logits.iter().enumerate().skip(2) {
+            if s > logits[b0] {
+                b1 = b0;
+                b0 = i;
+            } else if s > logits[b1] {
+                b1 = i;
+            }
+        }
+        (b0, logits[b0] - logits[b1])
+    }
+
+    /// Greedy tags.
+    pub fn tag(&self, words: &[&str]) -> Vec<Tag> {
+        self.tag_cached(&mut WordCache::new(), words)
+    }
+
+    /// Greedy tags with a caller-kept [`WordCache`].
+    pub fn tag_cached(&self, cache: &mut WordCache, words: &[&str]) -> Vec<Tag> {
+        self.logits_cached(cache, words)
+            .iter()
+            .map(|l| self.tags[Self::best_two(l).0])
+            .collect()
+    }
+
+    /// Greedy tags with best-minus-runner-up margins.
     pub fn tag_margins(&self, words: &[&str]) -> Vec<(Tag, f32)> {
         self.logits(words)
             .iter()
