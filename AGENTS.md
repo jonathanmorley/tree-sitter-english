@@ -3222,6 +3222,24 @@ per item; linear family stays closed)
   16 lanes where f32 gets 4 under SSE2 autovec — quant likely
   clears the bar without any multiversion build, so no AVX2
   dispatch work starts before the quant measurement arbitrates.
+- R3-1 Stage 3 (DONE 2026-10-10, PR #123 — size + accuracy MET,
+  speed hypothesis FAILED): per-row symmetric int8 (offline absmax;
+  biases/states f32; per-vector activation quant; `QModel` mirrors
+  `Model` API incl. `tag_cached`). Torch preview: dev/test identical
+  to the token. Rust gates: parity band 0/1166 (bound was 10),
+  sweep 1893/2079 = 0.9105 (f32: 1894), dev 23599 / test 23619
+  (±3 toks of f32), size 28.5 → 6.72 MB JSON (single-digit ✓).
+  Speed went the WRONG way (10.5k scoped vs 19.5k f32): scalar i32
+  MACs match f32 MAC-for-MAC while activation-quant overhead adds
+  on top — autovec produced no PMADD sequences, and an AVX f32
+  `dot` (runtime-detected, parity still 0 diffs) measured zero gain
+  with it, proving the word-LSTM is transcendental+char bound, not
+  dot-bound. No AVX2 on this silicon anyway. Standing shape: TWO
+  artifacts — f32 = speed path (19.5k), i8 = size path (6.7 MB,
+  10.5k), both accuracy-neutral; Stage 4 picks (or pairs) on
+  consumer need. No further speed spend without a non-degenerate
+  idea (approx activations / GRU retrain both trade gate risk for
+  a 2.5% line — parked, same formula as widths-3/4).
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE

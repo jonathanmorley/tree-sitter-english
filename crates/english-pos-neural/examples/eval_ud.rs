@@ -8,7 +8,7 @@
 //!   /tmp/opencode/round3/bilstm.json
 //! ```
 
-use english_pos_neural::Model;
+use english_pos_neural::{Model, QModel};
 use std::collections::HashSet;
 
 fn read(path: &str) -> Vec<Vec<(String, String)>> {
@@ -37,7 +37,18 @@ fn read(path: &str) -> Vec<Vec<(String, String)>> {
 fn main() {
     let weights_path = std::env::args().nth(1).expect("weights path");
     let weights = std::fs::read_to_string(weights_path).unwrap();
-    let model = Model::from_json(&weights).expect("weights load");
+    // Auto-detect artifact kind by top-level key (f32 "params" vs
+    // int8 "qparams"); both paths report the same gates.
+    let quant = weights.contains("\"qparams\"");
+    let fmodel;
+    let qmodel;
+    if quant {
+        qmodel = Some(QModel::from_json(&weights).expect("i8 weights load"));
+        fmodel = None;
+    } else {
+        fmodel = Some(Model::from_json(&weights).expect("weights load"));
+        qmodel = None;
+    }
     let train = read("/tmp/ud/ewt/en_ewt-ud-train.conllu");
     let vocab: HashSet<String> = train
         .iter()
@@ -53,7 +64,11 @@ fn main() {
         let (mut ook, mut ot) = (0usize, 0usize);
         for s in &data {
             let words: Vec<&str> = s.iter().map(|(w, _)| w.as_str()).collect();
-            let got = model.tag(&words);
+            let got: Vec<english_pos::Tag> = match (&fmodel, &qmodel) {
+                (Some(m), _) => m.tag(&words),
+                (_, Some(m)) => m.tag(&words),
+                _ => unreachable!(),
+            };
             for ((w, gold), g) in s.iter().zip(got.iter()) {
                 tot += 1;
                 let hit = g.upos() == *gold;

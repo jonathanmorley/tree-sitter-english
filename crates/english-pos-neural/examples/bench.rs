@@ -9,7 +9,7 @@
 //!   /tmp/opencode/round3/bilstm.json
 //! ```
 
-use english_pos_neural::{Model, WordCache};
+use english_pos_neural::{Model, QModel, WordCache};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -38,18 +38,40 @@ fn read(path: &str) -> Vec<Vec<String>> {
 
 fn main() {
     let weights = std::fs::read_to_string(std::env::args().nth(1).expect("weights")).unwrap();
-    let model = Arc::new(Model::from_json(&weights).expect("weights load"));
+    // Auto-detect artifact kind (f32 "params" vs int8 "qparams").
+    enum Any {
+        F(Model),
+        Q(QModel),
+    }
+    impl Any {
+        fn tag_cached(&self, cache: &mut WordCache, w: &[&str]) {
+            match self {
+                Any::F(m) => {
+                    m.tag_cached(cache, w);
+                }
+                Any::Q(m) => {
+                    m.tag_cached(cache, w);
+                }
+            }
+        }
+    }
+    let model = Arc::new(if weights.contains("\"qparams\"") {
+        Any::Q(QModel::from_json(&weights).expect("i8 weights load"))
+    } else {
+        Any::F(Model::from_json(&weights).expect("weights load"))
+    });
     let dev = read("/tmp/ud/ewt/en_ewt-ud-dev.conllu");
     let toks: usize = dev.iter().map(Vec::len).sum();
     for s in dev.iter().take(20) {
         let w: Vec<&str> = s.iter().map(|x| x.as_str()).collect();
-        let _ = model.tag(&w);
+        let mut c = WordCache::new();
+        model.tag_cached(&mut c, &w);
     }
     let t0 = Instant::now();
     let mut cache = WordCache::new();
     for s in &dev {
         let w: Vec<&str> = s.iter().map(|x| x.as_str()).collect();
-        let _ = model.tag_cached(&mut cache, &w);
+        model.tag_cached(&mut cache, &w);
     }
     let dt = t0.elapsed().as_secs_f64();
     println!(
@@ -65,7 +87,7 @@ fn main() {
                 let mut cache = WordCache::new();
                 for s in half {
                     let w: Vec<&str> = s.iter().map(|x| x.as_str()).collect();
-                    let _ = m.tag_cached(&mut cache, &w);
+                    m.tag_cached(&mut cache, &w);
                 }
             });
         }
