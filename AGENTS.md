@@ -1140,15 +1140,23 @@ suspect; item 4 proceeds with its own bars.
 12. Bootstrap diversity: members see ~63% unique sentences
     each (vs full-data shuffles). Weak prior (stable learner
     + less data each + K-curve flat). Unbuilt, lowest.
-13. LaSO beam training for the tagger (QUEUED 2026-10-09, from
-    the Viterbi verdict above): the fix global search needs —
-    teach cross-path calibration the way the parser's LaSO
-    license does (early-update beam training, same weights
-    shape). Nothing in current weights supports global search;
-    no decoder extracts what training never put in. Needs its
-    own bars (dev/test + evals + `flies` + determinism) before
-    work. Unbuilt (strengthened by item 8: averaging validated
-    for the tagger, and LaSO carries averaging inside).
+13. LaSO beam training for the tagger (MEASURED AND REJECTED
+    2026-10-09): ported the parser's license (early update +
+    sentence-step averaging, same shape) at widths 4 and 2, 20/1,
+    fixed order. B=4 beam-full+rules: dev 23539 / test 23569
+    (−17/−102 vs production); B=2: 23546/23611 (−10/−60).
+    Attribution control: beam-full-4 of AVERAGED weights scores
+    23563/23578 — the unanchored full-sentence decoder loses ~93
+    on test regardless of weights (the Vitruvius mechanism verbatim:
+    anchored spans+rules beat global search). LaSO weights add only
+    −9 on top, and greedy-of-LaSO merely degrades (93.40/93.90,
+    no parser-style collapse). Mechanism, the parser/tagging
+    asymmetry: arc-eager config space is vast, so gold falls out
+    constantly (updates flow); 17-tag width-4 beams keep gold
+    (no calibration pressure — LaSO degrades to sentence-averaged
+    perceptron). Code fully reverted, suite green, weights
+    untouched. Do not reopen without a pressure-restoring
+    mechanism (none queued).
 14. Ensemble-of-averaged (MEASURED AND REJECTED 2026-10-09):
     15 averaged members on seeds 1–15 (same shuffles as the plain
     round) show 1.58% pairwise dev disagreement (vs 5.4% plain) —
