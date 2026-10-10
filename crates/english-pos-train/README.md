@@ -445,16 +445,24 @@ combined — needs its own bars; one variable at a time).
 ## Cross-genre standing (GUM test, gold)
 
 Committed weights measured per GUM genre (split its test file by
-`# meta::genre`; EWT test 92.05% for reference). GUM-side conventions
+`# meta::genre` at the pinned revision; EWT test 94.23% greedy
+for reference; per-sentence greedy decode). GUM-side conventions
 (predicative participles →VERB, discourse-`like`→INTJ — see
 CANONICAL.md J2/J4) count as errors here, so this table mixes real
-gaps with known disagreements:
+gaps with known disagreements. Remeasured 2026-10-10 with
+averaged weights (was: 6 genres at the 92.05 era); the revision
+now carries 15 test genres:
 
-| genre | acc | | genre | acc |
-|---|---|---|---|---|
-| conversation | 93.36% | | essay | 92.92% |
-| podcast | 92.17% | | whow | 91.96% |
-| news | 91.80% | | academic | 91.75% |
+| genre | acc | toks | | genre | acc | toks |
+|---|---|---|---|---|---|---|
+| essay | 94.70% | 2359 | | podcast | 94.67% | 2119 |
+| whow | 94.52% | 1642 | | conversation | 94.59% | 1868 |
+| speech | 94.33% | 1728 | | academic | 94.21% | 1952 |
+| letter | 94.12% | 1939 | | vlog | 94.01% | 1669 |
+| interview | 93.95% | 1653 | | textbook | 93.00% | 2072 |
+| court | 93.16% | 2075 | | news | 92.70% | 1891 |
+| fiction | 92.56% | 2029 | | voyage | 92.45% | 1722 |
+| bio | 92.14% | 1679 | | ALL | 93.69% | 28397 |
 | vlog | 91.73% | | speech | 91.38% |
 | interview | 91.11% | | letter | 90.97% |
 | court | 90.65% | | fiction | 90.64% |
