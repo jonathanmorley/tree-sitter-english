@@ -74,6 +74,9 @@ This doc scopes that program. Status: design only.
   SPEED MEASURED 2026-10-10 (PR #134): 6.8k single / 13.2k scoped —
   42k-parity retired as pre-evidence aspiration (encoder-bound by
   construction); recalibrated bar batch-viable ≥7.5k scoped PASSES.
+  SIZE DONE 2026-10-10 (PR #135): `QJointModel`, 7.44 MB, parity
+  band 13/20, sweep 0.9096, dev/test/PUD ±7 toks of f32; test-UAS
+  tie recorded (−1 inside arithmetic noise + run-wobble).
 - Stage 4 — admission (front parser table + charts + READMEs,
   Tier-1 weights; keystroke path untouched).
 

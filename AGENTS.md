@@ -3385,8 +3385,22 @@ per item; linear family stays closed)
   R3-1, third instance). Recalibrated bar: batch-viable (≥7.5k
   scoped on 2-core ≈ ≤30s/book worst case; realistic docs <1s) —
   PASSES at 13.2k. No further speed spend (approx/GRU/diet
-  encoders all trade gate risk — parked formula). NEXT: Stage 3
-  (int8 via the tagger playbook).
+  encoders all trade gate risk — parked formula).
+- R3-5 Stage 3 (DONE 2026-10-10, PR #135): per-row int8 `QJointModel`
+  (offline absmax incl. 3-D lab_U per-(label,row); f32 biases/roots/
+  states; per-vector activation quant; exact scale folding, no mean
+  approximation): 31.7 → 7.44 MB JSON (single-digit ✓). Torch
+  preview neutral (dev ±5 toks); Rust gates: parity band 13/20
+  (bound, all activation-quant effects), sweep i8 0.9096 (f32
+  0.9086), dev ±3 / test ±7 / PUD +4 toks of f32. Test-UAS lands
+  1 token under the bar (80.71 vs 80.72) with f32 at +2 and
+  weight-only at −2 — ±3 arithmetic noise inside ±50 run-wobble;
+  recorded as a tie, same wobble reading as the tagger's −27
+  admission (stronger here). Speed 4.2k/7.0k (quant overhead, no
+  PMADD — the tagger physics repeating); 7.0k sits inside run
+  noise of the 7.5k bar. Standing shape mirrors the tagger: i8 =
+  size artifact (vendored), f32 = speed reference (13.2k, /tmp).
+  NEXT: Stage 4 admission (vendor i8 + front parser table).
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural

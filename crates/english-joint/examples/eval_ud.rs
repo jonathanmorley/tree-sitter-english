@@ -8,7 +8,7 @@
 //!   /tmp/opencode/round3/joint.json
 //! ```
 
-use english_joint::JointModel;
+use english_joint::{JointModel, QJointModel};
 
 fn read(path: &str) -> Vec<Vec<(String, String, i32, String)>> {
     let mut sents = Vec::new();
@@ -36,7 +36,15 @@ fn read(path: &str) -> Vec<Vec<(String, String, i32, String)>> {
 
 fn main() {
     let weights = std::fs::read_to_string(std::env::args().nth(1).expect("weights")).unwrap();
-    let model = JointModel::from_json(&weights).expect("weights load");
+    enum Any {
+        F(JointModel),
+        Q(QJointModel),
+    }
+    let model = if weights.contains("\"qparams\"") {
+        Any::Q(QJointModel::from_json(&weights).expect("i8 weights load"))
+    } else {
+        Any::F(JointModel::from_json(&weights).expect("weights load"))
+    };
     for (name, path) in [
         ("dev", "/tmp/ud/ewt/en_ewt-ud-dev.conllu"),
         ("test", "/tmp/ud/ewt/en_ewt-ud-test.conllu"),
@@ -47,10 +55,18 @@ fn main() {
         let mut tot = 0usize;
         for s in &data {
             let words: Vec<&str> = s.iter().map(|(w, _, _, _)| w.as_str()).collect();
-            let p = model.parse(&words);
-            for ((_, g, gh, gr), ((t, h), r)) in s
-                .iter()
-                .zip(p.tags.iter().zip(p.heads.iter()).zip(p.rels.iter()))
+            let (tags, heads, rels): (Vec<english_pos::Tag>, Vec<i32>, Vec<String>) = match &model {
+                Any::F(m) => {
+                    let p = m.parse(&words);
+                    (p.tags, p.heads, p.rels)
+                }
+                Any::Q(m) => {
+                    let p = m.parse(&words);
+                    (p.tags, p.heads, p.rels)
+                }
+            };
+            for ((_, g, gh, gr), ((t, h), r)) in
+                s.iter().zip(tags.iter().zip(heads.iter()).zip(rels.iter()))
             {
                 tot += 1;
                 tok += (t.upos() == *g) as usize;
