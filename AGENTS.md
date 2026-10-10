@@ -1139,14 +1139,19 @@ suspect; item 4 proceeds with its own bars.
     own bars (dev/test + evals + `flies` + determinism) before
     work. Unbuilt (strengthened by item 8: averaging validated
     for the tagger, and LaSO carries averaging inside).
-14. Ensemble-of-averaged (QUEUED 2026-10-09): 15 averaged members
-    on shuffled orders, combined (mean or median — median won
-    the plain round). Stacks the two variance reducers (within-run
-    settling × across-order diversity) that each gained ~+400
-    alone. Cheap to try (15 x ~4 s runs + combine). Bars: admit
-    iff beats averaged-single production on dev AND test, evals
-    neutral-or-better, `flies` holds, determinism md5-verified.
-    Unbuilt.
+14. Ensemble-of-averaged (MEASURED AND REJECTED 2026-10-09):
+    15 averaged members on seeds 1–15 (same shuffles as the plain
+    round) show 1.58% pairwise dev disagreement (vs 5.4% plain) —
+    averaging already settles the recency bias shuffling
+    diversifies. Mean combination: greedy +69/+4, production
+    +58/+5; median: greedy +62/+6, production +56/+7 (coarse
+    ±0). Test forensics 173 fixes / 166 breaks, symmetric churn
+    both directions, X background — no signal, just the tie
+    lottery at +0.03pt. The stack is redundant (dev-only fit);
+    recipe md5-verified end to end, members stay /tmp-ephemeral.
+    Probe code fully reverted (`--averaged` flag removed from the
+    kept recipe), suite untouched. Do not reopen without a
+    diversity-restoring mechanism (none queued).
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
