@@ -773,3 +773,49 @@ fn oov_nn_fixes_unseen_proper_name() {
         Tag::Verb
     );
 }
+
+#[test]
+fn this_pron_fixes_determiner_led_ellipsis() {
+    // `Add to this the economic...`: DET before DET -> PRON (a
+    // determiner cannot precede another determiner; EWT 6:0).
+    assert_eq!(
+        run(
+            &["Add", "to", "this", "the"],
+            &[
+                (Tag::Verb, 9.0),
+                (Tag::Part, 9.0),
+                (Tag::Det, 1.0),
+                (Tag::Det, 9.0)
+            ],
+            "this-pron",
+        )[2],
+        Tag::Pron
+    );
+    // Complementizer `that` stays out even in the shape.
+    assert_eq!(
+        run(
+            &["say", "that", "the"],
+            &[(Tag::Verb, 9.0), (Tag::Det, 1.0), (Tag::Det, 9.0)],
+            "this-pron",
+        )[1],
+        Tag::Det
+    );
+    // Nominal complement abstains (`this book` is a real determiner).
+    assert_eq!(
+        run(
+            &["read", "this", "book"],
+            &[(Tag::Verb, 9.0), (Tag::Det, 1.0), (Tag::Noun, 9.0)],
+            "this-pron",
+        )[1],
+        Tag::Det
+    );
+    // Above-gate margin abstains even in the shape.
+    assert_eq!(
+        run(
+            &["to", "this", "the"],
+            &[(Tag::Part, 9.0), (Tag::Det, 11.0), (Tag::Det, 9.0)],
+            "this-pron",
+        )[1],
+        Tag::Det
+    );
+}

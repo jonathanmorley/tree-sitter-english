@@ -3473,3 +3473,16 @@ per item; linear family stays closed)
   vendored (sweep always, parity band /tmp-gated); front parser
   row 84.1/80.5/8.1 MB/13.0k/96 MB + chart bars; README/scope
   lines. Round 3 fully closed.
+- Correction rule `this-pron` (ADMITTED 2026-10-10, PR #141,
+  19-for-33 — the queued `dem-pron` probe): pred-DET `this` +
+  DET-next → PRON (a determiner cannot precede another determiner;
+  `that` excluded, complementizer territory). EWT train 6:0 (one
+  duplicated sentence, so 5 distinct); τ=10.0 for the 4
+  hand-verified Moby fixes at margins 4.8–9.0 (quite-adv widening
+  precedent — τ=2.0 fires nowhere measurable, and unmeasurable
+  code doesn't ship). Reverse direction (PRON→DET) has no support
+  (~2 instances, stays out); other followers stay out per measured
+  splits (nominal-next is DET 1100:4, VERB/ADV/PUNCT-next mixed).
+  Gates: unit fire + 3 abstains; EWT dev/test ±0 (zero fires);
+  sweep/genre/hard/moby/flies green; chunk/lint downstream green;
+  zero breaks anywhere.

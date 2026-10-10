@@ -235,6 +235,11 @@ pub const RULES: &[Rule] = &[
         test: those_pron,
     },
     Rule {
+        name: "this-pron",
+        threshold: 10.0,
+        test: this_pron,
+    },
+    Rule {
         name: "there-adv",
         threshold: 2.0,
         test: there_adv,
@@ -539,6 +544,23 @@ fn those_pron(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     matches!(tags.get(i + 1), Some(Tag::Adp)).then_some(Tag::Pron)
+}
+
+/// Demonstrative `this` before a determiner (`Add to this the
+/// economic...`, `for all this the chief mate`): a determiner cannot
+/// directly precede another determiner, so pred-DET `this` with
+/// DET-next is the elliptical pronoun (this matter/situation), never
+/// the determiner. EWT train gold is PRON 6:0 in the shape (one
+/// duplicated sentence); `that` stays out — complementizer `that`
+/// routinely precedes DET (`said that the`, that-vcomp territory).
+/// τ=10.0: the 4 hand-verified book fixes sit at margins 4.8–9.0
+/// (confident-mistag class, quite-adv precedent); zero breaks at any
+/// margin on EWT, and the gate still excludes ties by construction.
+fn this_pron(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Det || low[i] != "this" {
+        return None;
+    }
+    matches!(tags.get(i + 1), Some(Tag::Det)).then_some(Tag::Pron)
 }
 
 /// Prepositional `to` read as infinitive marker (`to Coenties
