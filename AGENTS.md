@@ -3236,10 +3236,27 @@ per item; linear family stays closed)
   with it, proving the word-LSTM is transcendental+char bound, not
   dot-bound. No AVX2 on this silicon anyway. Standing shape: TWO
   artifacts — f32 = speed path (19.5k), i8 = size path (6.7 MB,
-  10.5k), both accuracy-neutral; Stage 4 picks (or pairs) on
-  consumer need. No further speed spend without a non-degenerate
+  10.5k), both accuracy-neutral; Stage 4 production numbers below
+  decide the pick. No further speed spend without a non-degenerate
   idea (approx activations / GRU retrain both trade gate risk for
   a 2.5% line — parked, same formula as widths-3/4).
+- R3-1 Stage 4 (production numbers DONE 2026-10-10, PR #125 —
+  admission decision open): `examples/prod_eval.rs` (dev-time only):
+  shipped `apply_rules` replays cleanly on neural margins
+  (model-agnostic `(Tag, margin)` API) with net-positive fires,
+  zero risky shapes. f32: dev +rules 23601/93.85 (fires 24), test
+  +rules 23626/94.15 (fires 23); i8: dev 23605, test 23628 (±4
+  toks of f32 — quant costs nothing twice-measured). Committed
+  perceptron production: dev 23556/93.67, test 23671/94.33.
+  Scoreboard (neural f32): dev +45, test −45 (inside ±50
+  run-wobble), sweep +rules 1897/2079 = 0.9125 (+2 over committed
+  prod 1895), PUD greedy 19876/21180 = 93.84 (+56 over committed
+  prod 93.58), GUM greedy 26646/28397 = 93.83 (+0.14 over committed
+  93.69). 4 of 5 cells neural wins; the lone trailer sits inside
+  wobble. `tests/sweep.rs` gains a +rules production test (same
+  0.87 bar). OPEN: artifact pick (recommend i8: 6.7 MB
+  single-digit + zero damage + 10.5k batch-viable; f32 stays /tmp
+  speed reference) → vendor Tier-1 + front table/charts + READMEs.
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE

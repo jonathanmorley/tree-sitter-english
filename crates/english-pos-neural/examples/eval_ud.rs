@@ -58,6 +58,8 @@ fn main() {
     for (name, path) in [
         ("dev", "/tmp/ud/ewt/en_ewt-ud-dev.conllu"),
         ("test", "/tmp/ud/ewt/en_ewt-ud-test.conllu"),
+        ("pud", "/tmp/ud/.cache/en_pud-ud-test.conllu"),
+        ("gum", "/tmp/ud/.cache/en_gum-ud-test.conllu"),
     ] {
         let data = read(path);
         let (mut ok, mut tot) = (0usize, 0usize);
