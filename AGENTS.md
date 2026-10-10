@@ -3262,14 +3262,24 @@ per item; linear family stays closed)
   band); front row (94.16/96.04/10.5k/6.7 MB/61 MB ¶) + chart bars;
   ARCHITECTURE + README lines. R3-1 closes; revisit sweep on
   material change per the standing rule.
-- R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
-  ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
-  never global features (global char 0-for-2 stands). Census DONE
-  2026-10-10: dev OOV 1708/25148 = 6.8% / test 1882/25094 = 7.5%;
-  OOV tags PROPN 685/760 + NOUN 506/538 (~70% of OOV) — the prize
-  is the top confusion class itself. R3-1's char-BiLSTM already tags
-  OOV at 77.9%/79.1% with zero OOV-specific training; then offline
-  classifier probe with EWT-majority discipline.
+- R3-2 char-aware OOV backoff only (MEASURED AND REJECTED
+  2026-10-10, PR #127 — same net-negative signature as s-verb):
+  census first (new `--margins` flag on `tag_tokens`, kept as
+  forensics tooling): dev OOV 1708 toks, 366 misses (78 actionable
+  0<m<2.0 / 75 warm / 213 confident); shapes PROPN↔NOUN-led as
+  expected. Probe: context-free char-BiLSTM word classifier
+  (16-dim char / 32-unit, torch-CPU ~26s/epoch, 6 epochs to
+  plateau; `/tmp/opencode/round3/char_probe.py`, /tmp-only):
+  61% on all dev OOV vs perceptron's 78.6% — strictly weaker
+  overall. Fire simulation (flip to char tag on OOV + gate):
+  τ=2.0 fires 81, fixes 23, breaks 26 (net −3); τ=5.0 fires 177,
+  fixes 49, breaks 67 (net −18). Mechanism: context-free char
+  shape cannot beat contextual shape features; the actionable zone
+  is genuinely ambiguous context, and char guesses there break
+  more right-but-uncertain tokens than they fix — fire-precision
+  below shape-precision (color-adj lesson, third instance).
+  The BiLSTM's 78% OOV (contextual) stands as the OOV answer;
+  no keystroke-path char model without a context mechanism.
 - R3-3 frozen pretrained embeddings as rare-word backoff (QUEUED):
   dense fastText/GloVe-50 quantized Tier-1 table (like verbs.txt),
   not sparse clusters (0-for-1 stands). Offline join probe on EWT vocab.
