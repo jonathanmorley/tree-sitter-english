@@ -3137,3 +3137,49 @@ suspect; item 4 proceeds with its own bars.
   dash/colon-handoff arbitration absorbs blank lines into following
   sentences (~36 Moby paragraphs), so no byte splitter reproduces
   grammar paragraphs. Temp probes deleted per discipline.
+
+## Accuracy program, round 3 (QUEUED 2026-10-10 — owner opened
+external research + large architectural changes; bars still required
+per item; linear family stays closed)
+
+- Standing position: tagger prod dev 93.67 / test 94.33 (greedy
+  93.58 / 94.23, md5 `1cf5ca79`, 3.87 MB); parser beam4 gold UAS
+  85.9 / pipe 80.7, LAS 82.1 / 75.0; round 2 closed 13/14 with 1
+  admission (averaging). Remaining tagger misses ~85% confident;
+  top classes PROPN↔NOUN, VERB→NOUN, ADJ↔NOUN, ADP/SCONJ.
+  All linear search/training variations measured shut (Viterbi,
+  mirror, rerank, LaSO, PA/MIRA, bootstrap, K-scale, punct,
+  silver/soft-for-perceptron, guessed-history). Next gains need
+  representation change, not inference change.
+- Standing bars for every item below: EWT dev/test neutral-or-better
+  (+ book evals sweep/genre/hard/moby, `flies` holds, determinism +
+  latency/size where they apply). Probes run /tmp-only; no committed
+  weights until gates pass; recipes kept over bytes.
+- R3-1 two-tier neural tagger (STARTED 2026-10-10): keep perceptron
+  for the ~40ms keystroke path, add batch/save-pass neural path
+  (dep precedent). Screen: small BiLSTM tagger (word-embed + char-BiLSTM,
+  word-BiLSTM, 17-way softmax) trained offline in /tmp torch-CPU on
+  EWT; report dev/test + OOV split vs committed greedy. On +1pt,
+  scope the Rust port (hand-rolled quantized matmul vs candle Tier-1
+  optional). Tiny-transformer fine-tune is the fallback leg (DistilBERT
+  96.51 measured here).
+- R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
+  ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
+  never global features (global char 0-for-2 stands). Census first:
+  dev OOV miss mass by shape (sizes the prize); then offline classifier
+  probe with EWT-majority discipline.
+- R3-3 frozen pretrained embeddings as rare-word backoff (QUEUED):
+  dense fastText/GloVe-50 quantized Tier-1 table (like verbs.txt),
+  not sparse clusters (0-for-1 stands). Offline join probe on EWT vocab.
+- R3-4 stacked heterogeneous votes (QUEUED): tiny stacker over
+  (perceptron, RDR, margins) learning per-shape trust; RDR wins
+  VERB→NOUN/ADJ→NOUN/ADP→SCONJ where we lose and vice versa.
+  Offline dev probe, no retrain — drift-immune by construction if gated.
+- R3-5 joint neural tag-parse, biaffine shared encoder (QUEUED,
+  parked until R3-1 exists): the only addressed-to-cause cascade fix;
+  shares R3-1's encoder. Needs decoder/features/evals scope like dep
+  stage 1 had.
+- R3-6 data with harmonization, not concat (QUEUED): per-construction
+  harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
+  multi-task; naive concat stays rejected. Silver only for a neural
+  student, never perceptron (0-for-6 stands).
