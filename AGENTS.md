@@ -3343,6 +3343,27 @@ per item; linear family stays closed)
   tag+parse sum, score-gating). Stopped-program verdicts stay
   closed (margin coupling, linear joint arc+label, UAS-87).
   NEXT: Stage-0 offline screen (/tmp torch multi-task).
+- R3-5 Stage 0 (SCREEN PASS 2026-10-10, PR #131): multi-task joint
+  (shared R3-1-dim encoder + UPOS head + biaffine arc/label heads
+  with learned root vectors, MST Chu-Liu-Edmonds at eval;
+  `/tmp/opencode/round3/joint_screen.py`, 51 labels, /tmp-only):
+  epoch curve 61→80 UAS over 20 epochs (tag 78→93), tag-weight 2.0
+  phase 21+ (capacity contention: parse gradients 2:1), snapshot
+  average of phase-2 epochs for the settled artifact (averaging
+  helps parse +0.4, costs tag −0.3 — the contention signature).
+  Settled (avg 22,24,26,28) vs banked beam4+averaged-tagger
+  pipeline: dev tag +0.04 / UAS +0.32 / LAS +1.79; test tag −0.08
+  (wobble) / UAS +0.02 / LAS +1.52 — every bar passes (test UAS
+  thin at +5 toks, strictly above holds literally). Gold-hold bar
+  vacuous-by-construction (no pred-tags training anywhere — both
+  heads supervised by gold; the tradeoff cannot occur). PUD
+  77.22/72.25 (+4.0/+6.5 over banked); books all pass (genre
+  0.913, hard 0.889, moby 0.887, sweep 0.909); `flies` holds VERB
+  (better than the standalone BiLSTM's NOUN). Process notes:
+  einsum output-order bug (`btld` vs `btdl`, caught by shape
+  assert); label-MLP 64→32 + batch-32 keeps epochs ~130s;
+  interim evals on a stride slice (Python MST is the bottleneck).
+  NEXT: Stage-1 Rust port (same hand-rolled playbook).
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural
