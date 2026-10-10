@@ -124,7 +124,7 @@ six tokens, one left-to-right pass each stage.
 | Tagger weights | 3.87 MB, zero-dependency pure Rust |
 | Neural weights | 9.6 MB int8 JSON, vendored Tier-1 (`english-pos-neural`, EWT+GUM) |
 | Dep weights | 32 + 3.8 MB lazy Tier-1 pair (gitignored, never vendored) |
-| Joint weights | 7.4 MB int8 JSON, vendored Tier-1 (`english-joint`; f32 regenerable) |
+| Joint weights | 8.1 MB int8 JSON, vendored Tier-1 (`english-joint`; f32 regenerable, EWT+GUM) |
 
 Transformers (~97-98% UPOS vs our 94.33) were measured against
 these lines and evicted: 50–1000× slower, 7–220× larger, plus a
