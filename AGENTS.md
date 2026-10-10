@@ -1060,10 +1060,18 @@ suspect; item 4 proceeds with its own bars.
    coverage vs the 150-token bar. Item 5 CLOSED permanently
    (bars' own terms); no train rebuild. Spin-off noted for item
    6: `which`→PRON is 94% in gold — rule-shaped, not rerank.
-6. Correction re-mining on current weights: the 19-actionable
-   shapes predate the ensemble by three accuracy points; the
-   gate zone has all-new occupants. Same unanimity discipline.
-   Unbuilt.
+6. Correction re-mining on current weights (ROUND 1 DONE 2026-10-09,
+   0 admitted): production-path margins over sweep/genre/hard/moby
+   on median weights — 364 misses (17 actionable at 0<m<2.0,
+   12 ties, 335 confident) vs 269/17 on older weights. All 9 EWT pred-conditioned cells fail: `had`
+   VERB→AUX 392:0 model-right; `whole` n=0; `as`→SCONJ 63:2;
+   `that`→SCONJ (so-prev) 11:0; ADV→ADJ (CC-next) 247:12;
+   `of`→ADP n=0; participle→VERB (be-prev) 117:11; `that`→DET
+   n=4 model-right; `down`-particle precedent-rejected without
+   measuring (P1/P2 ground, oracle-joint). The banked `which`
+   lead dies too (pred-DET 21:0 + pred-PRON 323:0, model right
+   both ways — zero prize). Singles (`tenant`, `Horner`,
+   `pistol`, …) stay below support. Repeat only on new weights.
 7. Soft-target distillation: all five failures used hard
    labels (shared-prior yank); distilling DBERT *distributions*
    preserves teacher uncertainty — different mechanism.
