@@ -3445,3 +3445,15 @@ per item; linear family stays closed)
   holds); front row 94.56/96.32/11.5k/9.6 MB/82 MB + chart bars;
   README/ARCHITECTURE/scope lines. Joint EG re-run stays queued
   (same vehicle, bigger compute).
+- R3-6 SHIP: EG joint (SCREEN DONE 2026-10-10, PR #139 —
+  port/export/gates follow): multi-task training replayed on
+  EWT+GUM (23.8k sents; env-var corpus switch; `--full` flag for
+  interim slices; `--tag-weight 2.0` phase 21+; snapshot average
+  22,24,26,28): settled test 94.79/84.14/80.57, dev 94.65/83.56/
+  79.65 — vs old pipeline +1.1/+3.4/+5.6 test, +1.0/+2.7/+4.8 dev;
+  vs EWT-joint +1.3/+3.4/+4.0 test. PUD 95.34/82.44/78.87
+  (+2.5/+5.2/+7.1 over banked); GUM 96.22/83.89/80.43; books all
+  pass (genre 0.936, hard 0.936, moby 0.934, sweep 0.918);
+  `flies` VERB. Every scope bar passes with margin (gold-hold
+  vacuous as before). NEXT: export + Stage-1-parity port + int8 +
+  full gates + vendor (tagger-EG-ship vehicle).
