@@ -71,6 +71,9 @@ This doc scopes that program. Status: design only.
   dev/test/PUD reproduce torch-avg; sweep 0.9086; `flies` VERB.
 - Stage 2/3 — speed/size (int8 playbook; biaffine matrices quantize
   like the tagger's).
+  SPEED MEASURED 2026-10-10 (PR #134): 6.8k single / 13.2k scoped —
+  42k-parity retired as pre-evidence aspiration (encoder-bound by
+  construction); recalibrated bar batch-viable ≥7.5k scoped PASSES.
 - Stage 4 — admission (front parser table + charts + READMEs,
   Tier-1 weights; keystroke path untouched).
 

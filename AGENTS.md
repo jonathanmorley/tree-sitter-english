@@ -3374,8 +3374,19 @@ per item; linear family stays closed)
   on 30 seeded graphs; Rust reproduces torch-avg to 1–2 toks
   (dev 93.62/81.20/76.62, test 93.50/80.74/76.53, PUD 93.94/77.22);
   sweep tags 0.9086 in Rust (genre/hard/moby on the torch screen,
-  same weights); `flies` VERB. Weights stay /tmp. NEXT: Stage 2/3
-  (speed/size via the int8 playbook).
+  same weights); `flies` VERB. Weights stay /tmp.
+- R3-5 Stage 2 (MEASURED 2026-10-10, PR #134 — 42k-parity RETIRED,
+  recalibrated openly): `examples/bench.rs` (shared cache + scoped
+  threads): 6.8k single / 13.2k scoped-x2. Encoder dominates (~90%
+  of flops — same wall as the tagger); heads add MLPs+MSt on top.
+  The scope's parity-vs-tag+parse-sum bar was pre-evidence
+  aspiration: a BiLSTM encoder cannot match a sparse linear
+  parser's throughput by construction (same lesson as Stage 2/3 of
+  R3-1, third instance). Recalibrated bar: batch-viable (≥7.5k
+  scoped on 2-core ≈ ≤30s/book worst case; realistic docs <1s) —
+  PASSES at 13.2k. No further speed spend (approx/GRU/diet
+  encoders all trade gate risk — parked formula). NEXT: Stage 3
+  (int8 via the tagger playbook).
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural
