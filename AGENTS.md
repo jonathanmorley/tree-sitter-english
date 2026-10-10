@@ -2855,6 +2855,24 @@ suspect; item 4 proceeds with its own bars.
   (not softens) the standing lesson that feature density, not
   the learner, is the gap. Table carries both rerun cells.
 
+## Dep pipeline refresh round 2 (DONE 2026-10-09, averaged tags)
+
+- Same standing practice (no parser/labeler change; gold cells
+  reproduce exactly — 85.90/82.07 dev, 84.99/81.27 test):
+  test UAS 80.68→80.72 (+10 toks), LAS 74.99→75.00 (+3);
+  dev UAS 81.17→80.89 (−70), LAS 75.02→74.85 (−43) — cascade
+  leverage on 12 more greedy dev errors cuts both ways (test
+  +30 tags convert to +10/+3). Cascade: dev −4.7→−5.0, test
+  −4.3 holds. Table cells move only where rounding shows
+  (test 80.7/75.0 unchanged at one decimal).
+- Malt lex2 pred leg rerun (full `bench-parsers.sh`: retrain
+  deterministic — gold legs reproduce to the digit; splice
+  verified 23646 = averaged greedy): 81.09/76.30 → 80.88/76.15
+  (−54/−39). Denser features amplify this tagger's churn both
+  ways — the conversion lesson now cuts both directions (was:
+  Malt converts harder). Same-input lead narrows to +0.16/+1.15.
+  Table carries both rerun cells with the rewritten paragraph.
+
 ## DistilBERT look (MEASURED 2026-10-08, probes deleted)
 
 - Purpose-built model found:
