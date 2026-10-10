@@ -713,3 +713,63 @@ fn be_aux_fixes_infinitive_be() {
         Tag::Verb
     );
 }
+
+#[test]
+fn oov_nn_fixes_unseen_proper_name() {
+    // `Zanzibar` unseen in EWT train, nearest train-vocab neighbor
+    // reads PROPN: NOUN below the gate -> PROPN.
+    assert_eq!(
+        run(
+            &["sailed", "to", "Zanzibar"],
+            &[(Tag::Verb, 9.0), (Tag::Part, 9.0), (Tag::Noun, 1.0)],
+            "oov-nn",
+        )[2],
+        Tag::Propn
+    );
+    // In-vocab words abstain (the OOV gate): `the` never consults.
+    assert_eq!(
+        run(
+            &["the", "ship"],
+            &[(Tag::Det, 1.0), (Tag::Noun, 9.0)],
+            "oov-nn",
+        )[0],
+        Tag::Det
+    );
+    // Uncovered OOV (no GloVe row) abstains.
+    assert_eq!(
+        run(
+            &["pneumonoultramicroscopicsilicovolcanoconiosis", "spreads"],
+            &[(Tag::Noun, 1.0), (Tag::Verb, 9.0)],
+            "oov-nn",
+        )[0],
+        Tag::Noun
+    );
+    // Agreement is a no-op: `midnight` already reads NOUN (its NN tag).
+    assert_eq!(
+        run(
+            &["at", "midnight"],
+            &[(Tag::Adp, 9.0), (Tag::Noun, 1.0)],
+            "oov-nn",
+        )[1],
+        Tag::Noun
+    );
+    // Above-gate margin abstains even for OOV.
+    assert_eq!(
+        run(
+            &["to", "Zanzibar"],
+            &[(Tag::Part, 9.0), (Tag::Noun, 5.0)],
+            "oov-nn",
+        )[1],
+        Tag::Noun
+    );
+    // `-ing` participles abstain (barrier analysis the vote lacks:
+    // sweep `plodding` VERB→ADJ break plus measured EWT damage).
+    assert_eq!(
+        run(
+            &["came", "plodding"],
+            &[(Tag::Verb, 9.0), (Tag::Verb, 1.0)],
+            "oov-nn",
+        )[1],
+        Tag::Verb
+    );
+}

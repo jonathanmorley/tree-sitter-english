@@ -3280,9 +3280,34 @@ per item; linear family stays closed)
   below shape-precision (color-adj lesson, third instance).
   The BiLSTM's 78% OOV (contextual) stands as the OOV answer;
   no keystroke-path char model without a context mechanism.
-- R3-3 frozen pretrained embeddings as rare-word backoff (QUEUED):
-  dense fastText/GloVe-50 quantized Tier-1 table (like verbs.txt),
-  not sparse clusters (0-for-1 stands). Offline join probe on EWT vocab.
+- R3-3 frozen embeddings as rare-word backoff (ADMITTED 2026-10-10,
+  PR #128, 18-for-32): dense GloVe-50 NN-majority vote (Public Domain
+  vectors; Brown-cluster 0-for-1 stands — instance-based, no shared
+  prior). Probes (/tmp-only): NN==gold 65% on glove-covered dev OOV;
+  fire-sim net +21/+24 dev, +14/+22 test at τ=2.0/5.0 — first
+  consistently-positive backoff. Sizing: int8 targets go
+  net-NEGATIVE on test (−19/−34, quant noise reshuffles cosine
+  order) → f32 stays; float16 holds (+14/+12); query universe top-60k
+  holds (+14/+12 at 61%/59% OOV coverage, abstain elsewhere).
+  Ships: `lexicon/nn-{words.txt,vec.bin(f16-LE),targets.txt}` (60k
+  rows, 6.0 MB blob, `scripts/nn-vectors.py` kept as infrastructure
+  with md5s) + `train-vocab.txt` OOV gate + `lexicon.rs` LazyLock
+  loader (parses once on first gated fire, never fast path) + rule
+  `oov-nn` (τ=2.0, LAST in RULES). Along the way: bare-`#` glove
+  tokens (`#`, `#e`) broke the `#`-comment filter and misaligned
+  rows — comment rule is now `# `+space everywhere (also fixed
+  `train-vocab` hashtags); f16 needs manual bits (still unstable).
+  Sweep break adjudicated HONESTLY: `plodding` gold is VERB
+  (progressive complement, same as `following`/`falling`), so the
+  VERB→ADJ flip was a real break → principled `-ing` guard
+  (participles need barriers the vote lacks; 6 forgone fixes
+  documented, other guards unmotivated). Gates: unit fire + 4
+  abstains; dev +1 / test +4 (thin but green both splits);
+  sweep zero-breaks restored (production 1898, rule fixes 4);
+  genre/hard/moby/flies green; chunk/lint downstream green.
+  Cost noted: +6.0 MB uncompressed in every `english-pos` binary
+  (wasm delta unmeasured) — accepted for the first positive
+  backoff; feature-gating is the queued fallback if size bites.
 - R3-4 stacked heterogeneous votes (QUEUED): tiny stacker over
   (perceptron, RDR, margins) learning per-shape trust; RDR wins
   VERB→NOUN/ADJ→NOUN/ADP→SCONJ where we lose and vice versa.
