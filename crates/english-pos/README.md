@@ -14,24 +14,23 @@ parse). Weights live in `weights/upos.json`,
 trained by `crates/english-pos-train` on UD English-EWT (EWT:
 UD_English-EWT contributors, CC BY-SA 4.0,
 <https://github.com/UniversalDependencies/UD_English-EWT>):
-dev 93.63%, test 94.11% greedy (1.87 MB with the tagdict table,
-whole-number weights serialize as integers). Weights are the
-entrywise median of fifteen perceptrons trained on
-deterministically shuffled train orders (LCG seeds 1–15,
-`english-pos-train` example `ensemble` for members,
-`scripts/average-members.py --median` for the combination —
-the committed recipe, md5-identical reruns); median ignores
-outlier members the way a vote does, in one map (vote-decode
-measured first at +115/+69 over the mean with identical test
-score to the median — the map ships, the 30 MB vote doesn't).
-Naturally sparse (symmetric disagreements cancel exactly),
-so no prune step;
+dev 93.58%, test 94.23% greedy (3.87 MB with the tagdict table).
+Weights are a single Collins-averaged perceptron trained on
+deterministically ordered EWT train (iters=20, min-count=1,
+`--averaged`: timestamp averaging over token steps, lazy math
+pinned by the `item8_probe_tests` toy proof — md5-identical
+retrains). Averaging settles the recency bias that plain
+final-iteration weights bake in (and that the 15-shuffle
+ensemble shuffled away): one averaged run matches the median
+of fifteen (dev 93.63 / test 94.11 greedy). The dense averaged
+map is fractional, so whole-number integer serialization does
+not apply;
 EWT-only, no oracle data. Production decodes
 through a width-2 beam re-decode plus seventeen gated correction
 rules (`correction.rs`: lexicon-backed, relativizer shapes,
 participle repair — each admitted with EWT-majority and gate
 deltas, 17-for-31 with rejections recorded): dev 93.67%,
-test 94.13%. Tagger weights embed a 14,563-word tagdict (words
+test 94.33%. Tagger weights embed a 14,538-word tagdict (words
 seen under one tag in training) for the inference fast path —
 byte-identical decode is measured per weights/rules change,
 never assumed (see the train README probe record).

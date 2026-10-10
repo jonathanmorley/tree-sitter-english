@@ -1076,18 +1076,37 @@ suspect; item 4 proceeds with its own bars.
    labels (shared-prior yank); distilling DBERT *distributions*
    preserves teacher uncertainty — different mechanism.
    Needs posteriors + soft-update trainer. Unbuilt.
-8. Collins-averaging pilot re-exam: 33%-vs-88% smells broken,
-   not settled — and decided "no averaging" for the tagger
-   while the parser measured +7.1 for it. Cheap redo.
-   Unbuilt.
+8. Collins averaging (ADMITTED 2026-10-09 — overturns the pilot):
+   faithful timestamp averaging over token steps (`train_averaged`,
+   `--averaged`; lazy math pinned by a naive-vs-lazy toy proof that
+   caught one real off-by-one in the TEST oracle mid-build).
+   The 33%-vs-88% pilot was an implementation bug, never
+   reproduced: correct single-run averaging matches the 15-shuffle
+   ensemble (greedy dev 93.58 / test 94.23, +400/+440 over plain;
+   deterministic md5-verified retrains). Production dev 93.67
+   (−1, symmetric 220/221 churn) / test 94.33 (+49, spread flips,
+   X background, no convention damage); PUD +61 (cross-domain
+   holds — anti-drift); books mixed within bars (hard +16toks,
+   chunk +22toks, sweep greedy +2 / prod −7, moby +1 / genre −2);
+   lint 2 better / 3 worse cells, every written bar green (49/49);
+   `flies` holds; Moby parity 8881/8881; 3.87 MB Tier-1.
+   Committed weights md5 `1cf5ca79…` (supersedes median-15 the
+   day after it shipped: +49 test / +61 PUD outweigh the
+   within-bar churn, documented). README averaging theory
+   rewritten; tagdict count corrected 14,563 → 14,538 (measured
+   identical on both files — stale drift).
 9. PA/MIRA updates: different online rule, same features.
    Small code. Unbuilt.
 10. Punctuation-context features: commas delimit our hardest
     clauses, but hidden punctuation is excluded from tagger
     input by construction — unreachable without wire
     plumbing. Unbuilt (blocked on the plumbing, not evidence).
-11. Iters 25–30 / min-count 0: trivial grid around (20, 1).
-    Likely flat, nearly free. Unbuilt.
+11. Iters 25–30 / min-count 0 (MEASURED AND CLOSED 2026-10-09):
+    iters=25 dev 91.41 / test 91.99, iters=30 91.72 / 92.35 (both
+    worse than 20's 91.99 / 92.48 — plain oscillates past 20);
+    min-count=0 bit-identical to min-count=1 (singletons add
+    nothing). (20, 1) stands; the oscillation is the other half
+    of the averaging case for item 8.
 12. Bootstrap diversity: members see ~63% unique sentences
     each (vs full-data shuffles). Weak prior (stable learner
     + less data each + K-curve flat). Unbuilt, lowest.
@@ -1098,7 +1117,16 @@ suspect; item 4 proceeds with its own bars.
     shape). Nothing in current weights supports global search;
     no decoder extracts what training never put in. Needs its
     own bars (dev/test + evals + `flies` + determinism) before
-    work. Unbuilt.
+    work. Unbuilt (strengthened by item 8: averaging validated
+    for the tagger, and LaSO carries averaging inside).
+14. Ensemble-of-averaged (QUEUED 2026-10-09): 15 averaged members
+    on shuffled orders, combined (mean or median — median won
+    the plain round). Stacks the two variance reducers (within-run
+    settling × across-order diversity) that each gained ~+400
+    alone. Cheap to try (15 x ~4 s runs + combine). Bars: admit
+    iff beats averaged-single production on dev AND test, evals
+    neutral-or-better, `flies` holds, determinism md5-verified.
+    Unbuilt.
 
 - Architecture assessment (AGREED 2026-09-27): layering is sound —
   deterministic incremental segmentation → statistical labels →
