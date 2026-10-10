@@ -86,6 +86,10 @@ This doc scopes that program. Status: design only.
   (`QJointModel` size / `JointModel` speed). Front parser row
   (80.7/76.5/7.4 MB/7.0k/66 MB §, EWT-dev bench basis stated) +
   joint UAS/LAS chart bars.
+  SUPERSEDED 2026-10-10 by the EG ship (PR #140): weights now the
+  EG int8 artifact (8.1 MB; test 84.1/80.5); activation quant
+  removed (wrapper over f32 path — bought no speed, cost 16% arc
+  churn); front row 84.1/80.5/8.1 MB/13.0k/96 MB.
 
 ## 5. Explicitly out
 

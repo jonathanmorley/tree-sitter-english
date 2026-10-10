@@ -3455,5 +3455,21 @@ per item; linear family stays closed)
   (+2.5/+5.2/+7.1 over banked); GUM 96.22/83.89/80.43; books all
   pass (genre 0.936, hard 0.936, moby 0.934, sweep 0.918);
   `flies` VERB. Every scope bar passes with margin (gold-hold
-  vacuous as before). NEXT: export + Stage-1-parity port + int8 +
-  full gates + vendor (tagger-EG-ship vehicle).
+  vacuous as before).
+- R3-6 SHIP: EG joint (DONE 2026-10-10, PR #140): export
+  (`export_joint.py` + env corpus switch; f32 43 MB, i8 8.1 MB
+  compact separators) + parity 0/0/0 + full gates on the EG
+  artifact — dev 94.61/83.58/79.64, test 94.78/84.15/80.54, PUD
+  95.31/82.41/78.87, sweep i8 0.9197; speed 13.0k scoped (= f32
+  path — see below), RSS 96 MB. Two load-bearing corrections
+  along the way: (1) the Stage-3 preview numbers were misattributed
+  (EG-i8 compared against EWT-f32 — the parity gate caught it, not
+  staring); verified current: weight-quant dev ±12 / test ±4 toks.
+  (2) Activation quantization is OUT (16% arc churn on EG vs ~2%
+  EWT — heavy-tailed joint-encoder activations; bought no speed
+  either): `QJointModel` is now a dequant-at-load wrapper over the
+  exact f32 path (deleted ~300 lines incl. `QDir`/mixed dots).
+  Vendored `joint-i8.json` replaced (8.1 MB); quant gates on
+  vendored (sweep always, parity band /tmp-gated); front parser
+  row 84.1/80.5/8.1 MB/13.0k/96 MB + chart bars; README/scope
+  lines. Round 3 fully closed.

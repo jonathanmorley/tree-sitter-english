@@ -10,10 +10,18 @@
 
 use english_joint::QJointModel;
 
-const VENDORED: &str = include_str!("../weights/joint-i8.json");
-
 #[test]
 fn joint_quant_parity_band() {
+    // /tmp-vs-/tmp by design (the sweep gate below is the vendored
+    // one): the parity vectors embed EWT text, so this gate can never
+    // run vendored-only anyway.
+    let weights = match std::fs::read_to_string("/tmp/opencode/round3/joint-i8.json") {
+        Ok(w) => w,
+        Err(_) => {
+            eprintln!("skip: /tmp joint i8 weights absent");
+            return;
+        }
+    };
     let vectors = match std::fs::read_to_string("/tmp/opencode/round3/joint-parity.json") {
         Ok(v) => v,
         Err(_) => {
@@ -21,7 +29,7 @@ fn joint_quant_parity_band() {
             return;
         }
     };
-    let model = QJointModel::from_json(VENDORED).expect("i8 weights load");
+    let model = QJointModel::from_json(&weights).expect("i8 weights load");
     let rows: Vec<serde_json::Value> = serde_json::from_str(&vectors).expect("vectors parse");
     let (mut dt, mut dh, mut dr) = (0, 0, 0);
     for r in &rows {

@@ -157,13 +157,13 @@ with forensics.</p>
 </div>
 <div>
 <h4>Dependencies: gold vs pipeline</h4>
-<svg viewBox="0 0 440 228" class="bars" role="img" aria-label="Dependencies: UAS gold 85.9, UAS pipeline 81.2, LAS gold 82.1, LAS pipeline 75.0, joint UAS 80.7, joint LAS 76.5">
+<svg viewBox="0 0 440 228" class="bars" role="img" aria-label="Dependencies: UAS gold 85.9, UAS pipeline 81.2, LAS gold 82.1, LAS pipeline 75.0, joint UAS 84.1, joint LAS 80.5">
 <text x="0" y="18">UAS gold 85.9</text><rect x="150" y="5" width="279" height="18" rx="3"><title>UAS with gold tags 85.9</title></rect>
 <text x="0" y="48">UAS pipe 81.2</text><rect x="150" y="35" width="216" height="18" rx="3" class="soft"><title>UAS with tagger tags 81.2 — the cascade tax, narrowed by the ensemble tagger</title></rect>
 <text x="0" y="78">LAS gold 82.1</text><rect x="150" y="65" width="228" height="18" rx="3" class="alt"><title>LAS with gold tags 82.1</title></rect>
 <text x="0" y="108">LAS pipe 75.0</text><rect x="150" y="95" width="134" height="18" rx="3" class="alt"><title>LAS with tagger tags 75.0</title></rect>
-<text x="0" y="138">joint UAS 80.7</text><rect x="150" y="125" width="209" height="18" rx="3"><title>joint BiLSTM-i8 UAS 80.7 — own tags, no cascade</title></rect>
-<text x="0" y="168">joint LAS 76.5</text><rect x="150" y="155" width="153" height="18" rx="3" class="alt"><title>joint BiLSTM-i8 LAS 76.5 — own tags, no cascade</title></rect>
+<text x="0" y="138">joint UAS 84.1</text><rect x="150" y="125" width="254" height="18" rx="3"><title>joint BiLSTM-i8 UAS 84.1 — own tags, no cascade</title></rect>
+<text x="0" y="168">joint LAS 80.5</text><rect x="150" y="155" width="206" height="18" rx="3" class="alt"><title>joint BiLSTM-i8 LAS 80.5 — own tags, no cascade</title></rect>
 <text x="150" y="214" class="t2">axis 65–86 · cascade is structural (joint program stopped)</text>
 </svg>
 </div>
@@ -229,7 +229,7 @@ WSJ-trained (out of domain); detail is in the shootout table above.</p>
 <tr><td>Ours (beam4, v5)</td><td>gold</td><td class="num">85.0</td><td class="num">81.3</td><td class="num">31 + 3.8 MB</td><td class="num">—</td><td class="num">—</td></tr>
 <tr><td>MaltParser arc-eager liblinear, FORM+UPOS</td><td>greedy, ours (94.23)</td><td class="num">80.88</td><td class="num">76.15</td><td class="num">3.8 MB</td><td class="num">18k</td><td class="num">204 MB</td></tr>
 <tr><td>Ours (beam4, v5)</td><td>greedy (94.23)</td><td class="num">80.7</td><td class="num">75.0</td><td class="num">31 + 3.8 MB</td><td class="num">42k ‡</td><td class="num">118 MB</td></tr>
-<tr><td>Ours joint (BiLSTM i8)</td><td>own (93.51)</td><td class="num">80.7</td><td class="num">76.5</td><td class="num">7.4 MB</td><td class="num">7.0k §</td><td class="num">66 MB §</td></tr>
+<tr><td>Ours joint (BiLSTM i8)</td><td>own (94.78)</td><td class="num">84.1</td><td class="num">80.5</td><td class="num">8.1 MB</td><td class="num">13.0k §</td><td class="num">96 MB §</td></tr>
 </table>
 <p class="fine">Rerun it: <code>EWT=/path/to/ewt WORK=/tmp/malt
 scripts/bench-parsers.sh</code> trains both Malt models (BSD jar, /tmp only,
@@ -264,11 +264,11 @@ despite beam4-vs-greedy, while Malt's single 3.8 MB model covers both
 stages ours splits across 31 + 3.8 MB. ‡ Malt-full speed unmeasured
 (Moby has no gold feats); UDPipe size/speed never run locally.
 § Joint speed/RSS run on the EWT-dev bench binary (tags+parse
-jointly, 7.0k tok/s scoped×2, 66 MB peak) — a different basis from
+jointly, 13.0k tok/s scoped×2, 96 MB peak) — a different basis from
 the Moby-body rows above, stated not compared. The joint row reads
-own tags (93.51) by construction: there is no gold-tag variant,
+own tags (94.78) by construction: there is no gold-tag variant,
 so the gold-hold bar is vacuous and the pipeline comparison is the
-whole story (UAS 80.7 vs 80.7 tie, LAS 76.5 vs 75.0 lead).</p>
+whole story (UAS 84.1 vs 80.7, LAS 80.5 vs 75.0).</p>
 </section>
 
 </main>
