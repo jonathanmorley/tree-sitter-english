@@ -15,17 +15,30 @@
 //! (beam re-decode + gated correction rules, as `tag_sentence`
 //! wires them) instead of greedy `Model::tag`. The flags compose;
 //! accuracy work uses both.
+//!
+//! With `--margins`, each line gains the best-minus-runner-up margin
+//! (`tok TAG margin`), for forensics joins (OOV × margin censuses).
 
 use english_pos::{Model, RULES, apply_rules};
 
-fn decode(model: &Model, tokens: &[&str], production: bool) {
+fn decode(model: &Model, tokens: &[&str], production: bool, margins: bool) {
     if production {
         let (mut tagged, lower) = model.tag_beam_margins_lowered(tokens);
         if !RULES.is_empty() {
             apply_rules(&mut tagged, RULES, &lower);
         }
-        for ((tag, _), tok) in tagged.into_iter().zip(tokens) {
-            println!("{tok}\t{tag}");
+        for ((tag, m), tok) in tagged.into_iter().zip(tokens) {
+            if margins {
+                println!("{tok}\t{tag}\t{m:.3}");
+            } else {
+                println!("{tok}\t{tag}");
+            }
+        }
+        return;
+    }
+    if margins {
+        for (tok, (tag, m)) in tokens.iter().zip(model.tag_margins(tokens)) {
+            println!("{tok}\t{tag}\t{m:.3}");
         }
         return;
     }
@@ -38,10 +51,11 @@ fn main() {
     let mut args = std::env::args().skip(1);
     let path = args
         .next()
-        .expect("usage: tag_tokens <file> [--sentences] [--production]");
+        .expect("usage: tag_tokens <file> [--sentences] [--production] [--margins]");
     let flags: Vec<String> = args.collect();
     let per_sent = flags.iter().any(|a| a == "--sentences");
     let production = flags.iter().any(|a| a == "--production");
+    let margins = flags.iter().any(|a| a == "--margins");
     let text = std::fs::read_to_string(&path).expect("failed to read input");
     let model =
         Model::from_json(include_str!("../weights/upos.json")).expect("invalid weights JSON");
@@ -51,11 +65,11 @@ fn main() {
             if tokens.is_empty() {
                 continue;
             }
-            decode(&model, &tokens, production);
+            decode(&model, &tokens, production, margins);
             println!();
         }
         return;
     }
     let tokens: Vec<&str> = text.split_whitespace().collect();
-    decode(&model, &tokens, production);
+    decode(&model, &tokens, production, margins);
 }
