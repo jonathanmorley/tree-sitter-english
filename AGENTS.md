@@ -3408,7 +3408,22 @@ per item; linear family stays closed)
   `JointModel`). Front parser row + joint chart bars + § basis
   footnote (66 MB bench-binary basis); README + scope lines.
   R3-5 closes; revisit sweep on material change.
-- R3-6 data with harmonization, not concat (QUEUED): per-construction
-  harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
-  multi-task; naive concat stays rejected. Silver only for a neural
-  student, never perceptron (0-for-6 stands).
+- R3-6 data with harmonization, not concat (SCREEN PASS 2026-10-10,
+  PR #137 — with the key finding that harmonization is UNNECESSARY):
+  divergence census first (44 LinES + 74 GUM disagreeing forms):
+  nearly all top hits are genuine convention splits on the hardest
+  closed classes (have/had AUX, as/when SCONJ, up/out/down/off
+  particles, more/much ADJ/ADV, that SCONJ/PRON, 's PART/AUX) —
+  unharmonizable without taking sides (taking sides IS the concat
+  failure); the clear-bug tail (honorifics, `united`) is ~100-300
+  toks, below a retrain cycle's noise floor. Screen: BiLSTM on
+  EWT+GUM-train RAW concat (405k toks, no harmonization, no
+  treebank embeddings; `/tmp/opencode/round3/eg/`, env-var corpus
+  switch in the screen script): epoch-10 plateau — EWT dev 94.48
+  (+0.90), test 94.58 (+0.35), GUM 95.85 (+2.16), PUD 95.06 (+1.48),
+  LinES 92.81 (+0.73 over EWT-only). The perceptron lost 0.5 on the
+  same concat; capacity absorbs convention divergence (predicted
+  direction). GloVe-6B fetched for R3-3 (862 MB, resumed slices;
+  50d extracted, zip deleted after). SHIP VEHICLE (follow-up, full
+  gates like R3-1 Stages 1–4): re-run tagger + joint training on
+  EWT+GUM, int8, re-gate, vendor.
