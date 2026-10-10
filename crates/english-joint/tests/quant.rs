@@ -1,19 +1,19 @@
 //! Stage-3 quant gates for the joint path: int8 artifact vs the
 //! torch-f32 parity sample (pre-set smoke band ≤ 20 combined diffs —
 //! decisive gates are dev/test/PUD + sweep) and the sweep tag bar.
-//! Weights/vectors /tmp-only.
+//!
+//! The i8 artifact is vendored (`weights/joint-i8.json`, single-digit
+//! rule) so the sweep gate runs with no skips; the parity band still
+//! needs /tmp vectors (EWT text) and skips without them. The f32
+//! reference stays regenerable (`export_joint.py` + screen recipe,
+//! dep-weights precedent) — the consumer chooses the path.
 
 use english_joint::QJointModel;
 
+const VENDORED: &str = include_str!("../weights/joint-i8.json");
+
 #[test]
 fn joint_quant_parity_band() {
-    let weights = match std::fs::read_to_string("/tmp/opencode/round3/joint-i8.json") {
-        Ok(w) => w,
-        Err(_) => {
-            eprintln!("skip: /tmp joint i8 weights absent");
-            return;
-        }
-    };
     let vectors = match std::fs::read_to_string("/tmp/opencode/round3/joint-parity.json") {
         Ok(v) => v,
         Err(_) => {
@@ -21,7 +21,7 @@ fn joint_quant_parity_band() {
             return;
         }
     };
-    let model = QJointModel::from_json(&weights).expect("i8 weights load");
+    let model = QJointModel::from_json(VENDORED).expect("i8 weights load");
     let rows: Vec<serde_json::Value> = serde_json::from_str(&vectors).expect("vectors parse");
     let (mut dt, mut dh, mut dr) = (0, 0, 0);
     for r in &rows {

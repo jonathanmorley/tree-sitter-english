@@ -118,10 +118,12 @@ six tokens, one left-to-right pass each stage.
 | Tag pass | ~87 ms (~9 µs/sentence) |
 | One-word-edit keystroke path | ~40 ms (reparse + retag) |
 | Dep parse (beam4) | ~4 s/book — batch/save-pass, never keystroke |
+| Joint parse (BiLSTM i8) | ~17 s/book scoped×2 — batch alternative, no cascade |
 | Peak memory | 58 MB |
 | Tagger weights | 3.87 MB, zero-dependency pure Rust |
 | Neural weights | 6.7 MB int8 JSON, vendored Tier-1 (`english-pos-neural`) |
 | Dep weights | 32 + 3.8 MB lazy Tier-1 pair (gitignored, never vendored) |
+| Joint weights | 7.4 MB int8 JSON, vendored Tier-1 (`english-joint`; f32 regenerable) |
 
 Transformers (~97-98% UPOS vs our 94.33) were measured against
 these lines and evicted: 50–1000× slower, 7–220× larger, plus a

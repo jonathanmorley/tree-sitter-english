@@ -3400,7 +3400,14 @@ per item; linear family stays closed)
   PMADD — the tagger physics repeating); 7.0k sits inside run
   noise of the 7.5k bar. Standing shape mirrors the tagger: i8 =
   size artifact (vendored), f32 = speed reference (13.2k, /tmp).
-  NEXT: Stage 4 admission (vendor i8 + front parser table).
+- R3-5 Stage 4 ADMITTED 2026-10-10 (PR #136, both artifacts per
+  owner pick): `weights/joint-i8.json` vendored (7.4 MB);
+  quant gates on vendored (sweep always-run, parity band
+  /tmp-gated); f32 regenerable via export recipe (dep precedent)
+  — consumer chooses size/speed in code (`QJointModel` /
+  `JointModel`). Front parser row + joint chart bars + § basis
+  footnote (66 MB bench-binary basis); README + scope lines.
+  R3-5 closes; revisit sweep on material change.
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural

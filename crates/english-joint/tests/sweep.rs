@@ -6,6 +6,8 @@
 
 use english_joint::{JointModel, QJointModel};
 
+const VENDORED_I8: &str = include_str!("../weights/joint-i8.json");
+
 #[path = "../../english-pos-neural/tests/tables/sweep.rs"]
 mod tables;
 
@@ -36,14 +38,7 @@ fn sweep_joint_tags_meet_bar() {
 
 #[test]
 fn sweep_joint_quant_tags_meet_bar() {
-    let weights = match std::fs::read_to_string("/tmp/opencode/round3/joint-i8.json") {
-        Ok(w) => w,
-        Err(_) => {
-            eprintln!("skip: /tmp joint i8 weights absent");
-            return;
-        }
-    };
-    let model = QJointModel::from_json(&weights).expect("i8 weights load");
+    let model = QJointModel::from_json(VENDORED_I8).expect("i8 weights load");
     let mut ok = 0usize;
     let mut tot = 0usize;
     for (_, _, words, gold) in tables::SENTENCES {

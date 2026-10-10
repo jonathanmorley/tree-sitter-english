@@ -79,6 +79,13 @@ This doc scopes that program. Status: design only.
   tie recorded (−1 inside arithmetic noise + run-wobble).
 - Stage 4 — admission (front parser table + charts + READMEs,
   Tier-1 weights; keystroke path untouched).
+  ADMITTED 2026-10-10 (PR #136, both artifacts per owner pick):
+  `weights/joint-i8.json` vendored (7.4 MB); quant gates on
+  vendored (sweep always, parity band /tmp-gated); f32 stays
+  regenerable (export recipe, dep precedent) — consumer chooses
+  (`QJointModel` size / `JointModel` speed). Front parser row
+  (80.7/76.5/7.4 MB/7.0k/66 MB §, EWT-dev bench basis stated) +
+  joint UAS/LAS chart bars.
 
 ## 5. Explicitly out
 
