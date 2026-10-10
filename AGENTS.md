@@ -3308,10 +3308,32 @@ per item; linear family stays closed)
   Cost noted: +6.0 MB uncompressed in every `english-pos` binary
   (wasm delta unmeasured) — accepted for the first positive
   backoff; feature-gating is the queued fallback if size bites.
-- R3-4 stacked heterogeneous votes (QUEUED): tiny stacker over
-  (perceptron, RDR, margins) learning per-shape trust; RDR wins
-  VERB→NOUN/ADJ→NOUN/ADP→SCONJ where we lose and vice versa.
-  Offline dev probe, no retrain — drift-immune by construction if gated.
+- R3-4 stacked heterogeneous votes (MEASURED AND REJECTED
+  2026-10-10, PR #129 — the mirror verdict repeated with a third
+  system): perceptron-prod / neural-i8-greedy / RDRPOSTagger-UPOS-EWT
+  (repo checkout + vendored-tree model, /tmp-only; dev+test+sweep
+  dumps via `tag_tokens --margins`, neural dump example (deleted
+  after use), and the harness RDR driver). EWT all positive both
+  splits: either-bounds +2.6–2.9pt; majority vote +172 dev / +240
+  test; gated selectors A (perc + trust-N where perc torn, shippable
+  as a rule) +71/+59 and B (nn + trust-P where nn torn, shippable
+  in neural production) +199/+202 (test 94.94!). Sweep kills all
+  three: A 16 fixes / 13 breaks, B 59/35, vote 48/23 — zero-breaks
+  gate fails everywhere. Fix/brk shapes scatter identically both
+  directions (PROPN/NOUN both ways top both lists) — no narrowing,
+  same unseparability as mirror. Also recorded: production-path
+  hygiene note — trainer `--correct` uses greedy margins while
+  `tag_tokens --production` (the true shipped path) uses beam
+  margins; both deterministic, different gates, don't mix numbers.
+  Mechanism: members err confidently on DIFFERENT book
+  constructions (prep-chains, that-gaps, attr-adjectives,
+  participles); any unselected combination flips book sentences
+  the base gets right. The prize is real but unreachable by local
+  selectors — needs gap detection / right-tag context
+  (blind-to-right +1.79pt) or a trained stacker with book-domain
+  data (drift risk per the distillation record — queued, not
+  started, needs its own bars). RDR-port stays parked (vote would
+  need it and still fails sweep).
 - R3-5 joint neural tag-parse, biaffine shared encoder (QUEUED,
   parked until R3-1 exists): the only addressed-to-cause cascade fix;
   shares R3-1's encoder. Needs decoder/features/evals scope like dep
