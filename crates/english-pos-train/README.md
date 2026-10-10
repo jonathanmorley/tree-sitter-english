@@ -388,17 +388,19 @@ an assert that once caught a real contamination (oracle-pool
 members mixed into an EWT averaging set: same-pool tagdicts
 cannot differ, so the failure proved mislabeled inputs, and
 mtime forensics confirmed the overwrite order).
-Committed (2026-10-09 evening): entrywise MEDIAN of K=15
-(seeds 1–15), iters=20, min-count=1, EWT train only — no
-oracle data, no prune step (medians cancel symmetric
-disagreement exactly, so the map is naturally sparse at
-1.87 MB). Recipe: members via `ensemble`, combination via
-`scripts/average-members.py --median` (both md5-verified
-end to end). Median ignores outlier members the way a vote
-does: per-token-majority vote over the 15 greedy decodes
-measured +115/+69 over the mean with identical test score
-to the median (23558/23616 vs 23545/23616) — the map ships,
-the 30 MB vote does not.
+Committed (2026-10-09 night): Collins-averaged SINGLE, iters=20,
+min-count=1, fixed order, EWT train only — `--averaged`
+(timestamp averaging over token steps; lazy math pinned by the
+`item8_probe_tests` toy proof against naive snapshot averaging;
+deterministic — md5-identical retrains with identical scores).
+Recipe: one training run (~4 s). Overturns the 300-sentence pilot
+(averaged 33% vs plain 88% — pilot implementation bug, never
+reproduced; correct averaging matches the ensemble, settling the
+same recency bias shuffling averages away). Superseded the same
+evening: entrywise median of K=15 (shipped hours earlier:
+93.67/94.13 prod, md5 `ca29d68c…`, 1.87 MB) — test +49 and PUD
++61 outweigh dev −1, sweep production −7, and 3 within-bar lint
+cells (all documented below; every written bar green).
 Yield curve by K (greedy; members alone +59…+195): K=1 91.99 /
 K=3 93.22 / K=9 93.63 / K=15-mean 93.70 / K=15-median 93.63
 dev (test 92.48 / 93.74 / 94.14 / 94.10 / 94.11) — the median
@@ -416,22 +418,29 @@ combined out is real, not identity).
 | entrywise mean of 3 | 23443 (93.22%, +310) | 23522 (93.74%, +316) |
 | entrywise mean of 15 | 23563 (93.70%, +430) | 23622 (94.13%, +416) |
 | entrywise median of 15 | 23545 (93.63%, +412) | 23616 (94.11%, +410) |
+| Collins-averaged single | 23533 (93.58%, +400) | 23646 (94.23%, +440) |
 
-Production (beam-2 + 17 rules) for committed median: dev
-23557 (93.67%), test 23622 (94.13%, coarse 95.99); PUD test
-19759/21180 (93.29%). Books: sweep greedy 1896 / production
-1902 (+8/+15 over mean-shipped), hard 0.9064, Moby/genre miss
-counts 21/14, chunk sent/token mixed within noise, lint bars
-all hold with five TP/FP improvements over mean-shipped
-(coordscope +1TP/−1FP, passive +1TP, vague −1FP, weasel +1TP,
-nominal +1TP; hard +6toks too — nothing moves backwards). Flip census vs committed:
-624 fixes / 292 breaks, no concentration, X at background
-rate. Median weights md5
-`ca29d68ca32d2febdc8257c9bcfc0668` — the committed file
-(1.87 MB); Moby batch/stream parity 8881/8881; site
-numbers/table rebuilt from them (94.13/95.99, wasm bundle
-2.4 MB). Queued, not started: oracle-joint on top of the
-ensemble protocol (one variable at a time).
+Production (beam-2 + 17 rules) for committed averaged: dev
+23556 (93.67%, coarse 95.61), test 23671 (94.33%, coarse 96.23);
+PUD test 19820/21180 (93.58%, +61 — cross-domain holds, the
+opposite of every rejected drift case). Books: sweep greedy 1898
+(+2) / production 1895 (−7, bar 0.87 holds at 0.9115), hard
+0.9167 (+16 toks), Moby/genre miss counts 22/12 (+1/−2),
+chunk tokens +4/+1/+17 (sweep sent −1, all tripwires hold), lint
+mixed within bars (hedge +1TP, passive +1TP better;
+coordscope +3FP, vague +1FP, weasel +1FN worse — precision bar
+0.75 and all other bars green). Flip census vs median
+production: test 275 fixes / 226 breaks, dev 220/221, spread
+both ways (NOUN↔PROPN churn leads both lists), X at background
+rate, no convention damage (no particle-class spike — the
+oracle-joint failure does not repeat). Averaged weights md5
+`1cf5ca79554bee862c408b499dd014e4` — the committed file
+(3.87 MB; the dense averaged map is fractional, so the integer
+serde optimization dies — Tier-1 size holds regardless);
+Moby batch/stream parity 8881/8881 on averaged weights; site
+numbers/table rebuilt from them (94.33/96.23).
+Queued, not started: ensemble-of-averaged (15 averaged members
+combined — needs its own bars; one variable at a time).
 
 ## Cross-genre standing (GUM test, gold)
 
@@ -512,10 +521,21 @@ reproducibility for that work.
 
 Notes:
 
-- Plain (unaveraged) perceptron, deliberately: on fast-converging
-  data, Collins averaging shrinks settled weights into noise while
-  rarely-updated rare patterns dominate decoding (measured 33% vs
-  88% dev on a 300-sentence pilot). Final-iteration weights win here.
+- Collins-averaged training, deliberately (`--averaged`, the
+  committed protocol): timestamp averaging over token steps settles
+  the recency bias that plain final-iteration weights bake in
+  (the iters-25/30 grid below proves plain oscillates past 20).
+  The lazy math is pinned by the `item8_probe_tests` toy proof
+  against naive snapshot averaging. The old 300-sentence pilot
+  (averaged 33% vs plain 88%) was an implementation bug, never
+  reproduced — correct averaging matches the 15-shuffle ensemble
+  in a single run (dev 93.58 / test 94.23 greedy).
+- Iters grid around (20, 1), measured 2026-10-09 (plain training):
+  iters=25 gives dev 91.41 / test 91.99, iters=30 gives 91.72 /
+  92.35 (both worse than 20's 91.99 / 92.48 - plain oscillates
+  past 20, the other half of the averaging case); min-count=0
+  gives 91.99 / 92.48 bit-identical to min-count=1 (singletons
+  add nothing at 20 iters). Grid closed, (20, 1) stands.
 - Feature templates live in `english-pos` and are shared verbatim
   with inference; changing them invalidates the committed weights.
 - Tokenization follows UD (contractions split); see the `english-pos`

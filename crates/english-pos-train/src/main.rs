@@ -275,6 +275,8 @@ fn main() {
     let mut freeze_at: Option<usize> = None;
     let mut correct = false;
     let mut guessed_history = false;
+    // Committed training protocol (item 8, averaged admits).
+    let mut averaged = false;
     let mut beam: Option<(f32, usize)> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -317,6 +319,7 @@ fn main() {
             }
             "--correct" => correct = true,
             "--guessed-history" => guessed_history = true,
+            "--averaged" => averaged = true,
             "--beam" => {
                 let t: f32 = args
                     .next()
@@ -404,7 +407,9 @@ fn main() {
         train.len(),
         train.iter().map(|(w, _)| w.len()).sum::<usize>()
     );
-    let model = if guessed_history {
+    let model = if averaged {
+        Model::train_averaged(&train, iters, min_count)
+    } else if guessed_history {
         Model::train_guessed_history(&train, iters, min_count)
     } else {
         Model::train(&train, iters, min_count)
