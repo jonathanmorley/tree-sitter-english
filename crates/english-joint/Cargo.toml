@@ -1,0 +1,16 @@
+[package]
+name = "english-joint"
+version = "0.1.0"
+edition = "2024"
+authors = ["Jonathan Morley <morley.jonathan@gmail.com>"]
+license = "MIT"
+description = "Joint neural tagger-parser (shared BiLSTM + biaffine arcs/labels) — batch/save-pass, never keystroke"
+
+[dependencies]
+english-pos = { version = "0.1.0", path = "../english-pos" }
+english-pos-neural = { version = "0.1.0", path = "../english-pos-neural" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+serde_json = "1"

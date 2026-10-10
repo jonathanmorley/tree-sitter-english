@@ -3364,6 +3364,18 @@ per item; linear family stays closed)
   assert); label-MLP 64→32 + batch-32 keeps epochs ~130s;
   interim evals on a stride slice (Python MST is the bottleneck).
   NEXT: Stage-1 Rust port (same hand-rolled playbook).
+- R3-5 Stage 1 (DONE 2026-10-10, PR #132): new crate `english-joint`
+  (workspace member; reuses `HandRolled`/`LstmParams`/`dot`/
+  `WordCache` from the frozen tagger crate — one-line `pub fn dot`
+  addition, no behavior change): factored biaffine (U·head per slot
+  precomputed; labels only on MST-chosen arcs), raw-root vectors
+  both sides (torch-exact), Rust Chu-Liu-Edmonds. Gates: torch
+  parity 0/0/0 tags/heads/rels on 50 dev sents; MST vs brute force
+  on 30 seeded graphs; Rust reproduces torch-avg to 1–2 toks
+  (dev 93.62/81.20/76.62, test 93.50/80.74/76.53, PUD 93.94/77.22);
+  sweep tags 0.9086 in Rust (genre/hard/moby on the torch screen,
+  same weights); `flies` VERB. Weights stay /tmp. NEXT: Stage 2/3
+  (speed/size via the int8 playbook).
 - R3-6 data with harmonization, not concat (QUEUED): per-construction
   harmonization (LinES honorifics→PROPN etc.) + treebank-embedding
   multi-task; naive concat stays rejected. Silver only for a neural

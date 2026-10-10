@@ -22,7 +22,8 @@ fn sigmoid(x: f32) -> f32 {
 /// box has AVX but not AVX2 — `std::simd` is unstable and AVX2
 /// intrinsics would be dead weight here), portable chunked path
 /// everywhere else. Both orders re-gate the 0-diff parity test.
-fn dot(a: &[f32], b: &[f32]) -> f32 {
+/// Public for `english-joint` (shared encoder math, no duplication).
+pub fn dot(a: &[f32], b: &[f32]) -> f32 {
     #[cfg(target_arch = "x86_64")]
     {
         use std::sync::OnceLock;
@@ -297,6 +298,16 @@ impl WordCache {
         WordCache {
             map: HashMap::new(),
         }
+    }
+
+    /// Cached word vector, if present (shared with `english-joint`).
+    pub fn map_get(&self, word: &str) -> Option<Vec<f32>> {
+        self.map.get(word).cloned()
+    }
+
+    /// Store a word vector.
+    pub fn map_put(&mut self, word: &str, vec: Vec<f32>) {
+        self.map.insert(word.to_string(), vec);
     }
 }
 

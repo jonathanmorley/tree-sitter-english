@@ -66,6 +66,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-joint"
+version = "0.1.0"
+dependencies = [
+ "english-pos",
+ "english-pos-neural",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "english-lint"
 version = "0.1.0"
 dependencies = [
