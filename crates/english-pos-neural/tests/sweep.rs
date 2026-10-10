@@ -9,8 +9,8 @@
 //! Regenerate (never hand-edit) if the source table moves — the table
 //! itself lives in `tables/sweep.rs`, shared with the quant gate.
 
-use english_pos::{RULES, apply_rules};
-use english_pos_neural::Model;
+use english_pos::{RULES, Rule, apply_rules};
+use english_pos_neural::{Model, QModel};
 use std::path::PathBuf;
 
 #[path = "tables/sweep.rs"]
@@ -48,7 +48,10 @@ fn sweep_neural_meets_bar() {
 }
 
 /// Neural sweep production number (admission input, same 0.87 bar):
-/// greedy + shipped correction rules on neural margins.
+/// greedy + shipped correction rules on neural margins, EXCEPT
+/// `oov-nn` (its OOV gate is EWT-vocab: stale premise under an
+/// EWT+GUM tagger that knows those words — 8 measured sweep breaks;
+/// see the RULES dual-path note).
 #[test]
 fn sweep_neural_production() {
     let path = PathBuf::from("/tmp/opencode/round3/bilstm.json");
@@ -60,12 +63,17 @@ fn sweep_neural_production() {
         }
     };
     let model = Model::from_json(&weights).expect("weights load");
+    let rules: Vec<Rule> = RULES
+        .iter()
+        .filter(|r| r.name != "oov-nn")
+        .copied()
+        .collect();
     let mut ok = 0usize;
     let mut tot = 0usize;
     for (_, _, words, gold) in tables::SENTENCES {
         let low: Vec<String> = words.iter().map(|w| w.to_lowercase()).collect();
         let mut tagged = model.tag_margins(words);
-        apply_rules(&mut tagged, RULES, &low);
+        apply_rules(&mut tagged, &rules, &low);
         for ((p, _), want) in tagged.iter().zip(gold.iter()) {
             tot += 1;
             ok += (p.upos() == *want) as usize;
@@ -74,4 +82,31 @@ fn sweep_neural_production() {
     let acc = ok as f64 / tot as f64;
     eprintln!("neural sweep +rules: {ok}/{tot} = {acc:.4}");
     assert!(acc >= 0.87, "sweep production bar");
+}
+
+/// i8 sweep gate on the quantized artifact (same 0.87 bar).
+#[test]
+fn sweep_neural_quant_meets_bar() {
+    let path = PathBuf::from("/tmp/opencode/round3/bilstm-i8.json");
+    let weights = match std::fs::read_to_string(&path) {
+        Ok(w) => w,
+        Err(_) => {
+            eprintln!("skip: /tmp i8 weights absent");
+            return;
+        }
+    };
+    let model = QModel::from_json(&weights).expect("i8 weights load");
+    let mut ok = 0usize;
+    let mut tot = 0usize;
+    for (_, _, words, gold) in tables::SENTENCES {
+        let got = model.tag(words);
+        assert_eq!(got.len(), gold.len());
+        for (g, want) in got.iter().zip(gold.iter()) {
+            tot += 1;
+            ok += (g.upos() == *want) as usize;
+        }
+    }
+    let acc = ok as f64 / tot as f64;
+    eprintln!("neural i8 sweep: {ok}/{tot} = {acc:.4}");
+    assert!(acc >= 0.87, "sweep bar");
 }

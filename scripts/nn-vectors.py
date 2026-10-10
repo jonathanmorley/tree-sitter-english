@@ -38,9 +38,12 @@ def read(path):
 
 
 def main():
+    import sys
+    paths = [UD] + [a for a in sys.argv[1:] if not a.startswith("-")]
     maj = {}
-    for w, t in read(UD):
-        maj.setdefault(w.lower(), Counter())[t] += 1
+    for path in paths:
+        for w, t in read(path):
+            maj.setdefault(w.lower(), Counter())[t] += 1
     majtag = {w: c.most_common(1)[0][0] for w, c in maj.items()}
     vocab = set(maj)
     gw = []

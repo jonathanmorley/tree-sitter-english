@@ -80,6 +80,10 @@ path unconditionally — this crate never touches it.
   /tmp-gated — EWT text); front table row + accuracy/throughput/
   size chart bars + ¶ RSS footnote (61 MB bench-binary basis);
   ARCHITECTURE budget line + neural README admitted.
+  SUPERSEDED 2026-10-10 by the EWT+GUM ship (PR #138): weights now
+  the EG int8 artifact (9.6 MB; test 94.56/96.32 +17 rules — oov-nn
+  excluded, stale EWT-vocab premise); EWT-only numbers stand above
+  as history. Dual-path rule discipline recorded at RULES.
 
 ## Explicitly out
 

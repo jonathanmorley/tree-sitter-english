@@ -3427,3 +3427,21 @@ per item; linear family stays closed)
   50d extracted, zip deleted after). SHIP VEHICLE (follow-up, full
   gates like R3-1 Stages 1–4): re-run tagger + joint training on
   EWT+GUM, int8, re-gate, vendor.
+- R3-6 SHIP: EG tagger (DONE 2026-10-10, PR #138): export
+  (`export_eg.py`: EWT+GUM vocabs 25k/213, f32 40 MB, i8 9.6 MB)
+  + parity + full gates on the EG artifact — greedy dev 94.44 /
+  test 94.54 / PUD 95.06 / GUM 95.86 / LinES n/a (tagger has no
+  LinES baseline; screen 92.81 stands); production (17 rules)
+  dev 94.47 / test 94.56; sweep greedy 0.9202 / +rules 0.9206 /
+  i8 0.9197; books torch-screen all pass (genre 0.913, hard 0.917,
+  moby 0.909); `flies` VERB. Rule-table finding along the way:
+  oov-nn's EWT-vocab gate is a stale premise under EG (8 sweep
+  breaks on words the model knows — den/bandy/cheerful class) while
+  EG-table regeneration regresses perceptron test −8; resolution:
+  EWT tables stay (perceptron gates intact), neural production
+  excludes oov-nn by name + DUAL-PATH discipline note at RULES
+  (new rules must re-gate both paths — margins and vocabs need not
+  transfer). Vendored `upos-i8.json` replaced (9.6 MB, single-digit
+  holds); front row 94.56/96.32/11.5k/9.6 MB/82 MB + chart bars;
+  README/ARCHITECTURE/scope lines. Joint EG re-run stays queued
+  (same vehicle, bigger compute).

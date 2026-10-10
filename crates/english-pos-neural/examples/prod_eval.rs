@@ -12,7 +12,7 @@
 //!   /tmp/opencode/round3/bilstm.json
 //! ```
 
-use english_pos::{RULES, Tag, apply_rules};
+use english_pos::{RULES, Rule, Tag, apply_rules};
 use english_pos_neural::{Model, QModel};
 use std::collections::HashMap;
 
@@ -68,6 +68,14 @@ fn main() {
         ("test", "/tmp/ud/ewt/en_ewt-ud-test.conllu"),
     ] {
         let data = read(path);
+        // Neural production excludes `oov-nn` (EWT-vocab gate is a stale
+        // premise under an EWT+GUM tagger — see the RULES dual-path
+        // note and the neural sweep test).
+        let rules: Vec<Rule> = RULES
+            .iter()
+            .filter(|r| r.name != "oov-nn")
+            .copied()
+            .collect();
         let (mut gok, mut pok) = (0usize, 0usize);
         let (mut gcok, mut pcok) = (0usize, 0usize);
         let mut tot = 0usize;
@@ -82,13 +90,13 @@ fn main() {
             let greedy: Vec<Tag> = tagged.iter().map(|(t, _)| *t).collect();
             let before: Vec<Tag> = greedy.clone();
             let snap = before.clone();
-            apply_rules(&mut tagged, RULES, &low);
+            apply_rules(&mut tagged, &rules, &low);
             // Attribute each changed token to its first firing rule by
             // replaying the gate chain on the pre-rule snapshot (same
             // first-fire semantics as apply_rules).
             for (i, (b, (p, m))) in before.iter().zip(tagged.iter()).enumerate() {
                 if b != p {
-                    if let Some(r) = RULES.iter().find(|r| {
+                    if let Some(r) = rules.iter().find(|r| {
                         *m > 0.0 && *m < r.threshold && (r.test)(&snap, &low, i).is_some()
                     }) {
                         *fires.entry(r.name).or_insert(0) += 1;
