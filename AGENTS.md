@@ -1138,19 +1138,39 @@ suspect; item 4 proceeds with its own bars.
    committed averaged weights mid-turn; caught by git-diff +
    md5, repaired to HEAD-bit-identical, stale backup deleted —
    backups refresh every turn now, git is the backstop.
-10. Punctuation-context features: commas delimit our hardest
-    clauses, but hidden punctuation is excluded from tagger
-    input by construction — unreachable without wire
-    plumbing. Unbuilt (blocked on the plumbing, not evidence).
+10. Punctuation-context features (MEASURED AND CLOSED 2026-10-09,
+    no plumbing built): the model trains WITH commas (0x11/0x12
+    neighbors, PUNCT histories) but wire production hides them —
+    the suspected skew. Census: comma-adjacent production misses
+    are hard 13/127, moby 7/34, EWT dev 114/1592, test 96/1423
+    (≈7–12% of misses, at-or-below background rate). Wire
+    plumbing alone buys ~zero (commas are already visible in
+    eval streams and the misses persist). Explicit boundary
+    features would need templates + full retrain + wire
+    side-channel for a ~230-token ceiling whose top cells are
+    titlecase churn commas cannot fix (61:91 precedent stands).
+    Revisit trigger: a comma-BOUNDARY error class with its own
+    EWT numbers (none observed — 4–7 scattered ADP/SCONJ per
+    split). The train/serve skew stands as documented-harmless.
 11. Iters 25–30 / min-count 0 (MEASURED AND CLOSED 2026-10-09):
     iters=25 dev 91.41 / test 91.99, iters=30 91.72 / 92.35 (both
     worse than 20's 91.99 / 92.48 — plain oscillates past 20);
     min-count=0 bit-identical to min-count=1 (singletons add
     nothing). (20, 1) stands; the oscillation is the other half
     of the averaging case for item 8.
-12. Bootstrap diversity: members see ~63% unique sentences
-    each (vs full-data shuffles). Weak prior (stable learner
-    + less data each + K-curve flat). Unbuilt, lowest.
+12. Bootstrap diversity (MEASURED AND CLOSED 2026-10-09): 3
+   averaged members on 63%-unique bootstrap subsets (seeds
+   42/43/44, deterministic) score 93.02–93.43 dev (weaker than
+   single 93.58 — less data each, as predicted) with 3.65%
+   pairwise disagreement (between shuffle-plain 5.4% and
+   shuffle-averaged 1.58%). Mean-of-3: dev −3 / test −71 vs
+   single — disagreement-among-weak is noise, not signal.
+   Incidental validation: member tagdicts legitimately differ
+   across subsets (unanimity is order-independent, not
+   subset-independent), and the average-members equality assert
+   caught it — the contamination guard working a second time
+   (intersection 7,619 used for the pilot). K-curve-flat +
+   diversity-collapse + this = four strikes. Closed permanently.
 13. LaSO beam training for the tagger (MEASURED AND REJECTED
     2026-10-09): ported the parser's license (early update +
     sentence-step averaging, same shape) at widths 4 and 2, 20/1,
