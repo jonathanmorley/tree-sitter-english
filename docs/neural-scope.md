@@ -46,8 +46,15 @@ path unconditionally — this crate never touches it.
   hand-rolled forward (embed + char-BiLSTM + word-BiLSTM +
   linear + softmax/margins), pinned-sample parity, then full
   dev/test + book evals + `flies`. Parity miss → STOP.
-- Stage 2 — speed: measure batch tok/s; optimize (buffer reuse,
-  the inference-optimization playbook) only to a measured bar.
+  DONE 2026-10-10 (PRs #118/#120): parity 0/50; Rust dev
+  93.83 / test 94.11 (torch run-2 to the token); sweep 0.9110
+  (tied with perceptron greedy/production); flies-veto
+  deliberately not ported (see Veto below).
+- Stage 2 — speed: MEASURED 2026-10-10 at ~2k tok/s release naive;
+  bar ≥20k (dep-batch class) via the inference-optimization playbook
+  (buffer reuse, batched char encode, f32 sums re-gated by parity,
+  sentence batching, then quant). Bar set from the measurement,
+  never assumed.
 - Stage 3 — size: int8 quant of matmuls (embeddings stay
   higher precision first), accuracy-neutral re-gate. Damage →
   narrower quant, never accuracy spend.
