@@ -18,36 +18,50 @@ fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
 
+/// Dot product with four accumulators (ILP-friendly on any arch;
+/// `std::simd` is still unstable on this toolchain, and explicit
+///arch intrinsics would fork the parity gate per platform).
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    // `chunks_exact` (no bounds checks) + four accumulators.
+    let mut acc = [0.0f32; 4];
+    for (x, y) in a.chunks_exact(4).zip(b.chunks_exact(4)) {
+        acc[0] += x[0] * y[0];
+        acc[1] += x[1] * y[1];
+        acc[2] += x[2] * y[2];
+        acc[3] += x[3] * y[3];
+    }
+    let mut s = acc[0] + acc[1] + acc[2] + acc[3];
+    let cut = a.len() - a.len() % 4;
+    for (x, y) in a[cut..].iter().zip(b[cut..].iter()) {
+        s += x * y;
+    }
+    s
+}
+
 /// One directed single-layer LSTM pass over `xs` (T × input dim).
 /// Weight layout matches torch `nn.LSTM`: `w_ih` is (4H × in),
 /// `w_hh` (4H × H), biases length 4H, gates ordered i,f,g,o.
 fn lstm_dir(xs: &[Vec<f32>], p: &LstmParams<'_>) -> Vec<Vec<f32>> {
     let hidden = p.hidden;
     let input = xs[0].len();
-    let order: Vec<usize> = if p.reverse {
-        (0..xs.len()).rev().collect()
-    } else {
-        (0..xs.len()).collect()
-    };
     let mut h = vec![0.0f32; hidden];
     let mut c = vec![0.0f32; hidden];
     let mut out = vec![vec![0.0f32; hidden]; xs.len()];
     let mut gates = vec![0.0f32; 4 * hidden];
-    for &t in &order {
+    // No index Vec: forward walks up, reverse walks down — same
+    // visit order as before, so parity-neutral by construction.
+    let mut t = if p.reverse { xs.len() - 1 } else { 0 };
+    loop {
         for g in 0..4 * hidden {
             let row_ih = &p.w_ih[g * input..(g + 1) * input];
             let row_hh = &p.w_hh[g * hidden..(g + 1) * hidden];
             // f64 accumulation: oneDNN blocks/fuses f32 sums in an
             // order we cannot replicate, so sum wide and cast once —
             // near-tie logits then flip far less often.
-            let mut s = (p.b_ih[g] + p.b_hh[g]) as f64;
-            for (a, b) in row_ih.iter().zip(xs[t].iter()) {
-                s += *a as f64 * *b as f64;
-            }
-            for (a, b) in row_hh.iter().zip(h.iter()) {
-                s += *a as f64 * *b as f64;
-            }
-            gates[g] = s as f32;
+            let mut s = p.b_ih[g] + p.b_hh[g];
+            s += dot(row_ih, &xs[t]);
+            s += dot(row_hh, &h);
+            gates[g] = s;
         }
         for j in 0..hidden {
             let i = sigmoid(gates[j]);
@@ -58,6 +72,17 @@ fn lstm_dir(xs: &[Vec<f32>], p: &LstmParams<'_>) -> Vec<Vec<f32>> {
             h[j] = o * c[j].tanh();
         }
         out[t] = h.clone();
+        if p.reverse {
+            if t == 0 {
+                break;
+            }
+            t -= 1;
+        } else {
+            t += 1;
+            if t == xs.len() {
+                break;
+            }
+        }
     }
     out
 }
@@ -106,6 +131,24 @@ fn json_to_f32(v: &serde_json::Value, out: &mut Vec<f32>) {
             }
         }
         _ => {}
+    }
+}
+
+/// Cache of word input vectors (word-embed + char-BiLSTM) by surface
+/// form. The char encoder is ~1/5 of the flops and book text repeats
+/// itself; callers that tag whole documents keep one across sentences
+/// (the TagCache precedent). Passed `&mut` so `Model` stays `Sync`
+/// for scoped-thread batch tagging.
+#[derive(Default)]
+pub struct WordCache {
+    map: HashMap<String, Vec<f32>>,
+}
+
+impl WordCache {
+    pub fn new() -> Self {
+        WordCache {
+            map: HashMap::new(),
+        }
     }
 }
 
@@ -233,6 +276,11 @@ impl<B: RecurrentBackend> Model<B> {
 
     /// Logits per token (T × 17).
     pub fn logits(&self, words: &[&str]) -> Vec<Vec<f32>> {
+        self.logits_cached(&mut WordCache::new(), words)
+    }
+
+    /// Logits with a caller-kept [`WordCache`] across sentences.
+    pub fn logits_cached(&self, cache: &mut WordCache, words: &[&str]) -> Vec<Vec<f32>> {
         // Char vectors: truncate like training, pad per-sentence to max
         // (torch ran padded PAD steps — replicate, don't skip).
         let mut ch_ids: Vec<Vec<usize>> = words
@@ -255,6 +303,10 @@ impl<B: RecurrentBackend> Model<B> {
         }
         let mut word_vecs = Vec::with_capacity(words.len());
         for (w, cids) in words.iter().zip(ch_ids.iter()) {
+            if let Some(hit) = cache.map.get(*w) {
+                word_vecs.push(hit.clone());
+                continue;
+            }
             let lower = w.to_lowercase();
             let wid = *self.words.get(&lower).unwrap_or(&1);
             let cseq: Vec<Vec<f32>> = cids
@@ -287,6 +339,7 @@ impl<B: RecurrentBackend> Model<B> {
             cv.extend_from_slice(&r[0]);
             let mut wv = Self::embed_row(&self.wemb, self.wemb_dim, wid);
             wv.extend(cv);
+            cache.map.insert((*w).to_string(), wv.clone());
             word_vecs.push(wv);
         }
         let hf = self.backend.lstm_layer(
@@ -321,11 +374,7 @@ impl<B: RecurrentBackend> Model<B> {
                 (0..self.n_tags)
                     .map(|k| {
                         let row = &self.out_w[k * width..(k + 1) * width];
-                        row.iter()
-                            .zip(h.iter())
-                            .map(|(a, b)| *a as f64 * *b as f64)
-                            .sum::<f64>() as f32
-                            + self.out_b[k]
+                        dot(row, &h) + self.out_b[k]
                     })
                     .collect()
             })
@@ -352,7 +401,12 @@ impl<B: RecurrentBackend> Model<B> {
 
     /// Greedy tags.
     pub fn tag(&self, words: &[&str]) -> Vec<Tag> {
-        self.logits(words)
+        self.tag_cached(&mut WordCache::new(), words)
+    }
+
+    /// Greedy tags with a caller-kept [`WordCache`].
+    pub fn tag_cached(&self, cache: &mut WordCache, words: &[&str]) -> Vec<Tag> {
+        self.logits_cached(cache, words)
             .iter()
             .map(|l| self.tags[Self::best_two(l).0])
             .collect()
