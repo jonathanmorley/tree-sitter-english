@@ -3155,19 +3155,32 @@ per item; linear family stays closed)
   (+ book evals sweep/genre/hard/moby, `flies` holds, determinism +
   latency/size where they apply). Probes run /tmp-only; no committed
   weights until gates pass; recipes kept over bytes.
-- R3-1 two-tier neural tagger (STARTED 2026-10-10): keep perceptron
+- R3-1 two-tier neural tagger (SCREEN PASS 2026-10-10): keep perceptron
   for the ~40ms keystroke path, add batch/save-pass neural path
-  (dep precedent). Screen: small BiLSTM tagger (word-embed + char-BiLSTM,
-  word-BiLSTM, 17-way softmax) trained offline in /tmp torch-CPU on
-  EWT; report dev/test + OOV split vs committed greedy. On +1pt,
-  scope the Rust port (hand-rolled quantized matmul vs candle Tier-1
-  optional). Tiny-transformer fine-tune is the fallback leg (DistilBERT
+  (dep precedent). Screen: tiny first-attempt BiLSTM (64-dim word +
+  16-dim char / 32-unit char-BiLSTM / 128-unit word-BiLSTM, dropout
+  0.33, Adam 1e-3, seeds fixed, torch-CPU 2 cores ~92s/epoch;
+  recipe `/tmp/opencode/round3/bilstm_screen.py`, ckpt
+  `/tmp/opencode/round3/bilstm.pt`, both /tmp-ephemeral): epoch 10
+  dev 23604/25148 = 93.86 / test 23637/25094 = 94.19 vs committed
+  greedy 93.58 / 94.23 (dev +70, test −9) — ties the fully-tuned
+  averaged+tagdict perceptron with zero tuning, no tagdict, no beam,
+  no rules; curve 79.0 → 88.4 → 90.9 → 92.2 → 92.9 → 93.3 → 93.6 →
+  93.7 → 93.9 → 93.9 (plateau 9-10). OOV 1330/1708 = 77.9% dev /
+  1488/1882 = 79.1% test. Unapplied headroom: word-dropout/UNK
+  training, dims/schedule tuning, tagdict-equivalent, beam/CRF,
+  model-agnostic correction rules. NEXT: scope the Rust port
+  (hand-rolled quantized matmul vs candle Tier-1) with its own bars.
+  Tiny-transformer fine-tune stays the fallback leg (DistilBERT
   96.51 measured here).
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
-  never global features (global char 0-for-2 stands). Census first:
-  dev OOV miss mass by shape (sizes the prize); then offline classifier
-  probe with EWT-majority discipline.
+  never global features (global char 0-for-2 stands). Census DONE
+  2026-10-10: dev OOV 1708/25148 = 6.8% / test 1882/25094 = 7.5%;
+  OOV tags PROPN 685/760 + NOUN 506/538 (~70% of OOV) — the prize
+  is the top confusion class itself. R3-1's char-BiLSTM already tags
+  OOV at 77.9%/79.1% with zero OOV-specific training; then offline
+  classifier probe with EWT-majority discipline.
 - R3-3 frozen pretrained embeddings as rare-word backoff (QUEUED):
   dense fastText/GloVe-50 quantized Tier-1 table (like verbs.txt),
   not sparse clusters (0-for-1 stands). Offline join probe on EWT vocab.
