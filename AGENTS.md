@@ -3169,8 +3169,10 @@ per item; linear family stays closed)
   93.7 → 93.9 → 93.9 (plateau 9-10). OOV 1330/1708 = 77.9% dev /
   1488/1882 = 79.1% test. Unapplied headroom: word-dropout/UNK
   training, dims/schedule tuning, tagdict-equivalent, beam/CRF,
-  model-agnostic correction rules. NEXT: scope the Rust port
-  (hand-rolled quantized matmul vs candle Tier-1) with its own bars.
+  model-agnostic correction rules. SCOPE DONE 2026-10-10
+  (`docs/neural-scope.md`: separate `english-pos-neural` crate,
+  zero-dep hand-rolled backend first, Backend trait, Tier-1 weights,
+  staged bars with STOP rules; keystroke/Rust-training/silver out).
   Tiny-transformer fine-tune stays the fallback leg (DistilBERT
   96.51 measured here). Retrain variance (run 2, same seeds:
   93.83/94.11 — ±0.2 test wobble from oneDNN/thread nondeterminism):
