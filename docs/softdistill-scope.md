@@ -24,7 +24,10 @@ labels hedge noise that hard labels would bake in.
 2026-10-09): soft-averaged perceptron (fire iff model-argmax ≠
 teacher-argmax, delta = q − onehot, η=1.0, timestamp averaging,
 gold history; posteriors extracted once over EWT train, 12,544
-lines word-verified, /tmp-ephemeral; deterministic md5-verified
+lines word-verified (extraction PROCEDURE kept as
+`scripts/dbert-posteriors.py`, verified argmax-identical against
+the ORT record at 6dp; bytes stay /tmp-ephemeral per the
+no-training-data rule); deterministic md5-verified
 retrain). Result: production dev 23581 (+25) / test 23603 (−68
 vs 23671) — STOP, no book text touched. Mechanism: smoothing
 absorbs teacher habits that disagree with EWT-test conventions
