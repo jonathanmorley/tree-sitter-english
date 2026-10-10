@@ -149,6 +149,15 @@ pub struct Rule {
 /// `more-adj` (zero fires anywhere: sound shapes, no support).
 /// Eleven of fourteen candidates removed; the gate plus EWT
 /// measurement did their job.
+///
+/// DUAL-PATH DISCIPLINE (2026-10-10): every rule here was calibrated
+/// on perceptron margins over EWT. The neural paths (`english-pos-neural`,
+/// `english-joint` examples/tests) replay these rules on neural
+/// margins — a new rule must re-gate there (sweep + EWT prod numbers)
+/// because margin scales and vocab premises need not transfer
+/// (`oov-nn`'s OOV gate is EWT-vocab: stale under an EWT+GUM tagger,
+/// so neural production excludes it by name — see the neural sweep
+/// test). Never assume transfer; measure both.
 pub const RULES: &[Rule] = &[
     Rule {
         name: "to-prep",

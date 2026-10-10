@@ -66,10 +66,11 @@ quotes, and excludes hidden punctuation. `Model::tag_margins`
 (best minus runner-up) flags uncertain tokens for review;
 `TagCache` (sentence-text key) makes a one-word edit cost one
 retag instead of a book. Batch alternative: `english-pos-neural`
-(BiLSTM i8, vendored 6.7 MB Tier-1; EWT test 94.16/96.04, ~10k
-tok/s scoped batch) replays the same 17 gated rules on its own
-margins — wins dev/sweep/PUD/GUM, trails test inside run-wobble;
-keystroke path untouched. A `correction.rs` engine applies
+(BiLSTM i8, vendored 9.6 MB Tier-1, EWT+GUM training; EWT test
+94.56/96.32, ~11k tok/s scoped batch) replays 17 shipped rules on
+its own margins (`oov-nn` excluded — EWT-vocab gate stale under
+EG vocab; see the RULES dual-path note) — wins dev/sweep/PUD/GUM,
+test inside run-wobble; keystroke path untouched. A `correction.rs` engine applies
 gated rewrite rules as a post-pass; both morphology-only rules
 tried so far measured net-negative and were rejected — the
 standing lesson is that morphology without a lexicon cannot beat
@@ -121,7 +122,7 @@ six tokens, one left-to-right pass each stage.
 | Joint parse (BiLSTM i8) | ~17 s/book scoped×2 — batch alternative, no cascade |
 | Peak memory | 58 MB |
 | Tagger weights | 3.87 MB, zero-dependency pure Rust |
-| Neural weights | 6.7 MB int8 JSON, vendored Tier-1 (`english-pos-neural`) |
+| Neural weights | 9.6 MB int8 JSON, vendored Tier-1 (`english-pos-neural`, EWT+GUM) |
 | Dep weights | 32 + 3.8 MB lazy Tier-1 pair (gitignored, never vendored) |
 | Joint weights | 7.4 MB int8 JSON, vendored Tier-1 (`english-joint`; f32 regenerable) |
 
