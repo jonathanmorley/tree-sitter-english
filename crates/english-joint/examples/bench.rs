@@ -8,7 +8,7 @@
 //!   /tmp/opencode/round3/joint.json
 //! ```
 
-use english_joint::JointModel;
+use english_joint::{JointModel, QJointModel};
 use english_pos_neural::WordCache;
 use std::sync::Arc;
 use std::time::Instant;
@@ -38,7 +38,27 @@ fn read(path: &str) -> Vec<Vec<String>> {
 
 fn main() {
     let weights = std::fs::read_to_string(std::env::args().nth(1).expect("weights")).unwrap();
-    let model = Arc::new(JointModel::from_json(&weights).expect("weights load"));
+    enum Any {
+        F(JointModel),
+        Q(QJointModel),
+    }
+    impl Any {
+        fn parse_cached(&self, cache: &mut WordCache, w: &[&str]) {
+            match self {
+                Any::F(m) => {
+                    m.parse_cached(cache, w);
+                }
+                Any::Q(m) => {
+                    m.parse_cached(cache, w);
+                }
+            }
+        }
+    }
+    let model = Arc::new(if weights.contains("\"qparams\"") {
+        Any::Q(QJointModel::from_json(&weights).expect("i8 weights load"))
+    } else {
+        Any::F(JointModel::from_json(&weights).expect("weights load"))
+    });
     let dev = read("/tmp/ud/ewt/en_ewt-ud-dev.conllu");
     let toks: usize = dev.iter().map(Vec::len).sum();
     for s in dev.iter().take(10) {
@@ -53,7 +73,10 @@ fn main() {
         model.parse_cached(&mut cache, &w);
     }
     let dt = t0.elapsed().as_secs_f64();
-    println!("single: {toks} toks in {dt:.2}s = {:.0} tok/s", toks as f64 / dt);
+    println!(
+        "single: {toks} toks in {dt:.2}s = {:.0} tok/s",
+        toks as f64 / dt
+    );
     let t0 = Instant::now();
     let mid = dev.len() / 2;
     std::thread::scope(|scope| {
@@ -69,5 +92,8 @@ fn main() {
         }
     });
     let dt = t0.elapsed().as_secs_f64();
-    println!("scoped-x2: {toks} toks in {dt:.2}s = {:.0} tok/s", toks as f64 / dt);
+    println!(
+        "scoped-x2: {toks} toks in {dt:.2}s = {:.0} tok/s",
+        toks as f64 / dt
+    );
 }

@@ -169,8 +169,9 @@ impl RecurrentBackend for HandRolled {
 }
 
 /// Symmetric per-vector int8 quantization (absmax/127); zero vectors
-/// take scale epsilon so the dequant stays finite.
-fn quantize_row(x: &[f32]) -> (Vec<i8>, f32) {
+/// take scale epsilon so the dequant stays finite. Public for
+/// `english-joint` (shared quant math, no duplication).
+pub fn quantize_row(x: &[f32]) -> (Vec<i8>, f32) {
     let mut mx = 0.0f32;
     for v in x {
         let a = v.abs();
@@ -188,8 +189,9 @@ fn quantize_row(x: &[f32]) -> (Vec<i8>, f32) {
 }
 
 /// int8×int8 dot with i32 accumulation (autovec-friendly narrow lane
-/// density: 16 int8 lanes where f32 gets 4 under SSE2).
-fn qdot(w: &[i8], sw: f32, x: &[i8], sx: f32) -> f32 {
+/// density: 16 int8 lanes where f32 gets 4 under SSE2). Public for
+/// `english-joint`.
+pub fn qdot(w: &[i8], sw: f32, x: &[i8], sx: f32) -> f32 {
     let mut acc = [0i32; 4];
     for (a, b) in w.chunks_exact(4).zip(x.chunks_exact(4)) {
         acc[0] += a[0] as i32 * b[0] as i32;
