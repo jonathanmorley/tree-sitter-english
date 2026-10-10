@@ -38,6 +38,7 @@ members = [
   "crates/english",
   "crates/english-pos",
   "crates/english-pos-train",
+  "crates/english-pos-neural",
   "crates/english-chunk",
   "crates/english-dep",
   "crates/english-dep-train",

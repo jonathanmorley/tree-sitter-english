@@ -3181,6 +3181,21 @@ per item; linear family stays closed)
   scratch over the epoch-10 ckpt — restored by retrain), no `pkill -f`
   on script names (matches own shell), versioned per-epoch ckpts,
   transient host SIGILLs (retry-to-pass).
+- R3-1 Stage 1 (DONE 2026-10-10, PR #118): new crate
+  `english-pos-neural` (workspace member; path-deps on `english-pos`
+  for `Tag`/wire only, never its weights): `RecurrentBackend` trait +
+  zero-dep `HandRolled` f32 forward (`LstmParams` bundle keeps the
+  method lean and carries future quant scales), `Model::from_json`,
+  greedy `tag` + `tag_margins`. Parity bar PASSES: 0 diffs vs torch
+  on pinned 50-sent dev sample. Along the way: f64 accumulation
+  discipline (oneDNN order unreplicable); a stale-epoch export
+  (epoch-5 JSON vs epoch-10 tags) mimicked a forward bug with
+  confident flips — version exports next to ckpts
+  (`bilstm-ep10.json`); flies-veto deliberately NOT ported (torch
+  reads NOUN 6.96 vs VERB 5.17 — pinning one ambiguous token would
+  be post-hoc fitting; dev/test gates are the change-detection).
+  Weights stay /tmp until admission. NEXT: Stage-1 accuracy gates
+  (full dev/test + book evals in Rust).
 - R3-2 char-aware OOV backoff only (QUEUED): char-CNN/LSTM consulted
   ONLY for OOV/low-count words below margin τ (lexicon-rule gating),
   never global features (global char 0-for-2 stands). Census DONE
