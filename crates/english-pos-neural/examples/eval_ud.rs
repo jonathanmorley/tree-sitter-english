@@ -34,6 +34,20 @@ fn read(path: &str) -> Vec<Vec<(String, String)>> {
     sents
 }
 
+/// UPOS -> universal-12, same projection as `scripts/bench-taggers.py`
+/// `coarse_upos` (Petrov Table 1 targets).
+fn coarse(tag: &str) -> &str {
+    match tag {
+        "PROPN" => "NOUN",
+        "AUX" => "VERB",
+        "CCONJ" | "SCONJ" => "CONJ",
+        "PART" => "PRT",
+        "PUNCT" | "SYM" => ".",
+        "INTJ" => "X",
+        t => t,
+    }
+}
+
 fn main() {
     let weights_path = std::env::args().nth(1).expect("weights path");
     let weights = std::fs::read_to_string(weights_path).unwrap();
@@ -64,6 +78,7 @@ fn main() {
         let data = read(path);
         let (mut ok, mut tot) = (0usize, 0usize);
         let (mut ook, mut ot) = (0usize, 0usize);
+        let mut cok = 0usize;
         for s in &data {
             let words: Vec<&str> = s.iter().map(|(w, _)| w.as_str()).collect();
             let got: Vec<english_pos::Tag> = match (&fmodel, &qmodel) {
@@ -75,6 +90,7 @@ fn main() {
                 tot += 1;
                 let hit = g.upos() == *gold;
                 ok += hit as usize;
+                cok += (coarse(g.upos()) == coarse(gold)) as usize;
                 if !vocab.contains(&w.to_lowercase()) {
                     ot += 1;
                     ook += hit as usize;
@@ -82,8 +98,9 @@ fn main() {
             }
         }
         println!(
-            "{name}: exact {ok}/{tot} = {:.4}  oov {ook}/{ot} = {:.4}",
+            "{name}: exact {ok}/{tot} = {:.4}  coarse {cok}/{tot} = {:.4}  oov {ook}/{ot} = {:.4}",
             ok as f64 / tot as f64,
+            cok as f64 / tot as f64,
             ook as f64 / ot as f64
         );
     }

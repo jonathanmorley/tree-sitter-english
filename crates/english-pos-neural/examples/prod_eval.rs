@@ -16,6 +16,19 @@ use english_pos::{RULES, Tag, apply_rules};
 use english_pos_neural::{Model, QModel};
 use std::collections::HashMap;
 
+/// UPOS -> universal-12, same projection as `eval_ud` (Petrov Table 1).
+fn coarse(tag: &str) -> &str {
+    match tag {
+        "PROPN" => "NOUN",
+        "AUX" => "VERB",
+        "CCONJ" | "SCONJ" => "CONJ",
+        "PART" => "PRT",
+        "PUNCT" | "SYM" => ".",
+        "INTJ" => "X",
+        t => t,
+    }
+}
+
 fn read(path: &str) -> Vec<Vec<(String, String)>> {
     let mut sents = Vec::new();
     let mut cur = Vec::new();
@@ -56,6 +69,7 @@ fn main() {
     ] {
         let data = read(path);
         let (mut gok, mut pok) = (0usize, 0usize);
+        let (mut gcok, mut pcok) = (0usize, 0usize);
         let mut tot = 0usize;
         let mut fires: HashMap<&str, usize> = HashMap::new();
         for s in &data {
@@ -85,12 +99,16 @@ fn main() {
                 tot += 1;
                 gok += (g.upos() == *gold) as usize;
                 pok += (p.upos() == *gold) as usize;
+                gcok += (coarse(g.upos()) == coarse(gold)) as usize;
+                pcok += (coarse(p.upos()) == coarse(gold)) as usize;
             }
         }
         println!(
-            "{name}: greedy {gok}/{tot} = {:.4}  +rules {pok}/{tot} = {:.4}",
+            "{name}: greedy {gok}/{tot} = {:.4} (+rules {pok}/{tot} = {:.4})  coarse {:.4} (+rules {:.4})",
             gok as f64 / tot as f64,
-            pok as f64 / tot as f64
+            pok as f64 / tot as f64,
+            gcok as f64 / tot as f64,
+            pcok as f64 / tot as f64
         );
         let mut fs: Vec<(&str, usize)> = fires.into_iter().collect();
         fs.sort();

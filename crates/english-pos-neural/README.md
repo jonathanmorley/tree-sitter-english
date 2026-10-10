@@ -10,9 +10,11 @@ candle backend may implement it later — as a default-off cargo
 feature, never a default dep), greedy `tag` / `tag_cached` (caller-kept
 `WordCache`, `Model: Sync` for scoped-thread batch tagging) plus
 `tag_margins` for the same gated correction discipline. Weights are
-Tier-1 lazy assets: `/tmp` until the neural-scope bars pass
-(parity → accuracy → speed → size → admission), score-gated never
-md5-gated. See `docs/neural-scope.md`.
+Tier-1: the int8 artifact (`weights/upos-i8.json`, 6.7 MB,
+single-digit rule) is vendored and admitted (EWT test 94.16/96.04
++rules; dev 93.86/95.43; sweep 0.9105; score-gated never
+md5-gated); the f32 export stays a /tmp speed reference.
+See `docs/neural-scope.md`.
 
 ```rust
 let model = english_pos_neural::Model::from_json(&weights_json)?;

@@ -65,7 +65,11 @@ contractions UD-style (`don't` → `do` + `n't`), normalizes curly
 quotes, and excludes hidden punctuation. `Model::tag_margins`
 (best minus runner-up) flags uncertain tokens for review;
 `TagCache` (sentence-text key) makes a one-word edit cost one
-retag instead of a book. A `correction.rs` engine applies
+retag instead of a book. Batch alternative: `english-pos-neural`
+(BiLSTM i8, vendored 6.7 MB Tier-1; EWT test 94.16/96.04, ~10k
+tok/s scoped batch) replays the same 17 gated rules on its own
+margins — wins dev/sweep/PUD/GUM, trails test inside run-wobble;
+keystroke path untouched. A `correction.rs` engine applies
 gated rewrite rules as a post-pass; both morphology-only rules
 tried so far measured net-negative and were rejected — the
 standing lesson is that morphology without a lexicon cannot beat
@@ -116,6 +120,7 @@ six tokens, one left-to-right pass each stage.
 | Dep parse (beam4) | ~4 s/book — batch/save-pass, never keystroke |
 | Peak memory | 58 MB |
 | Tagger weights | 3.87 MB, zero-dependency pure Rust |
+| Neural weights | 6.7 MB int8 JSON, vendored Tier-1 (`english-pos-neural`) |
 | Dep weights | 32 + 3.8 MB lazy Tier-1 pair (gitignored, never vendored) |
 
 Transformers (~97-98% UPOS vs our 94.33) were measured against

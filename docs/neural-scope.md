@@ -74,7 +74,12 @@ path unconditionally — this crate never touches it.
   NUMBERS DONE 2026-10-10 (PR #125): dev +rules 93.85 (+45 over
   committed prod), test +rules 94.15 (−45, inside wobble), sweep
   +rules 0.9125 (+2), PUD 93.84 (+0.26), GUM 93.83 (+0.14).
-  Admission (vendor + front page) needs the artifact pick.
+  ADMITTED 2026-10-10 (PR #126, artifact i8 per owner pick):
+  `weights/upos-i8.json` vendored (6.7 MB, single-digit rule);
+  quant gates run on vendored with no skips (parity band stays
+  /tmp-gated — EWT text); front table row + accuracy/throughput/
+  size chart bars + ¶ RSS footnote (61 MB bench-binary basis);
+  ARCHITECTURE budget line + neural README admitted.
 
 ## Explicitly out
 
