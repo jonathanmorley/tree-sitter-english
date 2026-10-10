@@ -1092,10 +1092,15 @@ suspect; item 4 proceeds with its own bars.
    `this` n=2 PRON; `next` n=0; participle be-prev 107:6.
    0 admitted. Standing rejections hold sight-unseen (particles,
    imperatives, names, attr-swarm, subconj edges).
-7. Soft-target distillation: all five failures used hard
-   labels (shared-prior yank); distilling DBERT *distributions*
-   preserves teacher uncertainty — different mechanism.
-   Needs posteriors + soft-update trainer. Unbuilt.
+7. Soft-target distillation (STAGE 1 UNBLOCKED 2026-10-09):
+   all five hard-label failures used hard labels (shared-prior
+   yank); distilling DBERT *distributions* preserves teacher
+   uncertainty — different mechanism. Scope:
+   `docs/softdistill-scope.md`. Stage 0 PASS offline (our errors
+   2.62x enriched in top teacher-entropy quartile, capture 0.66;
+   teacher right 80% in-zone). Stage 1a (soft-averaged trainer on
+   EWT, machinery + regularization) needs dev AND test to unlock
+   1b (soft book batches, EWT-gated). Unbuilt.
 8. Collins averaging (ADMITTED 2026-10-09 — overturns the pilot):
    faithful timestamp averaging over token steps (`train_averaged`,
    `--averaged`; lazy math pinned by a naive-vs-lazy toy proof that
