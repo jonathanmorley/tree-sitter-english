@@ -71,6 +71,10 @@ path unconditionally — this crate never touches it.
   front table + chart + READMEs, weights vendored as Tier-1
   pair. Any bar miss → weights stay /tmp, crate stays
   experimental.
+  NUMBERS DONE 2026-10-10 (PR #125): dev +rules 93.85 (+45 over
+  committed prod), test +rules 94.15 (−45, inside wobble), sweep
+  +rules 0.9125 (+2), PUD 93.84 (+0.26), GUM 93.83 (+0.14).
+  Admission (vendor + front page) needs the artifact pick.
 
 ## Explicitly out
 

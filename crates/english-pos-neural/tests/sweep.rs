@@ -9,6 +9,7 @@
 //! Regenerate (never hand-edit) if the source table moves — the table
 //! itself lives in `tables/sweep.rs`, shared with the quant gate.
 
+use english_pos::{RULES, apply_rules};
 use english_pos_neural::Model;
 use std::path::PathBuf;
 
@@ -44,4 +45,33 @@ fn sweep_neural_meets_bar() {
     let acc = ok as f64 / tot as f64;
     eprintln!("neural sweep: {ok}/{tot} = {acc:.4}");
     assert!(acc >= 0.87, "sweep bar");
+}
+
+/// Neural sweep production number (admission input, same 0.87 bar):
+/// greedy + shipped correction rules on neural margins.
+#[test]
+fn sweep_neural_production() {
+    let path = PathBuf::from("/tmp/opencode/round3/bilstm.json");
+    let weights = match std::fs::read_to_string(&path) {
+        Ok(w) => w,
+        Err(_) => {
+            eprintln!("skip: /tmp weights absent");
+            return;
+        }
+    };
+    let model = Model::from_json(&weights).expect("weights load");
+    let mut ok = 0usize;
+    let mut tot = 0usize;
+    for (_, _, words, gold) in tables::SENTENCES {
+        let low: Vec<String> = words.iter().map(|w| w.to_lowercase()).collect();
+        let mut tagged = model.tag_margins(words);
+        apply_rules(&mut tagged, RULES, &low);
+        for ((p, _), want) in tagged.iter().zip(gold.iter()) {
+            tot += 1;
+            ok += (p.upos() == *want) as usize;
+        }
+    }
+    let acc = ok as f64 / tot as f64;
+    eprintln!("neural sweep +rules: {ok}/{tot} = {acc:.4}");
+    assert!(acc >= 0.87, "sweep production bar");
 }
