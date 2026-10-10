@@ -84,6 +84,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-pos-neural"
+version = "0.1.0"
+dependencies = [
+ "english-pos",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "english-pos-train"
 version = "0.1.0"
 dependencies = [
