@@ -66,6 +66,9 @@ This doc scopes that program. Status: design only.
   Tag-costs-anything or pipeline-misses-bars → STOP (no port).
 - Stage 1 — Rust port parity + accuracy gates (same discipline as
   R3-1: argmax-identical heads on pinned samples, then full gates).
+  DONE 2026-10-10 (PR #132): `english-joint` (factored biaffine,
+  raw roots, Rust MST brute-force-verified); parity 0/0/0; Rust
+  dev/test/PUD reproduce torch-avg; sweep 0.9086; `flies` VERB.
 - Stage 2/3 — speed/size (int8 playbook; biaffine matrices quantize
   like the tagger's).
 - Stage 4 — admission (front parser table + charts + READMEs,
