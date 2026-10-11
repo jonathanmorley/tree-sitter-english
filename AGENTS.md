@@ -2604,7 +2604,7 @@ suspect; item 4 proceeds with its own bars.
   (tree-sitter spans are bytes, JS slices UTF-16 — em-dash drifts
   without it). Stub-scanner recipe capture + build-std notes in entry.
 
-## TreeTagger harvest (QUEUED 2026-10-07, from Schmid 1994/1995)
+## TreeTagger harvest (RESOLVED — (a)(c) rejected, (b) closed by v1.3 measurement, (d)(e) done; entries synced 2026-10-11)
 
 - Source: TreeTagger page
   (`https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/`;
@@ -2635,13 +2635,13 @@ suspect; item 4 proceeds with its own bars.
   probe run raced its own edit (stale binary, mixed-case rows
   impossible from one code path) — same poisoned-build lesson
   as the Pattern entry; clean rerun confirmed.
-- (b) Lemmatizer, Tier-1 lookup table (NOT STARTED): lemmas come
-  almost free from the same lexicon as (a); consumers are
-  `english-lint` passive (participle identity) and
-  nominalization (deverbal noun→verb) instead of current suffix
-  matching. Scope: EWT-lemma table + closed irregular list,
-  offline-built like `lexicon/verbs.txt`, zero tagger impact.
-  Bars: lint evals neutral-or-better, weights md5 unchanged.
+- (b) Lemmatizer, Tier-1 lookup table (CLOSED 2026-10-11 —
+  entry was stale, no new work): both named consumers measured
+  out. Nominalization got a real WordNet table (2,209 noun lemmas)
+  in v1.3 — 2-word verdict delta, rejected as disproportionate,
+  removed. Passive never had a morphology site (the rule reads
+  `nsubj:pass`/`aux:pass` labels, no suffix matching), so there is
+  nothing a table could replace. Unmeasurable code doesn't ship.
 - (c) Lexicon-constrained decode (REJECTED 2026-10-07, zero code
   written — the probe sufficed): out-of-observed-set picks are
   COMMON, not rare (dev 1,831/7.3%, test 1,985/7.9%), and
@@ -3068,22 +3068,21 @@ suspect; item 4 proceeds with its own bars.
   Debug-suite numbers were never at risk (full rebuilds), only
   release examples.
 
-## WordNet uses (QUEUED 2026-10-07)
+## WordNet uses (CLOSED 2026-10-07 by v1.3 verdict, entry synced 2026-10-11)
 
 - WordNet 3.0 (permissive license, derived tables shippable)
   resolves via NLTK data (note: `wordnet.zip` must be EXTRACTED —
   3.14 `find` doesn't auto-resolve the bare zip; fixed in env).
-- (a) Lemmatizer table via morphy + exception lists (unblocks
-  TreeTagger harvest (b)): offline-built like `lexicon/verbs.txt`,
-  zero runtime deps. Consumers: passive participle identity,
-  nominalization deverbal gate.
-- (b) Nominalization via derivational links (NEW sub-item):
-  `arrangement`→`arrange` replaces suffix-guessing with real
-  morphology inside the existing light-verb government shape.
-  Bars: nominal eval precision/recall neutral-or-better.
-- Explicitly out: sense features for the tagger (UPOS coarser
-  than synsets; EWT-majority already beats lexicon lookup),
-  anything at runtime (10 MB+ database; offline tables only).
+- (a) Lemmatizer table via morphy + exception lists (CLOSED —
+  measured inside v1.3: 2,209 noun lemmas, 2-word delta,
+  rejected as disproportionate, removed entirely).
+- (b) Nominalization via derivational links (REJECTED in v1.3:
+  trades gold-endorsed `knowledge` TP for documented `moment`×2
+  FPs; EWT-bounded table misses real positives too).
+- Explicitly out (unchanged): sense features for the tagger
+  (UPOS coarser than synsets; EWT-majority already beats lexicon
+  lookup), anything at runtime (10 MB+ database; offline tables
+  only). "This closes the WordNet queue" (v1.3) stands.
 
 ## Streaming lint + weights-deser memory work (DONE 2026-10-07)
 
