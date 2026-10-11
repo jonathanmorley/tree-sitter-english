@@ -3486,3 +3486,39 @@ per item; linear family stays closed)
   Gates: unit fire + 3 abstains; EWT dev/test ±0 (zero fires);
   sweep/genre/hard/moby/flies green; chunk/lint downstream green;
   zero breaks anywhere.
+- Correction rule `if-sconj` (ADMITTED 2026-10-11, 20-for-34 —
+  fruit of remining round 3 below): pred-ADP `if` after `as`/SCONJ
+  → SCONJ (MWE-second of `as if`; gold unanimous 14:0 train +3:0
+  dev/test; chunker already lists it Subord). EWT train neural
+  4:0 (all distinct, all in-gate); perceptron never predicts the
+  shape (0 train instances — vacuous there by construction).
+  Plain conditionals stay out (no support — honest scope); no
+  next-guard (support PRON/DET, fixes PART-next — guarding next
+  would exclude the fixes for nothing). τ=2.0. Gates: unit fire +
+  3 abstains; perceptron EWT ±0 (fire counts byte-identical);
+  neural EWT dev +8 / test +3 net with zero if-sconj fires;
+  2 verified book fixes (`as if to strike`, `as if to step`,
+  margins 0.45/1.079), zero breaks; sweep/genre/hard/moby/flies
+  green both paths; chunk/lint/joint downstream green.
+- Correction re-mining round 3 (DONE 2026-10-11, 0 new perceptron
+  cells + 1 neural rule): production-path margins over
+  sweep/genre/hard/moby (112 sents / 4,075 toks) on both paths.
+  Perceptron reproduces Round 2 to the token class (356 misses /
+  55 actionable / 0 ties / 301 confident vs 355/54/0/301 — the +1
+  is sentence-split methodology): every actionable row sits in a
+  Round-2 cell, 0 new candidates, Round 2 stands. Neural-EG: 323
+  misses (164 actionable / 0 ties / 159 confident — wider gate
+  zone on logit-gap margins); triage on neural-greedy EWT-train
+  pred-conditioned cells kills everything but pred-ADP `if`
+  (4:0 SCONJ, all `as if` MWE-second; standing rejections
+  re-confirmed on neural counts: P1 220:29, P2 64:2:1,
+  attr-swarm 4634:32, very 325:1, have/had-VERB 1103:12,
+  subconj family model-right throughout). Along the way: 4
+  neural rule fixes / 1 break (to_part on hard `to windward` —
+  garbage-in from mistagged NOUN→VERB neighbor, documented
+  class, no action; shipped rules stay net-positive on EG
+  dev/test). Probes deleted (`dump_margins`, census/triage/ctx
+  scripts); methodology scar: Python `unicode_escape` decoding
+  mangled UTF-8 eval tokens into mojibake (both paths mistagged
+  them) — Rust sources unescape only `\\`/`\"`, fixed before
+  measuring.
