@@ -10,11 +10,11 @@ candle backend may implement it later — as a default-off cargo
 feature, never a default dep), greedy `tag` / `tag_cached` (caller-kept
 `WordCache`, `Model: Sync` for scoped-thread batch tagging) plus
 `tag_margins` for the same gated correction discipline. Weights are
-Tier-1: the int8 artifact (`weights/upos-i8.json`, 9.6 MB,
-single-digit rule) is vendored and admitted (EWT+GUM training; test
-94.56/96.32 +17 rules; dev 94.47/95.94; sweep 0.9206; score-gated
-never md5-gated); the f32 export stays a /tmp speed reference.
-See `docs/neural-scope.md`.
+Tier-1: the int8 artifact (`weights/upos-i8.json`, 8.2 MB,
+single-digit rule via compact separators) is vendored and admitted
+(EWT+GUM+LinES training; test 94.52/96.46 +18 rules; dev
+94.58/96.17; sweep 0.9312; score-gated never md5-gated); the f32
+export stays a /tmp speed reference. See `docs/neural-scope.md`.
 
 ```rust
 let model = english_pos_neural::Model::from_json(&weights_json)?;
@@ -33,8 +33,8 @@ cost a shared-code third crate.
 
 | artifact | size | speed, 2-core (single / scoped×2) | accuracy vs f32 |
 |---|---|---|---|
-| f32 (`Model`) — speed path | 40.1 MB JSON | 11.9k / 19.5k tok/s | reference |
-| int8 (`QModel`) — size path | 9.6 MB JSON | 6.9k / 11.5k tok/s | dev/test ±3 toks |
+| f32 (`Model`) — speed path | 43.4 MB JSON | 11.3k / 19.3k tok/s | reference |
+| int8 (`QModel`) — size path | 8.2 MB JSON | 6.9k / 11.5k tok/s | dev +3 / test ±0 |
 
 Per-row symmetric int8 (offline absmax; biases/states f32;
 per-vector activation quant). Single-digit MB is the size bar;

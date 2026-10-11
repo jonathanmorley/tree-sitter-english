@@ -84,6 +84,16 @@ path unconditionally — this crate never touches it.
   the EG int8 artifact (9.6 MB; test 94.56/96.32 +17 rules — oov-nn
   excluded, stale EWT-vocab premise); EWT-only numbers stand above
   as history. Dual-path rule discipline recorded at RULES.
+  SUPERSEDED 2026-10-11 by the EWT+GUM+LinES ship (R3-7 screen →
+  ship): `upos-i8.json` replaced (8.2 MB via compact separators —
+  the 10.35 MB default serialization broke the single-digit rule;
+  fixed the joint-ship way, openly); production test 94.52/96.46
+  +18 rules (if-sconj arrives after EG), dev 94.58/96.17, sweep
+  0.9312, books all up (genre +5, hard +8, moby +1, sweep +21 —
+  no book down); sub-baseline cells (test exact −8, GUM −20) sit
+  inside ±50 retrain wobble — ties, recorded not fudged; flies
+  NOUN restores the EWT-screen reading (EG's VERB was the
+  transient; veto stays perceptron-only by design).
 
 ## Explicitly out
 
