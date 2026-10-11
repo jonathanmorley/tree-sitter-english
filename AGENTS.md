@@ -162,7 +162,7 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   4 TDD corpus tests; keystroke 41.7 ms held; Moby 4; full
   gates green.
 
-- Harvest residuals (queued 2026-10-06 from the 100-book final
+- Harvest residuals (all four DONE 2026-10-06, from the 100-book final
   ranking; `/` excluded — all 27 hits are front-matter URLs):
   (a) spaced ellipsis (DONE 2026-10-06, mid-only): internal
   `ellipsis` widened to 3–8-dot spaced runs (75× 3-dot, 37×
@@ -682,8 +682,10 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   sound shapes, no support). `tests/canonical.rs` pins the
   `flies`-VERB veto on decode + corrected paths.
 
-- NP-chunker implementation notes (extends the greedy-chunker item
-  above; NOT STARTED): source `nltk/chunk/regexp.py` rule semantics
+- NP-chunker implementation notes (SUPERSEDED — the chunker
+  shipped under these notes: greedy post-pass DONE 2026-10-05,
+  MWE follow-up + V2 DONE 2026-10-06; kept as design record):
+  source `nltk/chunk/regexp.py` rule semantics
   only — ChunkRule→maximal-run wrapper starting from
   `{<DT|PRP$>?<JJ.*>*<NN.*>+}` translated to UD tags;
   StripRule→strip leading VBG/IN; SplitRule→split on DT/CC;
@@ -1626,8 +1628,8 @@ suspect; item 4 proceeds with its own bars.
   cascade analysis as long-term work. ACTIONABLE: step 4
   predecessor/successor features (s0−1, s0+1, b0−1 word+tag —
   b0+1 rides lookahead) → v4 arc templates 0x53–0x58, under
-  greedy screen; QUEUED: pseudo-projective lifting for the
-  2.3% (+0.2–0.4 est).
+  greedy screen (shipped as v4); pseudo-projective lifting for the
+  2.3% CLOSED without building — see backlog (g) (premise failed).
 - Standing: pipeline LAS 71.1/71.3 (bar 71 CLEARED by heads,
   labeler untouched); UAS 83.9 (bar 87, −3.1 — curve climbing,
   next levers below). REJECTED parser-on-pred-tags 2026-10-07
@@ -1891,8 +1893,9 @@ suspect; item 4 proceeds with its own bars.
   Tier-1 assets absent (documented Tier-1 consequence).
 - Latency tiers stand: POS/chunk rules keystroke-fast; dep rules
   batch (beam4 ~4 s/book; greedy-decode tradeoff per rule,
-  unmeasured). Next rules queued, not started: nominalization,
-  sentence complexity (both need their own 60-sent evals).
+  unmeasured). Next rules shipped since: nominalization (rule 2 +
+  v1.1/v1.2/v1.3, DONE 2026-10-07) and sentence complexity
+  (rules 3–4, DONE 2026-10-07).
 
 ## Attachment-uncertainty calibration (REJECTED 2026-10-08,
   probe deleted)
@@ -2208,11 +2211,10 @@ suspect; item 4 proceeds with its own bars.
   Same philosophy as the transcription bucket (markup encodes
   typography, not prose). Code fences produced nothing (short
   fragments stay silent under every rule — verified by absence
-  across both docs). Documented as prose-scope; a markdown-aware
-  input filter (fences/tables/lists) is queued, not started —
-  needs its own FP-rate measurement before it touches the
-  pipeline, and docs-linting is not the product's first market
-  (book prose is).
+  across both docs). Resolved 2026-10-08 (measured, deferred,
+  then ADMITTED as opt-in `--markdown` — see below); the
+  prose-scope default stands, docs-linting is not the product's
+  first market (book prose is).
 - Filter measured 2026-10-08, DEFERRED (probe deleted): fences/
   tables/list-markers stripped → README 8→7, AGENTS 502→491
   (−2%). But the lost set mixes structural with REAL findings
@@ -2300,10 +2302,10 @@ suspect; item 4 proceeds with its own bars.
   predicate `is all very proper`, free-relative `is what I
   mean`, idiomatic `that's strange`). `-ed` participle guard
   carries one known edge (`this wicked man` overfires).
-- Queued, not started: `dem-pron` correction rule (demonstrative
-  DET/PRON disambiguation needs EWT-majority measurement first);
-  vocative edge (`This, shipmates, this is...` reads DET via the
-  `shipmates` nominal — untested, noted not handled).
+- Resolved since: `dem-pron` shipped as `this-pron` (ADMITTED
+  2026-10-10, PR #141, 19-for-33); vocative edge (`This, shipmates,
+  this is...` reads DET via the `shipmates` nominal — untested,
+  noted not handled).
 
 ## Correction rule 14: quite-adv (ADMITTED 2026-10-07)
 
@@ -2897,9 +2899,10 @@ suspect; item 4 proceeds with its own bars.
   reached 78.7 at similar density — learners tie, no magic.
 - Lessons, ranked: (1) LABEL-INFORMED ARCS (+3.1, biggest
   lever) need joint arc+label decode (two-pass feedback or
-  joint beam) — NEW DECODER STAGE, queued with measured prize
-  (larger than any harvest step); (2) v5 TEMPLATES (scoped,
-  not started): port Malt's four tag trigrams (s1+s0+b0,
+  joint beam) — NEW DECODER STAGE, STOPPED at Stage 0 with the
+  program (mismatch eats the ceiling; see backlog (a)); (2) v5
+  TEMPLATES (shipped — backlog (c), DONE 2026-10-08 ADMITTED):
+  ported Malt's four tag trigrams (s1+s0+b0,
   s0+b0+b1, b0+b1+b2, b1+b2+b3 — we have only s0+b0/s1+s0
   bigrams) + b3 tag single, greedy screen then LaSO verdict,
   expect fraction of +3.9 (we already hold bigrams+dep-tree);
