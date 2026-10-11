@@ -250,6 +250,11 @@ pub const RULES: &[Rule] = &[
         test: be_aux,
     },
     Rule {
+        name: "if-sconj",
+        threshold: 2.0,
+        test: if_sconj,
+    },
+    Rule {
         name: "oov-nn",
         threshold: 2.0,
         test: oov_nn,
@@ -504,6 +509,25 @@ fn be_aux(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
         return None;
     }
     (i > 0 && low[i - 1] == "to").then_some(Tag::Aux)
+}
+
+/// Second half of `as if` read as preposition (`as if to step`):
+/// pred-ADP `if` right after `as` is gold SCONJ 4:0 on neural tags
+/// (14:0 in gold over train, +3:0 dev/test — `as if` always heads
+/// a clause; the chunker already lists it as a Subord MWE, so this
+/// restores the reading the MWE assumes). Plain conditionals stay
+/// out (no train instances without `as`-prev — the sweep `if you
+/// consider` miss at 0.45 stands as honest scope). Prev-word + tag
+/// guard (all support has `as`/SCONJ); no next-guard (support nexts
+/// PRON/DET, the book fix has PART-next — guarding next would
+/// exclude the fix for nothing). Found by remining round 3 (neural
+/// actionable triage; perceptron never predicts the shape — 0
+/// train instances — so the rule is vacuous there by construction).
+fn if_sconj(tags: &[Tag], low: &[String], i: usize) -> Option<Tag> {
+    if tags[i] != Tag::Adp || low[i] != "if" {
+        return None;
+    }
+    (i > 0 && low[i - 1] == "as" && tags[i - 1] == Tag::Sconj).then_some(Tag::Sconj)
 }
 
 /// Out-of-vocabulary neighbor tag: pre-lowered `low[i]` never seen in

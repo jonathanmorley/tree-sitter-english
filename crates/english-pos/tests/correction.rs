@@ -819,3 +819,44 @@ fn this_pron_fixes_determiner_led_ellipsis() {
         Tag::Det
     );
 }
+
+#[test]
+fn if_sconj_fixes_mwe_second_half() {
+    // `as if to step`: ADP after as/SCONJ -> SCONJ (gold 14:0;
+    // the chunker lists `as if` as Subord).
+    assert_eq!(
+        run(
+            &["as", "if", "to"],
+            &[(Tag::Sconj, 9.0), (Tag::Adp, 1.0), (Tag::Part, 9.0)],
+            "if-sconj",
+        )[1],
+        Tag::Sconj
+    );
+    // Plain conditional stays out (no as-prev: honest scope).
+    assert_eq!(
+        run(
+            &["see", "if", "you"],
+            &[(Tag::Verb, 9.0), (Tag::Adp, 0.5), (Tag::Pron, 9.0)],
+            "if-sconj",
+        )[1],
+        Tag::Adp
+    );
+    // as-prev with the wrong tag stays out (equative territory).
+    assert_eq!(
+        run(
+            &["as", "if", "you"],
+            &[(Tag::Adv, 9.0), (Tag::Adp, 0.5), (Tag::Pron, 9.0)],
+            "if-sconj",
+        )[1],
+        Tag::Adp
+    );
+    // Already-SCONJ never refires.
+    assert_eq!(
+        run(
+            &["as", "if", "he"],
+            &[(Tag::Sconj, 9.0), (Tag::Sconj, 9.0), (Tag::Pron, 9.0)],
+            "if-sconj",
+        )[1],
+        Tag::Sconj
+    );
+}
