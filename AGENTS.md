@@ -3516,7 +3516,30 @@ per item; linear family stays closed)
   moby +1, sweep +21 — all four up, none down; sweep +21 at 5×
   sweep-scale wobble. Advanced on book signal + EWT-tie; ship
   gates decide (below). `eg+clean`/`eg+diverse`/`eg+child`
-  screens stay queued behind this ship.
+  screens ran after the ship (below) — all three REJECTED, no
+  OOD/books attribution owed:
+  `eg+clean` (+GUMReddit+ParTUT): dev 93.75 / test 93.80
+  (−183/−195 toks — the "low-risk" hypothesis was wrong; small
+  formal/parallel data drags EWT boundaries);
+  `eg+diverse` (+ESLSpok+Atis): dev 93.76 / test 93.87
+  (−182/−178 — learner + narrow-query harm, as predicted);
+  `eg+child` (+CHILDES): dev 94.29 / test 94.34 (−48/−61 —
+  test outside wobble; child-directed speech, fragments).
+  `eg+all` dies with them (needed every bundle to pass).
+  Operational lessons (all load-bearing for future screens):
+  (i) the screen script does not mkdir R36_DIR — first chain died
+  at the epoch-1 save on missing dirs (fixed: mkdir before launch);
+  (ii) never pipe screen output through `tail` (destroys the only
+  record — the first chain's deaths went undiagnosed a full round);
+  log per-screen files with exit codes; (iii) silent deaths are
+  MKL VML `sqrt` SIGILLs (Adam step, batch-shape lottery —
+  faulthandler-localized to `mkl_vml_kernel_sSqrt`): force
+  `MKL_ENABLE_INSTRUCTIONS=SSE4_2` on every torch launch
+  (elementwise op — byte-identical math, portable-ISAs stance);
+  (iv) resume with `>>`, never `>` (clobbered the child ep1-4 log;
+  numbers survive only in-session); (v) background chains do not
+  survive day-boundary sleeps — resume (`--resume`, versioned
+  ckpts) rather than restart.
 - R3-7 SHIP: EWT+GUM+LinES tagger (DONE 2026-10-11): export
   (`export_r37lines.py`: vocabs 27,828/214, f32 43.4 MB, i8 8.19
   MB via compact separators — default serialization hit 10.35
@@ -3535,8 +3558,10 @@ per item; linear family stays closed)
   sweep +24, books +35 — every cell wins-or-ties, zero
   regressions (sub-baseline cells inside wobble). Standing
   triggers: joint EG re-run now stale (tags moved) — QUEUED;
-  re-mining on the new weights — QUEUED (round 4); dep-pipeline
-  refresh (cheap) — QUEUED.
+  re-mining on the new weights — QUEUED (round 4).
+  (Dep-pipeline refresh STRUCK 2026-10-11, zero work: the dep
+  `+tagger` regime is perceptron-greedy, untouched by any neural
+  ship — a refresh would reproduce banked numbers exactly.)
 - Correction re-mining round 3 (DONE 2026-10-11, 0 new perceptron
   cells + 1 neural rule): production-path margins over
   sweep/genre/hard/moby (112 sents / 4,075 toks) on both paths.
