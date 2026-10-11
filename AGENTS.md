@@ -601,11 +601,13 @@ against a deleted scanner. Delete it if CLI results look suspicious.
   lists with LL scores on Moby-Dick, top items dispositioned per
   harvest criteria, zero grammar/runtime changes in this item.
 
-- Scanner micro-guards from NLTK tokenizers (NOT STARTED):
-  (a) digit-guarded colon: `treebank.py` `([:,])([^\d])` and
-  `toktok.py` `:(?!//)` are the exact shape for the `10:30` residual
-  — apply same guard in `scan_colon_handoff`
-  (`bindings/rust/scanner.rs`), TDD in `test/corpus/*.txt`;
+- Scanner micro-guards from NLTK tokenizers (DONE 2026-10-11 —
+  entry was stale, verified no code change):
+  (a) digit-guarded colon: DONE since `a961396` (guard lives in
+  `scan_colon_handoff` with the treebank shape in-comment) and
+  closed fully by `af2041a` (`number` absorbs `:MM(:SS)`);
+  corpus pin `punctuation.txt:Time expression lexes as one number`
+  green, full corpus suite green on re-measure;
   (b) dash coverage: `destructive.py` `[\u2012-\u2015]` vs scanner
   `is_dash` U+2013/2014 only — extend to U+2012/U+2015 or map them,
   corpus test each (DONE 2026-09-27: range extended + bar test);
