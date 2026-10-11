@@ -3526,6 +3526,16 @@ per item; linear family stays closed)
   `eg+child` (+CHILDES): dev 94.29 / test 94.34 (−48/−61 —
   test outside wobble; child-directed speech, fragments).
   `eg+all` dies with them (needed every bundle to pass).
+  Follow-up 2026-10-11 (owner asked — GUMReddit solo, isolating the
+  `eg+clean` bundle): dev 93.66 / test 93.99 (−207/−149 toks) —
+  REJECTED solo. Reddit's 686 sentences explain the bundle's damage
+  by magnitude; ParTUT's individual share unmeasured and moot (both
+  reject). Small informal-register sample yanks shared rows — same
+  drift family as the 0-for-6 record, no new mechanism.
+  Operationally the solo needed `MKL_DEBUG_CPU_TYPE=5` on top of
+  the SSE4_2 pin (faulthandler: same `sSqrt` kernel — the pin
+  narrows but never eliminates); that dodge can run pathologically
+  slow (1114 s epoch vs ~100 s).
   Operational lessons (all load-bearing for future screens):
   (i) the screen script does not mkdir R36_DIR — first chain died
   at the epoch-1 save on missing dirs (fixed: mkdir before launch);
