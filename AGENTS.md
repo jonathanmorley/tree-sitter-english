@@ -3500,6 +3500,24 @@ per item; linear family stays closed)
   2 verified book fixes (`as if to strike`, `as if to step`,
   margins 0.45/1.079), zero breaks; sweep/genre/hard/moby/flies
   green both paths; chunk/lint/joint downstream green.
+- R3-7 corpus expansion screen (QUEUED 2026-10-11, owner-ordered:
+  pull every usable bank, measure, reject-as-unhelpful where due):
+  `fetch-ud.sh` now pins ESLSpok (17k, BY-SA), GUMReddit (13k,
+  BY 4.0), ParTUT (43k, BY-NC-SA 2.0), Atis (49k, BY-SA),
+  CHILDES (221k, BY-SA) + test-only GENTLE/Pronouns/LittlePrince/
+  CTeTex; ESL excluded (every FORM scrubbed `_` — verified,
+  mechanically unusable), PCEDT/UniDive are stubs, code-switched
+  and Old English repos out of scope. Bundles vs the shipped
+  EWT+GUM base: `eg+lines` (book-domain hypothesis),
+  `eg+clean` (+GUMReddit+ParTUT, low-risk), `eg+diverse`
+  (+ESLSpok+Atis, divergent), `eg+child` (solo — 221k would
+  dominate any bundle); `eg+all` only if every bundle passes.
+  Vehicle: R3-6 tagger screen (same seeds/hparams/epochs).
+  Screen bar: EWT dev AND test ≥ baseline with no OOD
+  (PUD/GUM/LinES) regression — else reject, no attribution owed.
+  Ship stage (admitted bundles only): full gates (books, flies),
+  joint re-run, vendor. Test-only corpora enter as evals
+  (GENTLE OOD suite, Pronouns targeted, LittlePrince book-domain).
 - Correction re-mining round 3 (DONE 2026-10-11, 0 new perceptron
   cells + 1 neural rule): production-path margins over
   sweep/genre/hard/moby (112 sents / 4,075 toks) on both paths.
