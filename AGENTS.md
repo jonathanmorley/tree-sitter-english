@@ -2696,40 +2696,36 @@ suspect; item 4 proceeds with its own bars.
   their work rides uncommitted as before, this commit carries
   only the table.
 
-## Honnibal 2013 averaged-perceptron harvest (QUEUED 2026-10-07)
+## Honnibal 2013 averaged-perceptron harvest (RESOLVED — all three probes adjudicated 2026-10-07, entries synced 2026-10-11)
 
 - Source: `https://explosion.ai/blog/part-of-speech-pos-tagger-in-python`
   (averaging rationale, tagdict fast-path, case-frequency advice,
   greedy-suffices 0.1% line, train-with-guessed-history caveat).
-  Three queued probes, three validations, one do-not-reopen —
-  all below. Nothing here changes a shipped decision by itself.
-- (a) PROBE — training-history exposure (REAL FIND, not started):
-  `english-pos/src/lib.rs:827` advances `prev1/prev2` with the GOLD
-  tag; Honnibal: history must come from the guesses, "otherwise it
-  will be way over-reliant on the tag-history features" — exactly
-  the failure our trainer is exposed to, never measured here.
-  Variant: advance history from predicted `best` (updates still
-  toward gold), else identical. Bars: EWT dev/test ≥ 0, all evals
-  neutral-or-better, `flies` holds on all paths. Orthogonal to
-  the averaging rejection (history modeling vs weight
-  averaging — different axis, no interaction assumed).
-- (b) PROBE — tagdict inference fast-path (not started): blog's
-  "~50% of words unambiguous, output the tag and skip" with the
-  literal `tagdict.get` short-circuit. Our tagdict-behavior-change
-  rejection STANDS (training/locking); this is the already-open
-  "fast-path-only optional" door with the strongest external
-  precedent. Bar: byte-identical tags on every eval + speed delta
-  on `bench` (tag pass is 104 ms; skip rate decides the win).
-- (c) PROBE — external case-frequency backoff (not started):
-  Honnibal's actual case advice is NOT in-model case features
-  (our Titlecase×position, measured dev −130 with PROPN→NOUN
-  +94 — exactly the domain-convention overfit he predicts) but
-  "how frequently is this word title-cased in a large sample",
-  train corpus lowercased. Unmeasured direction: offline
-  titlecase-rate table (books100 bodies as the large sample —
-  in-domain, no license exposure) consulted only below τ like
-  every other rule. Standard gates (EWT-majority on the
-  PREDICTED tag per the color-adj lesson, dev/test ≥ 0).
+  Three probes, all resolved below (plus three validations and one
+  do-not-reopen) — nothing here changes a shipped decision by itself.
+- (a) PROBE — training-history exposure (MEASURED AND REJECTED
+  2026-10-07, 0-for-3 mechanics — entry was stale, no new work):
+  `Model::train_guessed_history` + `--guessed-history`, canonical
+  joint protocol: greedy dev −33 / test −57, production −0.16/−0.37
+  (EWT gate fails first, no book run). Mechanism: inference history
+  matches gold 92% of the time, so gold-training costs less than
+  noise-training; early-iteration guesses drag lexical rows
+  (PROPN→NOUN 479). Full numbers in `english-pos-train/README.md`;
+  code kept as measured infrastructure, weights restored
+  md5-verified. Verdict stands, see the round-3 standing list.
+- (b) PROBE — tagdict inference fast-path (ADMITTED 2026-10-07 —
+  entry was stale, no new work): `Model.tagdict` + `decode_lower`
+  skip, largest single EWT jump since the joint protocol; full
+  numbers in `english-pos-train/README.md`. Our
+  tagdict-behavior-change rejection STANDS (training/locking);
+  this was the already-open fast-path-only door.
+- (c) PROBE — external case-frequency backoff (MEASURED AND
+  REJECTED 2026-10-07, zero code written — entry was stale, no new
+  work): 6.6M-token book-body rate table, pred-conditioned
+  EWT-train tabulation — NOUN→PROPN 8:2 above rate 0.1 but 6:5
+  below, PROPN→NOUN 8:17 against; book misses scatter across
+  buckets with no capturing threshold. Note in `correction.rs`
+  module docs; probe deleted.
 - Validations, no action: greedy-suffices ("can't do without an
   extra 0.1%") matches beam-2 at +0.05/+0.10 admitted as
   strictly-non-negative; perceptron "rubbish at multi-tagging,
